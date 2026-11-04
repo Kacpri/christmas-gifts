@@ -40,6 +40,29 @@ create index if not exists wishes_user_id_idx on public.wishes (user_id);
 create index if not exists assignments_drawer_idx on public.assignments (drawer_id);
 create index if not exists assignments_drawee_idx on public.assignments (drawee_id);
 
+-- Czaty: wątek = para z losowania (lottery_type, drawer_id, drawee_id)
+create table if not exists public.messages (
+  id bigint generated always as identity primary key,
+  lottery_type smallint not null check (lottery_type in (1, 2)),
+  drawer_id uuid not null references public.profiles (id) on delete cascade,
+  drawee_id uuid not null references public.profiles (id) on delete cascade,
+  sender_id uuid not null references public.profiles (id) on delete cascade,
+  text text not null check (char_length(text) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists messages_thread_idx
+  on public.messages (lottery_type, drawer_id, drawee_id, id);
+
+create table if not exists public.thread_reads (
+  lottery_type smallint not null check (lottery_type in (1, 2)),
+  drawer_id uuid not null references public.profiles (id) on delete cascade,
+  drawee_id uuid not null references public.profiles (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  last_read_at timestamptz not null default now(),
+  primary key (lottery_type, drawer_id, drawee_id, user_id)
+);
+
 -- Profil tworzy się automatycznie przy rejestracji; pierwszy użytkownik zostaje organizatorem
 create or replace function public.handle_new_user()
 returns trigger
@@ -91,6 +114,8 @@ alter table public.profiles enable row level security;
 alter table public.wishes enable row level security;
 alter table public.themes enable row level security;
 alter table public.assignments enable row level security;
+alter table public.messages enable row level security;
+alter table public.thread_reads enable row level security;
 
 -- profiles
 drop policy if exists "profiles_select_all" on public.profiles;
@@ -183,6 +208,42 @@ drop policy if exists "assignments_select_own" on public.assignments;
 create policy "assignments_select_own" on public.assignments
   for select to authenticated using (drawer_id = auth.uid());
 
+-- messages: widać i pisze tylko uczestnicy wątku
+drop policy if exists "messages_select_members" on public.messages;
+create policy "messages_select_members" on public.messages
+  for select to authenticated
+  using (drawer_id = auth.uid() or drawee_id = auth.uid());
+
+drop policy if exists "messages_insert_member" on public.messages;
+create policy "messages_insert_member" on public.messages
+  for insert to authenticated
+  with check (
+    sender_id = auth.uid()
+    and (drawer_id = auth.uid() or drawee_id = auth.uid())
+    and exists (
+      select 1 from public.assignments a
+      where a.lottery_type = lottery_type
+        and a.drawer_id = drawer_id
+        and a.drawee_id = drawee_id
+    )
+  );
+
+-- thread_reads: tylko własne znaczniki odczytu
+drop policy if exists "thread_reads_select_own" on public.thread_reads;
+create policy "thread_reads_select_own" on public.thread_reads
+  for select to authenticated using (user_id = auth.uid());
+
+drop policy if exists "thread_reads_insert_own" on public.thread_reads;
+create policy "thread_reads_insert_own" on public.thread_reads
+  for insert to authenticated
+  with check (user_id = auth.uid() and (drawer_id = auth.uid() or drawee_id = auth.uid()));
+
+drop policy if exists "thread_reads_update_own" on public.thread_reads;
+create policy "thread_reads_update_own" on public.thread_reads
+  for update to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
 -- Losowanie: dwa derangementi; w drugim nikt nie losuje osoby z pierwszego
 create or replace function public.run_lottery()
 returns void
@@ -249,6 +310,8 @@ begin
   end loop;
 
   delete from public.assignments where true;
+  delete from public.messages where true;
+  delete from public.thread_reads where true;
   insert into public.assignments (lottery_type, drawer_id, drawee_id)
   select 1, user_ids[x], user_ids[sigma[x]] from generate_series(1, n) as g(x)
   union all
@@ -274,9 +337,20 @@ begin
   end if;
 
   delete from public.assignments where true;
+  delete from public.messages where true;
+  delete from public.thread_reads where true;
   update public.profiles set is_ready = false where is_ready = true;
 end;
 $$;
 
 revoke execute on function public.cancel_lottery() from public;
 grant execute on function public.cancel_lottery() to authenticated;
+
+-- Realtime dla czatu
+do $$
+begin
+  alter publication supabase_realtime add table public.messages;
+exception
+  when duplicate_object then null;
+end
+$$;

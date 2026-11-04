@@ -178,6 +178,73 @@ export async function runLottery(
   return { ok: true };
 }
 
+async function touchThreadRead(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  lotteryType: number,
+  drawerId: string,
+  draweeId: string
+) {
+  await supabase.from("thread_reads").upsert(
+    {
+      lottery_type: lotteryType,
+      drawer_id: drawerId,
+      drawee_id: draweeId,
+      user_id: userId,
+      last_read_at: new Date().toISOString(),
+    },
+    { onConflict: "lottery_type,drawer_id,drawee_id,user_id" }
+  );
+}
+
+export async function sendMessage(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const text = String(formData.get("text") ?? "").trim();
+  const lotteryType = Number(formData.get("lottery_type"));
+  const drawerId = String(formData.get("drawer_id") ?? "");
+  const draweeId = String(formData.get("drawee_id") ?? "");
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  if (!Number.isInteger(lotteryType) || !drawerId || !draweeId) {
+    return { ok: false, error: "Nieprawidłowy wątek." };
+  }
+  const { data: mine } = await supabase
+    .from("assignments")
+    .select("lottery_type, drawer_id, drawee_id")
+    .or(`drawer_id.eq.${user.id},drawee_id.eq.${user.id}`);
+  const isMember = (mine ?? []).some(
+    (a) =>
+      a.lottery_type === lotteryType &&
+      a.drawer_id === drawerId &&
+      a.drawee_id === draweeId
+  );
+  if (!isMember) return { ok: false, error: "Nie masz dostępu do tego wątku." };
+  const { error } = await supabase.from("messages").insert({
+    lottery_type: lotteryType,
+    drawer_id: drawerId,
+    drawee_id: draweeId,
+    sender_id: user.id,
+    text,
+  });
+  if (error) return { ok: false, error: error.message };
+  await touchThreadRead(supabase, user.id, lotteryType, drawerId, draweeId);
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function markThreadRead(formData: FormData): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const lotteryType = Number(formData.get("lottery_type"));
+  const drawerId = String(formData.get("drawer_id") ?? "");
+  const draweeId = String(formData.get("drawee_id") ?? "");
+  if (!Number.isInteger(lotteryType) || !drawerId || !draweeId) return;
+  await touchThreadRead(supabase, user.id, lotteryType, drawerId, draweeId);
+}
+
 export async function cancelLottery(
   _prev: ActionResult,
   _formData: FormData

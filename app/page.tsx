@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { ChatSection, type Thread } from "@/components/chat-section";
 import { LogoutButton } from "@/components/logout-button";
 import { NameForm } from "@/components/name-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
@@ -20,6 +21,9 @@ export default async function Home() {
     { data: myWishes },
     { data: myTheme },
     { data: myAssignments },
+    { data: myAsDrawee },
+    { data: myMessages },
+    { data: myReads },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -40,6 +44,19 @@ export default async function Home() {
       .from("assignments")
       .select("lottery_type, drawee_id")
       .eq("drawer_id", user.id),
+    supabase
+      .from("assignments")
+      .select("lottery_type, drawer_id")
+      .eq("drawee_id", user.id),
+    supabase
+      .from("messages")
+      .select("id, lottery_type, drawer_id, drawee_id, sender_id, text, created_at")
+      .or(`drawer_id.eq.${user.id},drawee_id.eq.${user.id}`)
+      .order("created_at"),
+    supabase
+      .from("thread_reads")
+      .select("lottery_type, drawer_id, drawee_id, last_read_at")
+      .eq("user_id", user.id),
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
@@ -48,6 +65,7 @@ export default async function Home() {
 
   let listGift: { person: string; wishes: Wish[] } | null = null;
   let themeGift: { person: string; theme: string } | null = null;
+  let threads: Thread[] = [];
 
   if (lotteryDone) {
     const listDrawee = myAssignments!.find((a) => a.lottery_type === 1)!;
@@ -82,6 +100,62 @@ export default async function Home() {
         draweeThemes?.find((t) => t.user_id === themeDrawee.drawee_id)
           ?.theme ?? "",
     };
+
+    const threadKeyOf = (
+      a: { lottery_type: number; drawer_id: string; drawee_id: string }
+    ) => `${a.lottery_type}-${a.drawer_id}-${a.drawee_id}`;
+    const typeLabel = (t: number) => (t === 1 ? "lista" : "temat");
+    const buildThread = (
+      a: { lottery_type: number; drawer_id: string; drawee_id: string },
+      label: string
+    ): Thread => {
+      const key = threadKeyOf(a);
+      const msgs = (myMessages ?? []).filter((m) => {
+        const mk = `${m.lottery_type}-${m.drawer_id}-${m.drawee_id}`;
+        return mk === key;
+      });
+      const read = myReads?.find(
+        (r) =>
+          r.lottery_type === a.lottery_type &&
+          r.drawer_id === a.drawer_id &&
+          r.drawee_id === a.drawee_id
+      );
+      return {
+        lotteryType: a.lottery_type,
+        drawerId: a.drawer_id,
+        draweeId: a.drawee_id,
+        label,
+        messages: msgs.map((m) => ({
+          id: m.id,
+          senderId: m.sender_id,
+          text: m.text,
+          createdAt: m.created_at,
+        })),
+        unread: msgs.filter(
+          (m) =>
+            m.sender_id !== user.id &&
+            (!read || m.created_at > read.last_read_at)
+        ).length,
+      };
+    };
+    threads = [
+      ...myAssignments!.map((a) =>
+        buildThread(
+          { lottery_type: a.lottery_type, drawer_id: user.id, drawee_id: a.drawee_id },
+          `Dla ${nameOf(a.drawee_id)} — ${typeLabel(a.lottery_type)}`
+        )
+      ),
+      ...(myAsDrawee ?? []).map((a) =>
+        buildThread(
+          { lottery_type: a.lottery_type, drawer_id: a.drawer_id, drawee_id: user.id },
+          `Anonimowy Mikołaj — ${typeLabel(a.lottery_type)}`
+        )
+      ),
+    ].sort((x, y) => {
+      const lx = x.messages[x.messages.length - 1]?.createdAt ?? "";
+      const ly = y.messages[y.messages.length - 1]?.createdAt ?? "";
+      return lx < ly ? -1 : lx > ly ? 1 : x.label.localeCompare(y.label);
+    });
   }
 
   return (
@@ -152,6 +226,8 @@ export default async function Home() {
           <strong>{participants?.length ?? 0}</strong> osób.
         </section>
       )}
+
+      <ChatSection me={user.id} threads={threads} lotteryDone={lotteryDone} />
 
       <WishForm
         wishes={myWishes ?? []}
