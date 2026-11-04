@@ -1,0 +1,89 @@
+"use client";
+
+import { useActionState } from "react";
+
+import { removeUser, runLottery, type ActionResult } from "@/app/actions";
+
+const empty: ActionResult = { ok: false };
+
+export function OrganizerPanel({
+  participants,
+  lotteryDone,
+}: {
+  participants: { id: string; full_name: string }[];
+  lotteryDone: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(runLottery, empty);
+
+  return (
+    <section className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-5">
+      <div>
+        <h2 className="text-lg font-semibold">Panel organizatora</h2>
+        <p className="text-sm text-stone-500">
+          {participants.length} osób w grze. Losowanie wymaga minimum 3 osób.
+        </p>
+      </div>
+
+      <form
+        action={(formData: FormData) => {
+          if (
+            lotteryDone &&
+            !window.confirm(
+              "Powtórzyć losowanie? Obecne wyniki zostaną zastąpione."
+            )
+          ) {
+            return;
+          }
+          formAction(formData);
+        }}
+      >
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        >
+          {pending
+            ? "Losowanie…"
+            : lotteryDone
+              ? "Powtórz losowanie"
+              : "Start losowania"}
+        </button>
+      </form>
+      {!state.ok && state.error && (
+        <p className="text-sm text-red-600">{state.error}</p>
+      )}
+
+      <div>
+        <h3 className="text-sm font-medium text-stone-600">Uczestnicy</h3>
+        <ul className="mt-2 flex flex-col gap-1">
+          {participants.map((p) => (
+            <li
+              key={p.id}
+              className="flex items-center justify-between text-sm"
+            >
+              <span>{p.full_name}</span>
+              <form
+                action={(formData) => {
+                  removeUser(formData);
+                }}
+                onSubmit={(e) => {
+                  if (!window.confirm(`Usunąć ${p.full_name} z losowania?`)) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="id" value={p.id} />
+                <button
+                  type="submit"
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  usuń
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}

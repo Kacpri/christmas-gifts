@@ -1,0 +1,161 @@
+import { redirect } from "next/navigation";
+
+import { LogoutButton } from "@/components/logout-button";
+import { OrganizerPanel } from "@/components/organizer-panel";
+import { WishForm, type Wish } from "@/components/wish-form";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const [
+    { data: profile },
+    { data: participants },
+    { data: myWishes },
+    { data: myTheme },
+    { data: myAssignments },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, is_organizer")
+      .eq("id", user.id)
+      .single(),
+    supabase.from("profiles").select("id, full_name").order("full_name"),
+    supabase
+      .from("wishes")
+      .select("id, text, link, price")
+      .eq("user_id", user.id)
+      .order("created_at"),
+    supabase.from("themes").select("theme").eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("assignments")
+      .select("lottery_type, drawee_id")
+      .eq("drawer_id", user.id),
+  ]);
+
+  const lotteryDone = (myAssignments?.length ?? 0) === 2;
+
+  let listGift: { person: string; wishes: Wish[] } | null = null;
+  let themeGift: { person: string; theme: string } | null = null;
+
+  if (lotteryDone) {
+    const listDrawee = myAssignments!.find((a) => a.lottery_type === 1)!;
+    const themeDrawee = myAssignments!.find((a) => a.lottery_type === 2)!;
+    const draweeIds = [listDrawee.drawee_id, themeDrawee.drawee_id];
+
+    const [
+      { data: drawees },
+      { data: draweeWishes },
+      { data: draweeThemes },
+    ] = await Promise.all([
+      supabase.from("profiles").select("id, full_name").in("id", draweeIds),
+      supabase
+        .from("wishes")
+        .select("id, user_id, text, link, price")
+        .in("user_id", draweeIds)
+        .order("created_at"),
+      supabase.from("themes").select("user_id, theme").in("user_id", draweeIds),
+    ]);
+
+    const nameOf = (id: string) =>
+      drawees?.find((p) => p.id === id)?.full_name ?? "??";
+    listGift = {
+      person: nameOf(listDrawee.drawee_id),
+      wishes: (draweeWishes ?? []).filter(
+        (w) => w.user_id === listDrawee.drawee_id
+      ),
+    };
+    themeGift = {
+      person: nameOf(themeDrawee.drawee_id),
+      theme:
+        draweeThemes?.find((t) => t.user_id === themeDrawee.drawee_id)
+          ?.theme ?? "",
+    };
+  }
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Świąteczne Losowanie</h1>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-stone-600">{profile?.full_name}</span>
+          <LogoutButton />
+        </div>
+      </header>
+
+      {lotteryDone && listGift && themeGift ? (
+        <section className="flex flex-col gap-4">
+          <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <h2 className="text-lg font-semibold">Prezent z listy</h2>
+            <p className="mt-1 text-sm text-stone-600">
+              Kupujesz prezent dla: <strong>{listGift.person}</strong>
+            </p>
+            {listGift.wishes.length > 0 ? (
+              <ul className="mt-3 flex flex-col gap-2">
+                {listGift.wishes.map((wish) => (
+                  <li
+                    key={wish.id}
+                    className="rounded-lg bg-stone-50 p-3 text-sm"
+                  >
+                    <p>{wish.text}</p>
+                    <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
+                      {wish.price != null && (
+                        <span>{wish.price.toFixed(2)} zł</span>
+                      )}
+                      {wish.link && (
+                        <a
+                          href={wish.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          link
+                        </a>
+                      )}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-stone-500">
+                Ta osoba jeszcze nie dodała życzeń.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-stone-200 bg-white p-5">
+            <h2 className="text-lg font-semibold">Prezent tematyczny</h2>
+            <p className="mt-1 text-sm text-stone-600">
+              Kupujesz prezent dla: <strong>{themeGift.person}</strong>
+            </p>
+            <p className="mt-3 text-sm">
+              Temat: <em>{themeGift.theme}</em>
+            </p>
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-sm text-stone-600">
+          Czekamy na losowanie. W grze bierze udział{" "}
+          <strong>{participants?.length ?? 0}</strong> osób.
+        </section>
+      )}
+
+      <WishForm
+        wishes={myWishes ?? []}
+        theme={myTheme?.theme ?? null}
+        locked={lotteryDone}
+      />
+
+      {profile?.is_organizer && (
+        <OrganizerPanel
+          participants={participants ?? []}
+          lotteryDone={lotteryDone}
+        />
+      )}
+    </main>
+  );
+}
