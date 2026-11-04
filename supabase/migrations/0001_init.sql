@@ -4,8 +4,12 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   full_name text not null,
   is_organizer boolean not null default false,
+  is_ready boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+-- dla baz utworzonych przed kolumną is_ready
+alter table public.profiles add column if not exists is_ready boolean not null default false;
 
 create table if not exists public.wishes (
   id bigint generated always as identity primary key,
@@ -63,23 +67,50 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- flaga organizatora nie może być zmieniana po utworzeniu profilu
+create or replace function public.protect_organizer_flag()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.is_organizer is distinct from old.is_organizer then
+    raise exception 'Zmiana flagi organizatora jest zabroniona.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_organizer_flag on public.profiles;
+create trigger protect_organizer_flag
+  before update on public.profiles
+  for each row execute function public.protect_organizer_flag();
+
 alter table public.profiles enable row level security;
 alter table public.wishes enable row level security;
 alter table public.themes enable row level security;
 alter table public.assignments enable row level security;
 
 -- profiles
+drop policy if exists "profiles_select_all" on public.profiles;
 create policy "profiles_select_all" on public.profiles
   for select to authenticated using (true);
 
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update to authenticated
-  using (id = auth.uid())
+  using (
+    id = auth.uid()
+    and not is_ready
+    and not exists (select 1 from public.assignments)
+  )
   with check (
     id = auth.uid()
     and is_organizer = (select p.is_organizer from public.profiles p where p.id = auth.uid())
   );
 
+drop policy if exists "profiles_delete_by_organizer" on public.profiles;
 create policy "profiles_delete_by_organizer" on public.profiles
   for delete to authenticated
   using (
@@ -88,6 +119,7 @@ create policy "profiles_delete_by_organizer" on public.profiles
   );
 
 -- wishes: widać własne oraz życzenia osoby wylosowanej w losowaniu 1
+drop policy if exists "wishes_select_own_or_drawn" on public.wishes;
 create policy "wishes_select_own_or_drawn" on public.wishes
   for select to authenticated
   using (
@@ -100,18 +132,26 @@ create policy "wishes_select_own_or_drawn" on public.wishes
     )
   );
 
+drop policy if exists "wishes_insert_own" on public.wishes;
 create policy "wishes_insert_own" on public.wishes
   for insert to authenticated with check (user_id = auth.uid());
 
+drop policy if exists "wishes_update_own" on public.wishes;
 create policy "wishes_update_own" on public.wishes
   for update to authenticated using (user_id = auth.uid());
 
--- usuwanie tylko przed losowaniem
+-- usuwanie tylko przed losowaniem i przed gotowością
+drop policy if exists "wishes_delete_own_before_lottery" on public.wishes;
 create policy "wishes_delete_own_before_lottery" on public.wishes
   for delete to authenticated
-  using (user_id = auth.uid() and not exists (select 1 from public.assignments));
+  using (
+    user_id = auth.uid()
+    and not exists (select 1 from public.assignments)
+    and not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_ready)
+  );
 
 -- themes: widać własny oraz temat osoby wylosowanej w losowaniu 2
+drop policy if exists "themes_select_own_or_drawn" on public.themes;
 create policy "themes_select_own_or_drawn" on public.themes
   for select to authenticated
   using (
@@ -124,15 +164,22 @@ create policy "themes_select_own_or_drawn" on public.themes
     )
   );
 
+drop policy if exists "themes_insert_own" on public.themes;
 create policy "themes_insert_own" on public.themes
   for insert to authenticated with check (user_id = auth.uid());
 
--- temat zablokowany po losowaniu
+-- temat zablokowany po losowaniu lub po gotowości
+drop policy if exists "themes_update_own_before_lottery" on public.themes;
 create policy "themes_update_own_before_lottery" on public.themes
   for update to authenticated
-  using (user_id = auth.uid() and not exists (select 1 from public.assignments));
+  using (
+    user_id = auth.uid()
+    and not exists (select 1 from public.assignments)
+    and not exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_ready)
+  );
 
 -- assignments: każdy widzi tylko własne losy; zapis wyłącznie przez run_lottery()
+drop policy if exists "assignments_select_own" on public.assignments;
 create policy "assignments_select_own" on public.assignments
   for select to authenticated using (drawer_id = auth.uid());
 
@@ -160,6 +207,10 @@ begin
   n := coalesce(array_length(user_ids, 1), 0);
   if n < 3 then
     raise exception 'Do losowania potrzebne są co najmniej 3 osoby (obecnie: %).', n;
+  end if;
+
+  if exists (select 1 from public.profiles where not is_ready) then
+    raise exception 'Losowanie może wystartować, gdy wszyscy uczestnicy są gotowi.';
   end if;
 
   attempts := 0;
@@ -223,6 +274,7 @@ begin
   end if;
 
   delete from public.assignments where true;
+  update public.profiles set is_ready = false where is_ready = true;
 end;
 $$;
 

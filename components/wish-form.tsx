@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useActionState } from "react";
 
 import { addWish, removeWish, saveTheme, type ActionResult } from "@/app/actions";
 
@@ -27,6 +27,7 @@ export function WishForm({
     saveTheme,
     empty
   );
+  const [themeDirty, setThemeDirty] = useState(false);
 
   return (
     <section className="flex flex-col gap-6 rounded-xl border border-stone-200 bg-white p-5">
@@ -34,7 +35,7 @@ export function WishForm({
         <h2 className="text-lg font-semibold">Twoje życzenia</h2>
         <p className="text-sm text-stone-500">
           {locked
-            ? "Po losowaniu możesz tylko dodawać nowe życzenia."
+            ? "Możesz teraz tylko dodawać nowe życzenia."
             : "Maksymalnie 5 pozycji. Widzi je tylko osoba, która Cię wylosuje."}
         </p>
       </div>
@@ -144,21 +145,27 @@ export function WishForm({
           required
           maxLength={300}
           disabled={locked}
+          onChange={() => setThemeDirty(true)}
           placeholder={
             locked
-              ? "Temat zablokowany po losowaniu"
+              ? "Temat zablokowany"
               : "np. coś ciepłego na zimowe wieczory"
           }
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500"
         />
         {!locked && (
-          <button
-            type="submit"
-            disabled={savingTheme}
-            className="w-fit rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
-          >
-            {savingTheme ? "Zapisywanie…" : "Zapisz temat"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={savingTheme}
+              className="w-fit rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
+            >
+              {savingTheme ? "Zapisywanie…" : "Zapisz temat"}
+            </button>
+            {themeState.ok && !themeDirty && (
+              <span className="text-sm text-green-700">Zapisano ✓</span>
+            )}
+          </div>
         )}
         {!themeState.ok && themeState.error && (
           <p className="text-sm text-red-600">{themeState.error}</p>

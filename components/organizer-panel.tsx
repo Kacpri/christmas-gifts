@@ -15,7 +15,7 @@ export function OrganizerPanel({
   participants,
   lotteryDone,
 }: {
-  participants: { id: string; full_name: string }[];
+  participants: { id: string; full_name: string; is_ready: boolean }[];
   lotteryDone: boolean;
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
@@ -24,12 +24,21 @@ export function OrganizerPanel({
     empty
   );
 
+  const readyCount = participants.filter((p) => p.is_ready).length;
+  const allReady =
+    participants.length > 0 && participants.every((p) => p.is_ready);
+  const notReadyNames = participants
+    .filter((p) => !p.is_ready)
+    .map((p) => p.full_name);
+
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-5">
       <div>
         <h2 className="text-lg font-semibold">Panel organizatora</h2>
         <p className="text-sm text-stone-500">
-          {participants.length} osób w grze. Losowanie wymaga minimum 3 osób.
+          {participants.length} osób w grze, {readyCount}{" "}
+          {readyCount === 1 ? "gotowa" : readyCount >= 2 && readyCount <= 4 ? "gotowe" : "gotowych"}.
+          Losowanie wymaga minimum 3 osób.
         </p>
       </div>
 
@@ -48,7 +57,7 @@ export function OrganizerPanel({
       >
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || !allReady}
           className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
         >
           {pending
@@ -57,6 +66,11 @@ export function OrganizerPanel({
               ? "Powtórz losowanie"
               : "Start losowania"}
         </button>
+        {!allReady && (
+          <span className="text-xs text-stone-500">
+            Czekamy na: {notReadyNames.join(", ")}
+          </span>
+        )}
       </form>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
@@ -95,7 +109,18 @@ export function OrganizerPanel({
               key={p.id}
               className="flex items-center justify-between text-sm"
             >
-              <span>{p.full_name}</span>
+              <span className="flex items-center gap-2">
+                <span>{p.full_name}</span>
+                <span
+                  className={
+                    p.is_ready
+                      ? "text-xs font-medium text-green-700"
+                      : "text-xs text-stone-400"
+                  }
+                >
+                  {p.is_ready ? "gotowy" : "oczekuje"}
+                </span>
+              </span>
               <form
                 action={(formData) => {
                   removeUser(formData);

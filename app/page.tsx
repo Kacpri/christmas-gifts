@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { LogoutButton } from "@/components/logout-button";
+import { NameForm } from "@/components/name-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
+import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,10 +23,13 @@ export default async function Home() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, is_organizer")
+      .select("id, full_name, is_organizer, is_ready")
       .eq("id", user.id)
       .single(),
-    supabase.from("profiles").select("id, full_name").order("full_name"),
+    supabase
+      .from("profiles")
+      .select("id, full_name, is_ready")
+      .order("full_name"),
     supabase
       .from("wishes")
       .select("id, text, link, price")
@@ -38,6 +43,8 @@ export default async function Home() {
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
+  const isReady = profile?.is_ready ?? false;
+  const locked = lotteryDone || isReady;
 
   let listGift: { person: string; wishes: Wish[] } | null = null;
   let themeGift: { person: string; theme: string } | null = null;
@@ -86,6 +93,8 @@ export default async function Home() {
           <LogoutButton />
         </div>
       </header>
+
+      <NameForm fullName={profile?.full_name ?? ""} locked={locked} />
 
       {lotteryDone && listGift && themeGift ? (
         <section className="flex flex-col gap-4">
@@ -147,7 +156,14 @@ export default async function Home() {
       <WishForm
         wishes={myWishes ?? []}
         theme={myTheme?.theme ?? null}
-        locked={lotteryDone}
+        locked={locked}
+      />
+
+      <ReadySection
+        hasWish={(myWishes ?? []).length > 0}
+        hasTheme={Boolean(myTheme?.theme)}
+        isReady={isReady}
+        lotteryDone={lotteryDone}
       />
 
       {profile?.is_organizer && (

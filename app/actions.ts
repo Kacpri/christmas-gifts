@@ -81,6 +81,69 @@ export async function removeWish(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+export async function saveName(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const name = String(formData.get("full_name") ?? "").trim();
+  if (!name || name.length > 100) {
+    return { ok: false, error: "Imię i nazwisko: 1–100 znaków." };
+  }
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ full_name: name })
+    .eq("id", user.id)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Imię i nazwisko są już zablokowane." };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function markReady(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const { count, error: countError } = await supabase
+    .from("wishes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  if (countError) return { ok: false, error: countError.message };
+  if ((count ?? 0) < 1) {
+    return { ok: false, error: "Dodaj przynajmniej jedno życzenie." };
+  }
+  const { data: theme } = await supabase
+    .from("themes")
+    .select("theme")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!theme) return { ok: false, error: "Wpisz temat prezentu." };
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_ready")
+    .eq("id", user.id)
+    .single();
+  if (profile?.is_ready) return { ok: false, error: "Jesteś już gotowy." };
+  const { count: assignmentCount, error: assignError } = await supabase
+    .from("assignments")
+    .select("id", { count: "exact", head: true });
+  if (assignError) return { ok: false, error: assignError.message };
+  if ((assignmentCount ?? 0) > 0) {
+    return { ok: false, error: "Losowanie już się odbyło." };
+  }
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_ready: true })
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function saveTheme(
   _prev: ActionResult,
   formData: FormData
