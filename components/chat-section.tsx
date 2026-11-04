@@ -128,6 +128,26 @@ export function ChatSection({
   }, [state]);
 
   useEffect(() => {
+    setMessagesByThread((prev) => {
+      let changed = false;
+      const next: Record<string, ChatMessage[]> = {};
+      for (const t of threads) {
+        const key = threadKey(t);
+        const existing = prev[key] ?? [];
+        const existingIds = new Set(existing.map((m) => m.id));
+        const missing = t.messages.filter((m) => !existingIds.has(m.id));
+        if (missing.length > 0) {
+          next[key] = [...existing, ...missing].sort((a, b) => a.id - b.id);
+          changed = true;
+        } else {
+          next[key] = existing;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [threads]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "nearest" });
   }, [selected, selectedMessages.length]);
 
@@ -239,12 +259,12 @@ export function ChatSection({
                     required
                     maxLength={500}
                     placeholder="Napisz wiadomość…"
-                    className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+                    className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={pending || !value.trim()}
-                    className="rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+                    className="shrink-0 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
                   >
                     {pending ? "…" : "Wyślij"}
                   </button>
