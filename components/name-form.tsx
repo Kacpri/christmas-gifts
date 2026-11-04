@@ -14,7 +14,7 @@ export function NameForm({
   locked: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveName, empty);
-  const [dirty, setDirty] = useState(false);
+  const [nameValue, setNameValue] = useState(fullName);
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-5">
@@ -27,11 +27,11 @@ export function NameForm({
       <form action={formAction} className="mt-3 flex flex-col gap-3">
         <input
           name="full_name"
-          defaultValue={fullName}
+          value={nameValue}
+          onChange={(e) => setNameValue(e.target.value)}
           required
           maxLength={100}
           disabled={locked}
-          onChange={() => setDirty(true)}
           className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500"
         />
         {!locked && (
@@ -43,7 +43,7 @@ export function NameForm({
             >
               {pending ? "Zapisywanie…" : "Zapisz"}
             </button>
-            {state.ok && !dirty && (
+            {nameValue.trim() !== "" && nameValue.trim() === fullName && (
               <span className="text-sm text-green-700">Zapisano ✓</span>
             )}
           </div>

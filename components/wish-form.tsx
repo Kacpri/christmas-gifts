@@ -27,7 +27,7 @@ export function WishForm({
     saveTheme,
     empty
   );
-  const [themeDirty, setThemeDirty] = useState(false);
+  const [themeValue, setThemeValue] = useState(theme ?? "");
 
   return (
     <section className="flex flex-col gap-6 rounded-xl border border-stone-200 bg-white p-5">
@@ -141,11 +141,11 @@ export function WishForm({
       <form action={saveThemeAction} className="flex flex-col gap-3">
         <input
           name="theme"
-          defaultValue={theme ?? ""}
+          value={themeValue}
+          onChange={(e) => setThemeValue(e.target.value)}
           required
           maxLength={300}
           disabled={locked}
-          onChange={() => setThemeDirty(true)}
           placeholder={
             locked
               ? "Temat zablokowany"
@@ -162,7 +162,7 @@ export function WishForm({
             >
               {savingTheme ? "Zapisywanie…" : "Zapisz temat"}
             </button>
-            {themeState.ok && !themeDirty && (
+            {theme != null && themeValue.trim() === theme && (
               <span className="text-sm text-green-700">Zapisano ✓</span>
             )}
           </div>
