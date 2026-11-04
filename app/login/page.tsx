@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTransition, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -64,8 +65,9 @@ export default function LoginPage() {
           type="button"
           onClick={signInWithGoogle}
           disabled={pending}
-          className="w-full rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-stone-50 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-stone-50 disabled:opacity-50"
         >
+          <Image src="/g-logo.png" alt="Google" width={20} height={20} />
           Zaloguj się przez Google
         </button>
 
