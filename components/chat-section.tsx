@@ -210,7 +210,9 @@ export function ChatSection({
                         {last.senderId === me ? "Ty: " : ""}
                         {last.text}
                       </span>
-                      <span className="shrink-0">{timeOf(last.createdAt)}</span>
+                      <span suppressHydrationWarning className="shrink-0">
+                        {timeOf(last.createdAt)}
+                      </span>
                     </span>
                   )}
                 </button>
@@ -243,6 +245,7 @@ export function ChatSection({
                         {m.text}
                       </p>
                       <p
+                        suppressHydrationWarning
                         className={`mt-0.5 text-right text-[10px] ${
                           m.senderId === me ? "text-red-200" : "text-stone-400"
                         }`}
