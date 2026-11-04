@@ -206,7 +206,8 @@ create policy "themes_update_own_before_lottery" on public.themes
 -- assignments: każdy widzi tylko własne losy; zapis wyłącznie przez run_lottery()
 drop policy if exists "assignments_select_own" on public.assignments;
 create policy "assignments_select_own" on public.assignments
-  for select to authenticated using (drawer_id = auth.uid());
+  for select to authenticated
+  using (drawer_id = auth.uid() or drawee_id = auth.uid());
 
 -- messages: widać i pisze tylko uczestnicy wątku
 drop policy if exists "messages_select_members" on public.messages;
