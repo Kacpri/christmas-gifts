@@ -56,7 +56,6 @@ export function ChatSection({
     () => Object.fromEntries(threads.map((t) => [threadKey(t), t.unread]))
   );
   const [value, setValue] = useState("");
-  const [rtStatus, setRtStatus] = useState("łączenie…");
   const [state, sendAction, pending] = useActionState(sendMessage, empty);
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
@@ -77,15 +76,8 @@ export function ChatSection({
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      console.log(
-        "[chat] session:",
-        session ? session.user.email : "NULL"
-      );
       if (cancelled) return;
-      if (!session) {
-        setRtStatus("brak sesji");
-        return;
-      }
+      if (!session) return;
       await supabase.auth.setSession({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
@@ -97,15 +89,6 @@ export function ChatSection({
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "messages" },
           (payload) => {
-            console.log(
-              "[chat] event:",
-              JSON.stringify({
-                text: (payload.new as Record<string, unknown>).text,
-                created_at: (payload.new as Record<string, unknown>)
-                  .created_at,
-                sender: (payload.new as Record<string, unknown>).sender_id,
-              })
-            );
             const m = payload.new as {
               id: number;
               lottery_type: number;
@@ -148,16 +131,7 @@ export function ChatSection({
             }
           }
         )
-        .subscribe((status) => {
-          setRtStatus(status);
-          console.log("[chat] realtime status", status);
-          if (status === "SUBSCRIBED") {
-            console.log(
-              "[chat] rt token:",
-              supabase.realtime.accessTokenValue?.slice(0, 25)
-            );
-          }
-        });
+        .subscribe();
     })();
 
     return () => {
@@ -207,10 +181,7 @@ export function ChatSection({
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Czaty</h2>
-        <span className="text-xs text-stone-400">realtime: {rtStatus}</span>
-      </div>
+      <h2 className="text-lg font-semibold">Czaty</h2>
       {!lotteryDone ? (
         <p className="mt-1 text-sm text-stone-500">
           Czaty pojawią się po losowaniu.
