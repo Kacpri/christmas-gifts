@@ -56,6 +56,7 @@ export function ChatSection({
     () => Object.fromEntries(threads.map((t) => [threadKey(t), t.unread]))
   );
   const [value, setValue] = useState("");
+  const [rtStatus, setRtStatus] = useState("łączenie…");
   const [state, sendAction, pending] = useActionState(sendMessage, empty);
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
@@ -75,6 +76,7 @@ export function ChatSection({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
+          console.log("[chat] realtime event", payload);
           const m = payload.new as {
             id: number;
             lottery_type: number;
@@ -117,7 +119,10 @@ export function ChatSection({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        setRtStatus(status);
+        console.log("[chat] realtime status", status);
+      });
     return () => {
       supabase.removeChannel(channel);
     };
@@ -164,7 +169,10 @@ export function ChatSection({
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-lg font-semibold">Czaty</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Czaty</h2>
+        <span className="text-xs text-stone-400">realtime: {rtStatus}</span>
+      </div>
       {!lotteryDone ? (
         <p className="mt-1 text-sm text-stone-500">
           Czaty pojawią się po losowaniu.
