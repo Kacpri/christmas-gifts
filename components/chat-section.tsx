@@ -76,7 +76,14 @@ export function ChatSection({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          console.log("[chat] realtime event", payload);
+          console.log(
+            "[chat] event:",
+            JSON.stringify({
+              text: (payload.new as Record<string, unknown>).text,
+              created_at: (payload.new as Record<string, unknown>).created_at,
+              sender: (payload.new as Record<string, unknown>).sender_id,
+            })
+          );
           const m = payload.new as {
             id: number;
             lottery_type: number;
