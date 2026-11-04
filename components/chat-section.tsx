@@ -70,68 +70,99 @@ export function ChatSection({
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel("chat-messages")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          console.log(
-            "[chat] event:",
-            JSON.stringify({
-              text: (payload.new as Record<string, unknown>).text,
-              created_at: (payload.new as Record<string, unknown>).created_at,
-              sender: (payload.new as Record<string, unknown>).sender_id,
-            })
-          );
-          const m = payload.new as {
-            id: number;
-            lottery_type: number;
-            drawer_id: string;
-            drawee_id: string;
-            sender_id: string;
-            text: string;
-            created_at: string;
-          };
-          const key = `${m.lottery_type}-${m.drawer_id}-${m.drawee_id}`;
-          setMessagesByThread((prev) => {
-            const list = prev[key];
-            if (!list || list.some((x) => x.id === m.id)) return prev;
-            return {
-              ...prev,
-              [key]: [
-                ...list,
-                {
-                  id: m.id,
-                  senderId: m.sender_id,
-                  text: m.text,
-                  createdAt: m.created_at,
-                },
-              ],
-            };
-          });
-          if (m.sender_id === me) return;
-          if (key === selectedRef.current) {
-            setUnreadByThread((prev) => ({ ...prev, [key]: 0 }));
-            const fd = new FormData();
-            fd.set("lottery_type", String(m.lottery_type));
-            fd.set("drawer_id", m.drawer_id);
-            fd.set("drawee_id", m.drawee_id);
-            markThreadRead(fd);
-          } else {
-            setUnreadByThread((prev) => ({
-              ...prev,
-              [key]: (prev[key] ?? 0) + 1,
-            }));
-          }
-        }
-      )
-      .subscribe((status) => {
-        setRtStatus(status);
-        console.log("[chat] realtime status", status);
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log(
+        "[chat] session:",
+        session ? session.user.email : "NULL"
+      );
+      if (cancelled) return;
+      if (!session) {
+        setRtStatus("brak sesji");
+        return;
+      }
+      await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
       });
+      if (cancelled) return;
+      channel = supabase
+        .channel("chat-messages")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          (payload) => {
+            console.log(
+              "[chat] event:",
+              JSON.stringify({
+                text: (payload.new as Record<string, unknown>).text,
+                created_at: (payload.new as Record<string, unknown>)
+                  .created_at,
+                sender: (payload.new as Record<string, unknown>).sender_id,
+              })
+            );
+            const m = payload.new as {
+              id: number;
+              lottery_type: number;
+              drawer_id: string;
+              drawee_id: string;
+              sender_id: string;
+              text: string;
+              created_at: string;
+            };
+            const key = `${m.lottery_type}-${m.drawer_id}-${m.drawee_id}`;
+            setMessagesByThread((prev) => {
+              const list = prev[key];
+              if (!list || list.some((x) => x.id === m.id)) return prev;
+              return {
+                ...prev,
+                [key]: [
+                  ...list,
+                  {
+                    id: m.id,
+                    senderId: m.sender_id,
+                    text: m.text,
+                    createdAt: m.created_at,
+                  },
+                ],
+              };
+            });
+            if (m.sender_id === me) return;
+            if (key === selectedRef.current) {
+              setUnreadByThread((prev) => ({ ...prev, [key]: 0 }));
+              const fd = new FormData();
+              fd.set("lottery_type", String(m.lottery_type));
+              fd.set("drawer_id", m.drawer_id);
+              fd.set("drawee_id", m.drawee_id);
+              markThreadRead(fd);
+            } else {
+              setUnreadByThread((prev) => ({
+                ...prev,
+                [key]: (prev[key] ?? 0) + 1,
+              }));
+            }
+          }
+        )
+        .subscribe((status) => {
+          setRtStatus(status);
+          console.log("[chat] realtime status", status);
+          if (status === "SUBSCRIBED") {
+            console.log(
+              "[chat] rt token:",
+              supabase.realtime.accessTokenValue?.slice(0, 25)
+            );
+          }
+        });
+    })();
+
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [me]);
 
