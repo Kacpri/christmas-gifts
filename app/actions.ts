@@ -115,6 +115,17 @@ export async function runLottery(
   return { ok: true };
 }
 
+export async function cancelLottery(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("cancel_lottery");
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function removeUser(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
   const id = String(formData.get("id") ?? "");

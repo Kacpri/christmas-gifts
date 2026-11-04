@@ -2,7 +2,12 @@
 
 import { useActionState } from "react";
 
-import { removeUser, runLottery, type ActionResult } from "@/app/actions";
+import {
+  cancelLottery,
+  removeUser,
+  runLottery,
+  type ActionResult,
+} from "@/app/actions";
 
 const empty: ActionResult = { ok: false };
 
@@ -14,6 +19,10 @@ export function OrganizerPanel({
   lotteryDone: boolean;
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
+  const [cancelState, cancelAction, cancelPending] = useActionState(
+    cancelLottery,
+    empty
+  );
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-5">
@@ -51,6 +60,31 @@ export function OrganizerPanel({
       </form>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
+      )}
+
+      {lotteryDone && (
+        <form
+          action={(formData: FormData) => {
+            if (
+              window.confirm(
+                "Anulować losowanie? Wyniki zostaną usunięte, a życzenia i tematy odblokowane."
+              )
+            ) {
+              cancelAction(formData);
+            }
+          }}
+        >
+          <button
+            type="submit"
+            disabled={cancelPending}
+            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            {cancelPending ? "Anulowanie…" : "Anuluj losowanie"}
+          </button>
+        </form>
+      )}
+      {!cancelState.ok && cancelState.error && (
+        <p className="text-sm text-red-600">{cancelState.error}</p>
       )}
 
       <div>

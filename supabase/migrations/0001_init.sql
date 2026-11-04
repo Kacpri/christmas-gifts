@@ -197,7 +197,7 @@ begin
     end if;
   end loop;
 
-  delete from public.assignments;
+  delete from public.assignments where true;
   insert into public.assignments (lottery_type, drawer_id, drawee_id)
   select 1, user_ids[x], user_ids[sigma[x]] from generate_series(1, n) as g(x)
   union all
@@ -207,3 +207,24 @@ $$;
 
 revoke execute on function public.run_lottery() from public;
 grant execute on function public.run_lottery() to authenticated;
+
+-- Anulowanie losowania: kasuje wyniki, odblokowuje życzenia i tematy
+create or replace function public.cancel_lottery()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public.profiles where id = auth.uid() and is_organizer
+  ) then
+    raise exception 'Tylko organizator może anulować losowanie.';
+  end if;
+
+  delete from public.assignments where true;
+end;
+$$;
+
+revoke execute on function public.cancel_lottery() from public;
+grant execute on function public.cancel_lottery() to authenticated;
