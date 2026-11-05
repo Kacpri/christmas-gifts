@@ -31,19 +31,19 @@ export function NameForm({
           required
           maxLength={100}
           disabled={locked}
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500"
+          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink disabled:bg-mist disabled:text-faint"
         />
         {!locked && (
           <div className="flex items-center gap-3">
             <button
               type="submit"
               disabled={pending}
-              className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+              className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
             >
               {pending ? "Zapisywanie…" : "Zapisz"}
             </button>
             {nameValue.trim() !== "" && nameValue.trim() === fullName && (
-              <span className="text-sm text-green-700">Zapisano ✓</span>
+              <span className="text-sm text-accent">Zapisano ✓</span>
             )}
           </div>
         )}

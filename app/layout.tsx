@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Lobster } from "next/font/google";
+import { Inter, Lobster } from "next/font/google";
 
 import { AuthCodeExchanger } from "@/components/auth-code-exchanger";
 import { Snow } from "@/components/snow";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin", "latin-ext"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin", "latin-ext"],
 });
 
@@ -31,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pl"
-      className={`${geistSans.variable} ${geistMono.variable} ${lobster.variable} h-full antialiased`}
+      className={`${inter.variable} ${lobster.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Snow />

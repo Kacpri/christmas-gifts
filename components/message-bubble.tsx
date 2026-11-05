@@ -102,12 +102,12 @@ export function MessageBubble({
   return (
     <>
       <div
-        className={`max-w-[80%] select-none rounded-lg px-3 py-2 ${
+        className={`max-w-[80%] select-none px-3.5 py-2.5 ${
           editing ? "min-w-48" : ""
         } ${
           isOwn
-            ? "self-end bg-red-700 text-white"
-            : "self-start bg-stone-100"
+            ? "self-end rounded-[16px_16px_4px_16px] bg-accent text-white"
+            : "self-start rounded-[16px_16px_16px_4px] bg-white"
         }`}
         onContextMenu={
           canMenu
@@ -170,7 +170,7 @@ export function MessageBubble({
         {message.deleted ? (
           <p
             className={`text-sm italic ${
-              isOwn ? "text-red-200" : "text-stone-400"
+              isOwn ? "text-white/70" : "text-faint"
             }`}
           >
             Wiadomość usunięta
@@ -185,7 +185,7 @@ export function MessageBubble({
               onChange={(e) => setEditValue(e.target.value)}
               required
               maxLength={500}
-              className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-900 focus:outline-none"
+              className="w-full rounded border border-input-line bg-white px-2 py-1 text-sm text-ink"
             />
             <div className="flex items-center gap-2">
               <button
@@ -203,7 +203,7 @@ export function MessageBubble({
                 Anuluj
               </button>
               {!editState.ok && editState.error && (
-                <span className="text-[10px] text-red-200">
+                <span className="text-[10px] text-white/70">
                   {editState.error}
                 </span>
               )}
@@ -217,7 +217,7 @@ export function MessageBubble({
             <p
               suppressHydrationWarning
               className={`mt-0.5 text-right text-[10px] ${
-                isOwn ? "text-red-200" : "text-stone-400"
+                isOwn ? "text-white/70" : "text-faint"
               }`}
             >
               {timeOf(message.createdAt)}

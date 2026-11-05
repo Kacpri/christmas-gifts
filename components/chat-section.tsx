@@ -36,18 +36,55 @@ const threadKey = (t: {
 function ChatBubbleIcon() {
   return (
     <svg
-      width="40"
-      height="40"
+      width="26"
+      height="26"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="text-stone-300"
       aria-hidden
     >
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  );
+}
+
+function ReplyIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 14L4 9l5-5" />
+      <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M22 2L11 13" />
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
     </svg>
   );
 }
@@ -267,43 +304,61 @@ export function ChatSection({
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-4 md:flex-row">
-          <div className="flex flex-col gap-2 md:w-72">
+          <div className="flex flex-col gap-2 md:w-[250px]">
             {threads.map((t) => {
               const key = threadKey(t);
               const msgs = messagesByThread[key] ?? [];
               const last = msgs[msgs.length - 1];
               const unread = unreadByThread[key] ?? 0;
+              const isList = t.lotteryType === 1;
+              const who = t.label.replace(/ — (lista|temat)$/, "");
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => openThread(t)}
-                  className={`rounded-xl border p-3 text-left text-sm transition-colors ${
+                  aria-current={selected === key}
+                  className={`w-full rounded-xl border border-l-4 p-[11px_14px] text-left text-sm transition-colors ${
                     selected === key
-                      ? "border-[#165a32] bg-[#eaf5ee]"
-                      : "border-stone-200 hover:bg-[#f3faf5]"
+                      ? "border-line border-l-accent bg-sage-100"
+                      : "border-line border-l-transparent hover:border-sage-300 hover:bg-sage-50"
                   }`}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate font-semibold">{t.label}</span>
-                    {unread > 0 && (
-                      <span className="shrink-0 rounded-full bg-red-700 px-2 py-0.5 text-xs font-medium text-white">
-                        {unread}
+                    <span className="truncate font-semibold text-ink">{who}</span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      {unread > 0 && (
+                        <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-bold text-white">
+                          {unread}
+                        </span>
+                      )}
+                      <span
+                        className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-bold ${
+                          isList
+                            ? "bg-sage-200 text-list-ink"
+                            : "bg-honey-200 text-honey-800"
+                        }`}
+                      >
+                        {isList ? "lista" : "temat"}
                       </span>
-                    )}
+                    </span>
                   </span>
                   {last && (
-                    <span className="mt-1 flex items-center justify-between gap-2 text-[13px] text-[#777]">
-                      <span className="truncate">
-                        {last.deleted
-                          ? "Wiadomość usunięta"
-                          : `${
-                              last.senderId === me && !allLastMine
-                                ? "Ty: "
-                                : ""
-                            }${last.text}`}
+                    <span className="mt-[5px] flex items-center justify-between gap-2.5">
+                      <span className="flex min-w-0 items-center gap-[5px] text-[13px] text-faint">
+                        {last.senderId === me && !allLastMine && !last.deleted && (
+                          <span className="shrink-0">
+                            <ReplyIcon />
+                          </span>
+                        )}
+                        <span className="truncate">
+                          {last.deleted ? "Wiadomość usunięta" : last.text}
+                        </span>
                       </span>
-                      <span suppressHydrationWarning className="shrink-0">
+                      <span
+                        suppressHydrationWarning
+                        className="shrink-0 text-xs text-faint"
+                      >
                         {timeOf(last.createdAt)}
                       </span>
                     </span>
@@ -315,13 +370,24 @@ export function ChatSection({
 
           <div className="min-w-0 flex-1">
             {selectedThread ? (
-              <div className="flex h-96 flex-col rounded-lg border border-stone-200">
-                <div className="border-b border-stone-200 px-3 py-2 text-sm font-medium">
-                  {selectedThread.label}
+              <div className="flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
+                <div className="flex items-center gap-2.5 border-b border-line bg-white px-4.5 py-3.5">
+                  <span className="truncate text-[15px] font-bold text-accent">
+                    {selectedThread.label.replace(/ — (lista|temat)$/, "")}
+                  </span>
+                  <span
+                    className={`inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[11px] font-bold ${
+                      selectedThread.lotteryType === 1
+                        ? "bg-sage-200 text-list-ink"
+                        : "bg-honey-200 text-honey-800"
+                    }`}
+                  >
+                    {selectedThread.lotteryType === 1 ? "lista" : "temat"}
+                  </span>
                 </div>
-                <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
+                <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
                   {selectedMessages.length === 0 && (
-                    <p className="text-sm text-stone-400">
+                    <p className="text-sm text-faint">
                       Brak wiadomości. Napisz pierwszą!
                     </p>
                   )}
@@ -338,7 +404,7 @@ export function ChatSection({
                 </div>
                 <form
                   action={sendAction}
-                  className="flex gap-2 border-t border-stone-200 p-3"
+                  className="flex items-center gap-2 border-t border-line bg-white p-3"
                 >
                   <input type="hidden" name="lottery_type" value={selectedThread.lotteryType} />
                   <input type="hidden" name="drawer_id" value={selectedThread.drawerId} />
@@ -350,22 +416,25 @@ export function ChatSection({
                     required
                     maxLength={500}
                     placeholder="Napisz wiadomość…"
-                    className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
                   />
                   <button
                     type="submit"
                     disabled={pending || !value.trim()}
-                    className="shrink-0 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+                    aria-label="Wyślij"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
                   >
-                    {pending ? "…" : "Wyślij"}
+                    <SendIcon />
                   </button>
                 </form>
               </div>
             ) : (
-              <div className="grid h-96 place-items-center rounded-xl border border-dashed border-stone-200">
+              <div className="grid h-96 place-items-center rounded-[14px] bg-mist">
                 <div className="flex flex-col items-center gap-3 text-center">
-                  <ChatBubbleIcon />
-                  <p className="text-sm text-stone-500">
+                  <span className="grid h-14 w-14 place-items-center rounded-full bg-sage-150 text-accent">
+                    <ChatBubbleIcon />
+                  </span>
+                  <p className="max-w-[220px] text-sm leading-[1.45] text-muted">
                     Wybierz wątek, aby rozpocząć rozmowę.
                   </p>
                 </div>

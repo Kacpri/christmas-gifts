@@ -54,27 +54,27 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-16">
       <div className="text-center">
-        <h1 className="text-4xl text-amber-100">Świąteczne Losowanie</h1>
-        <p className="mt-2 text-amber-100/80">
+        <h1 className="text-[38px] text-cream">Świąteczne Losowanie</h1>
+        <p className="mt-2 text-cream/80">
           Zaloguj się, aby wpisać życzenia i wziąć udział w losowaniu.
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-6">
+      <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
         <button
           type="button"
           onClick={signInWithGoogle}
           disabled={pending}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-stone-50 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2.5 text-sm font-medium hover:bg-mist disabled:opacity-50"
         >
           <Image src="/g-logo.png" alt="Google" width={20} height={20} />
           Zaloguj się przez Google
         </button>
 
-        <div className="flex items-center gap-3 text-xs text-stone-400">
-          <hr className="flex-1 border-amber-200" />
+        <div className="flex items-center gap-3 text-xs text-faint">
+          <hr className="flex-1 border-line" />
           lub
-          <hr className="flex-1 border-amber-200" />
+          <hr className="flex-1 border-line" />
         </div>
 
         <form onSubmit={sendMagicLink} className="flex flex-col gap-3">
@@ -83,7 +83,7 @@ export default function LoginPage() {
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Imię i nazwisko"
             required
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
           />
           <input
             value={email}
@@ -91,18 +91,18 @@ export default function LoginPage() {
             type="email"
             placeholder="Adres e-mail"
             required
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
           />
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
           >
             {pending ? "Wysyłanie…" : "Wyślij link logujący"}
           </button>
         </form>
 
-        {info && <p className="text-sm text-green-700">{info}</p>}
+        {info && <p className="text-sm text-accent">{info}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </main>

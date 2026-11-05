@@ -41,7 +41,7 @@ export function ReadySection({
   return (
     <>
       {isReady ? (
-        <p className="text-sm font-medium text-green-700">
+        <p className="text-sm font-medium text-accent">
           Jesteś gotowy ✓
         </p>
       ) : (
@@ -64,7 +64,7 @@ export function ReadySection({
             <button
               type="submit"
               disabled={pending || !hasWish || !hasTheme}
-              className="w-fit rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
+              className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
             >
               {pending ? "Zapisywanie…" : "Jestem gotowy"}
             </button>

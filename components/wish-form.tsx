@@ -45,7 +45,7 @@ export function WishForm({
           {wishes.map((wish) => (
             <li
               key={wish.id}
-              className="flex items-start justify-between gap-3 rounded-lg bg-stone-50 p-3"
+              className="flex items-start justify-between gap-3 rounded-[10px] bg-mist p-3"
             >
               <div className="text-sm">
                 <p>{wish.text}</p>
@@ -91,14 +91,14 @@ export function WishForm({
           required
           maxLength={500}
           placeholder="Czego sobie życzysz? (np. kubek, książka, voucher)"
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
         />
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             name="link"
             type="url"
             placeholder="Link (opcjonalnie)"
-            className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+            className="flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
           />
           <input
             name="price"
@@ -106,14 +106,14 @@ export function WishForm({
             min="0"
             step="0.01"
             placeholder="Cena (zł, opcjonalnie)"
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none sm:w-44"
+            className="w-full rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink sm:w-44"
           />
         </div>
         <div className="flex items-center gap-3">
           <button
             type="submit"
             disabled={addingWish || wishes.length >= 5}
-            className="rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
           >
             {addingWish ? "Dodawanie…" : "Dodaj życzenie"}
           </button>
@@ -128,7 +128,7 @@ export function WishForm({
         )}
       </form>
 
-      <hr className="border-amber-200" />
+      <hr className="border-line" />
 
       <div>
         <h3 className="text-base font-semibold">Temat Twojego prezentu</h3>
@@ -151,19 +151,19 @@ export function WishForm({
               ? "Temat zablokowany"
               : "np. coś ciepłego na zimowe wieczory"
           }
-          className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500"
+          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink disabled:bg-mist disabled:text-faint"
         />
         {!locked && (
           <div className="flex items-center gap-3">
             <button
               type="submit"
               disabled={savingTheme}
-              className="w-fit rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
+              className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
             >
               {savingTheme ? "Zapisywanie…" : "Zapisz temat"}
             </button>
             {theme != null && themeValue.trim() === theme && (
-              <span className="text-sm text-green-700">Zapisano ✓</span>
+              <span className="text-sm text-accent">Zapisano ✓</span>
             )}
           </div>
         )}

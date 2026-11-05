@@ -136,6 +136,48 @@ function ChevronIcon({ className }: { className?: string }) {
   );
 }
 
+function ListIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 6h11" />
+      <path d="M9 12h11" />
+      <path d="M9 18h11" />
+      <path d="M4 6h.01" />
+      <path d="M4 12h.01" />
+      <path d="M4 18h.01" />
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
+      <path d="M7.5 7.5h.01" />
+    </svg>
+  );
+}
+
 function PanelCard({
   id,
   title,
@@ -170,12 +212,10 @@ function PanelCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`rounded-xl border p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+      className={`rounded-2xl p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
         isHole
-          ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
-          : `border-stone-200 bg-white ${
-              editMode ? "ring-2 ring-amber-300" : ""
-            }`
+          ? "border border-dashed border-amber-400 bg-amber-50/60 opacity-60"
+          : `bg-white ${editMode ? "ring-2 ring-amber-300" : ""}`
       }`}
     >
       <div className="flex items-center gap-2">
@@ -185,14 +225,14 @@ function PanelCard({
             {...attributes}
             {...listeners}
             aria-label={`Przeciągnij: ${title}`}
-            className="cursor-grab touch-none rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 active:cursor-grabbing"
+            className="cursor-grab touch-none rounded p-1 text-muted hover:bg-mist hover:text-ink active:cursor-grabbing"
           >
             <GripIcon />
           </button>
         )}
-        <h2 className="flex-1 text-[22px] tracking-[0.3px]">{title}</h2>
+        <h2 className="flex-1 text-[26px] text-accent">{title}</h2>
         {badge > 0 && (
-          <span className="rounded-full bg-red-700 px-2 py-0.5 text-xs font-medium text-white">
+          <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-white">
             {badge}
           </span>
         )}
@@ -201,7 +241,7 @@ function PanelCard({
           onClick={onToggle}
           aria-expanded={!collapsed}
           aria-label={collapsed ? `Rozwiń: ${title}` : `Zwiń: ${title}`}
-          className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="rounded p-1 text-muted hover:bg-mist hover:text-ink"
         >
           <ChevronIcon className={collapsed ? "" : "rotate-180"} />
         </button>
@@ -214,14 +254,14 @@ function PanelCard({
 function GiftsBody({ gifts }: { gifts: GiftsData }) {
   if (gifts.kind === "late") {
     return (
-      <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-4 text-sm text-stone-600">
+      <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
         Losowanie już się odbyło. Dołączyłeś po jego rozpoczęciu.
       </div>
     );
   }
   if (gifts.kind === "waiting") {
     return (
-      <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-stone-600">
+      <div className="rounded-[10px] border border-dashed border-honey-200 bg-honey-50 p-4 text-sm text-muted">
         Czekamy na losowanie. W grze bierze udział{" "}
         <strong>{gifts.count}</strong> osób.
       </div>
@@ -229,68 +269,69 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
   }
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-xl bg-[#f6f8f6] p-4">
-        <div className="flex items-center gap-2">
-          <span aria-hidden>🎁</span>
-          <h3 className="text-base font-semibold">Prezent z listy</h3>
-          <span className="rounded-full bg-[#eaf5ee] px-2 py-0.5 text-xs font-medium text-[#165a32]">
+      <article className="flex flex-col gap-2.5 rounded-[14px] bg-mist p-4">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-sage-200 px-2.5 text-xs font-bold text-list-ink">
+            <ListIcon />
             Z listy
           </span>
+          <span className="text-sm text-muted">Kupujesz prezent dla</span>
         </div>
-        <p className="mt-2 text-sm text-stone-600">
-          Kupujesz prezent dla:{" "}
-          <span className="text-lg font-semibold text-[#165a32]">
-            {gifts.listGift.person}
-          </span>
+        <p className="text-[22px] font-bold leading-tight text-accent">
+          {gifts.listGift.person}
         </p>
         {gifts.listGift.wishes.length > 0 ? (
-          <ul className="mt-3 flex flex-col gap-2">
+          <ul className="mt-1 flex flex-col gap-2">
             {gifts.listGift.wishes.map((wish) => (
-              <li key={wish.id} className="rounded-lg bg-white p-3 text-sm">
-                <p>{wish.text}</p>
-                <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
-                  {wish.price != null && (
-                    <span>{formatPrice(wish.price)}</span>
-                  )}
-                  {wish.link && (
-                    <a
-                      href={wish.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      link
-                    </a>
-                  )}
+              <li key={wish.id} className="rounded-[10px] bg-white px-3.5 py-3">
+                <p className="text-[15px] font-semibold text-ink">
+                  {wish.text}
                 </p>
+                {(wish.price != null || wish.link) && (
+                  <p className="mt-1 flex flex-wrap gap-x-3 text-[13px] italic text-faint">
+                    {wish.price != null && (
+                      <span>{formatPrice(wish.price)}</span>
+                    )}
+                    {wish.link && (
+                      <a
+                        href={wish.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        link
+                      </a>
+                    )}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-faint">
             Ta osoba jeszcze nie dodała życzeń.
           </p>
         )}
-      </div>
+      </article>
 
-      <div className="rounded-xl bg-[#f6f8f6] p-4">
-        <div className="flex items-center gap-2">
-          <span aria-hidden>🎨</span>
-          <h3 className="text-base font-semibold">Prezent tematyczny</h3>
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+      <article className="flex flex-col gap-2.5 rounded-[14px] bg-honey-50 p-4">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-honey-200 px-2.5 text-xs font-bold text-honey-800">
+            <TagIcon />
             Tematyczny
           </span>
+          <span className="text-sm text-muted">Kupujesz prezent dla</span>
         </div>
-        <p className="mt-2 text-sm text-stone-600">
-          Kupujesz prezent dla:{" "}
-          <span className="text-lg font-semibold text-[#165a32]">
-            {gifts.themeGift.person}
+        <p className="text-[22px] font-bold leading-tight text-accent">
+          {gifts.themeGift.person}
+        </p>
+        <div className="mt-1 flex items-center gap-2.5 rounded-[10px] bg-white px-3.5 py-3">
+          <span className="text-[13px] text-faint">Temat</span>
+          <span className="text-[15px] font-semibold italic text-ink">
+            {gifts.themeGift.theme}
           </span>
-        </p>
-        <p className="mt-3 text-sm">
-          Temat: <em>{gifts.themeGift.theme}</em>
-        </p>
-      </div>
+        </div>
+      </article>
     </div>
   );
 }
@@ -474,30 +515,34 @@ export function Dashboard({
   ));
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-[680px] flex-1 flex-col gap-5 px-5 pb-16 pt-7">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl text-amber-100">Świąteczne Losowanie</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <span
-            aria-hidden
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-base font-semibold text-amber-50 ring-1 ring-white/25"
-          >
-            {userName.trim().charAt(0).toUpperCase()}
-          </span>
-          <span className="font-medium text-amber-50">{userName}</span>
+        <h1 className="text-[38px] leading-tight text-cream">
+          Świąteczne Losowanie
+        </h1>
+        <div className="flex items-center gap-2 text-sm">
+          <div className="mr-1.5 flex items-center gap-2">
+            <span
+              aria-hidden
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep"
+            >
+              {userName.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="font-medium text-cream">{userName}</span>
+          </div>
           {editMode ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={resetLayout}
-                className="rounded-lg border border-amber-200/40 px-3 py-1.5 text-sm text-amber-100 hover:bg-white/10"
+                className="h-9 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
               >
                 Resetuj układ
               </button>
               <button
                 type="button"
                 onClick={() => setEditMode(false)}
-                className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800"
+                className="h-9 rounded-[10px] bg-accent px-3.5 text-sm font-semibold text-white hover:bg-accent/90"
               >
                 Gotowe
               </button>
@@ -507,7 +552,7 @@ export function Dashboard({
               <button
                 type="button"
                 onClick={() => setEditMode(true)}
-                className="flex items-center gap-2 rounded-lg border border-amber-200/40 px-3 py-1.5 text-sm text-amber-100 hover:bg-white/10"
+                className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
               >
                 <LayoutIcon />
                 Układ
@@ -530,11 +575,11 @@ export function Dashboard({
             items={visible}
             strategy={verticalListSortingStrategy}
           >
-            <div className="flex flex-col gap-6">{cards}</div>
+            <div className="flex flex-col gap-5">{cards}</div>
           </SortableContext>
           <DragOverlay>
             {activeId ? (
-              <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
+              <section className="rounded-2xl bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
                 <div className="flex items-center gap-2">
                   <GripIcon />
                   <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
@@ -550,7 +595,7 @@ export function Dashboard({
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="flex flex-col gap-6">{cards}</div>
+        <div className="flex flex-col gap-5">{cards}</div>
       )}
     </main>
   );

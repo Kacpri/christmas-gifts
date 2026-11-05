@@ -74,7 +74,7 @@ export function OrganizerPanel({
         <button
           type="submit"
           disabled={pending || !allReady}
-          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
         >
           {pending
             ? "Losowanie…"
@@ -132,14 +132,14 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={emailPending}
-            className="rounded-lg border border-green-800 px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50 disabled:opacity-50"
+            className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
           >
             {emailPending ? "Wysyłanie…" : "Wyślij wyniki mailem"}
           </button>
         </form>
       )}
       {emailState.ok && (
-        <p className="text-sm font-medium text-green-700">Maile wysłane ✓</p>
+        <p className="text-sm font-medium text-accent">Maile wysłane ✓</p>
       )}
       {!emailState.ok && emailState.error && (
         <p className="text-sm text-red-600">{emailState.error}</p>
@@ -158,8 +158,8 @@ export function OrganizerPanel({
                 <span
                   className={
                     p.is_ready
-                      ? "text-xs font-medium text-green-700"
-                      : "text-xs text-stone-400"
+                      ? "text-xs font-medium text-accent"
+                      : "text-xs text-faint"
                   }
                 >
                   {p.is_ready ? "gotowy" : "oczekuje"}
