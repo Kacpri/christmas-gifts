@@ -38,11 +38,13 @@ export function ChatSection({
   threads,
   lotteryDone,
   lateJoiner,
+  onUnreadChange,
 }: {
   me: string;
   threads: Thread[];
   lotteryDone: boolean;
   lateJoiner: boolean;
+  onUnreadChange?: (total: number) => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [messagesByThread, setMessagesByThread] = useState<
@@ -211,6 +213,12 @@ export function ChatSection({
     bottomRef.current?.scrollIntoView({ block: "nearest" });
   }, [selected, selectedMessages.length]);
 
+  useEffect(() => {
+    onUnreadChange?.(
+      Object.values(unreadByThread).reduce((a, b) => a + b, 0)
+    );
+  }, [unreadByThread, onUnreadChange]);
+
   function openThread(t: Thread) {
     const key = threadKey(t);
     setSelected(key);
@@ -223,8 +231,7 @@ export function ChatSection({
   }
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-xl">Czaty</h2>
+    <>
       {!lotteryDone ? (
         <p className="mt-1 text-sm text-stone-500">
           {lateJoiner
@@ -334,6 +341,6 @@ export function ChatSection({
       {!state.ok && state.error && (
         <p className="mt-2 text-sm text-red-600">{state.error}</p>
       )}
-    </section>
+    </>
   );
 }

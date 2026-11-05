@@ -1,13 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { ChatSection, type Thread } from "@/components/chat-section";
-import { GroupChatSection } from "@/components/group-chat-section";
-import { LogoutButton } from "@/components/logout-button";
-import { NameForm } from "@/components/name-form";
-import { OrganizerPanel } from "@/components/organizer-panel";
-import { ReadySection } from "@/components/ready-section";
-import { WishForm, type Wish } from "@/components/wish-form";
-import { formatPrice } from "@/lib/format";
+import { Dashboard, type GiftsData } from "@/components/dashboard";
+import type { Thread } from "@/components/chat-section";
+import type { Wish } from "@/components/wish-form";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
@@ -211,120 +206,57 @@ export default async function Home() {
     });
   }
 
+  const gifts: GiftsData =
+    lotteryDone && listGift && themeGift
+      ? { kind: "done", listGift, themeGift }
+      : isLateJoiner
+        ? { kind: "late" }
+        : { kind: "waiting", count: participants?.length ?? 0 };
+
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl text-red-800">Świąteczne Losowanie</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-stone-600">{profile?.full_name}</span>
-          <LogoutButton />
-        </div>
-      </header>
-
-      <NameForm fullName={profile?.full_name ?? ""} locked={locked} />
-
-      {lotteryDone && listGift && themeGift ? (
-        <section className="flex flex-col gap-4">
-          <div className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="text-xl">Prezent z listy</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Kupujesz prezent dla: <strong>{listGift.person}</strong>
-            </p>
-            {listGift.wishes.length > 0 ? (
-              <ul className="mt-3 flex flex-col gap-2">
-                {listGift.wishes.map((wish) => (
-                  <li
-                    key={wish.id}
-                    className="rounded-lg bg-stone-50 p-3 text-sm"
-                  >
-                    <p>{wish.text}</p>
-                    <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
-                      {wish.price != null && (
-                        <span>{formatPrice(wish.price)}</span>
-                      )}
-                      {wish.link && (
-                        <a
-                          href={wish.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline"
-                        >
-                          link
-                        </a>
-                      )}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-stone-500">
-                Ta osoba jeszcze nie dodała życzeń.
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="text-xl">Prezent tematyczny</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Kupujesz prezent dla: <strong>{themeGift.person}</strong>
-            </p>
-            <p className="mt-3 text-sm">
-              Temat: <em>{themeGift.theme}</em>
-            </p>
-          </div>
-        </section>
-      ) : isLateJoiner ? (
-        <section className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-sm text-stone-600">
-          Losowanie już się odbyło. Dołączyłeś po jego rozpoczęciu.
-        </section>
-      ) : (
-        <section className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-5 text-sm text-stone-600">
-          Czekamy na losowanie. W grze bierze udział{" "}
-          <strong>{participants?.length ?? 0}</strong> osób.
-        </section>
-      )}
-
-      <ChatSection
-        me={user.id}
-        threads={threads}
-        lotteryDone={lotteryDone}
-        lateJoiner={isLateJoiner}
-      />
-
-      <GroupChatSection
-        me={user.id}
-        open={lotteryDone}
-        messages={groupMessages.map((m) => ({
+    <Dashboard
+      userName={profile?.full_name ?? ""}
+      profile={{ fullName: profile?.full_name ?? "", locked }}
+      gifts={gifts}
+      chats={{
+        me: user.id,
+        threads,
+        lotteryDone,
+        lateJoiner: isLateJoiner,
+      }}
+      groupChat={{
+        me: user.id,
+        open: lotteryDone,
+        messages: groupMessages.map((m) => ({
           id: m.id,
           senderId: m.sender_id,
           text: m.text,
           createdAt: m.created_at,
           editedAt: m.edited_at,
           deleted: m.deleted_at != null,
-        }))}
-      />
-
-      <WishForm
-        wishes={myWishes ?? []}
-        theme={myTheme?.theme ?? null}
-        locked={locked}
-      />
-
-      <ReadySection
-        hasWish={(myWishes ?? []).length > 0}
-        hasTheme={Boolean(myTheme?.theme)}
-        isReady={isReady}
-        lotteryDone={lotteryDone}
-        lateJoiner={isLateJoiner}
-      />
-
-      {profile?.is_organizer && (
-        <OrganizerPanel
-          participants={lotteryParticipants}
-          lateJoiners={lateJoiners}
-          lotteryDone={lotteryDone}
-        />
-      )}
-    </main>
+        })),
+      }}
+      wishes={{
+        wishes: myWishes ?? [],
+        theme: myTheme?.theme ?? null,
+        locked,
+      }}
+      ready={{
+        hasWish: (myWishes ?? []).length > 0,
+        hasTheme: Boolean(myTheme?.theme),
+        isReady,
+        lotteryDone,
+        lateJoiner: isLateJoiner,
+      }}
+      organizer={
+        profile?.is_organizer
+          ? {
+              participants: lotteryParticipants,
+              lateJoiners,
+              lotteryDone,
+            }
+          : null
+      }
+    />
   );
 }

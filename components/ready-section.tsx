@@ -23,14 +23,11 @@ export function ReadySection({
 
   if (lotteryDone || lateJoiner) {
     return (
-      <section className="rounded-xl border border-stone-200 bg-white p-5">
-        <h2 className="text-xl">Gotowość do losowania</h2>
-        <p className="mt-1 text-sm text-stone-500">
-          {lateJoiner
-            ? "Losowanie już się odbyło — gotowość nie jest wymagana."
-            : "Losowanie już się odbyło."}
-        </p>
-      </section>
+      <p className="text-sm text-stone-500">
+        {lateJoiner
+          ? "Losowanie już się odbyło — gotowość nie jest wymagana."
+          : "Losowanie już się odbyło."}
+      </p>
     );
   }
 
@@ -42,10 +39,9 @@ export function ReadySection({
     .join(" i ");
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-xl">Gotowość do losowania</h2>
+    <>
       {isReady ? (
-        <p className="mt-1 text-sm font-medium text-green-700">
+        <p className="text-sm font-medium text-green-700">
           Jesteś gotowy ✓
         </p>
       ) : (
@@ -83,6 +79,6 @@ export function ReadySection({
           </form>
         </>
       )}
-    </section>
+    </>
   );
 }

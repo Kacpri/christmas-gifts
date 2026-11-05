@@ -17,8 +17,7 @@ export function NameForm({
   const [nameValue, setNameValue] = useState(fullName);
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-xl">Twoje dane</h2>
+    <>
       <p className="text-sm text-stone-500">
         {locked
           ? "Imię i nazwisko są zablokowane."
@@ -52,6 +51,6 @@ export function NameForm({
           <p className="text-sm text-red-600">{state.error}</p>
         )}
       </form>
-    </section>
+    </>
   );
 }

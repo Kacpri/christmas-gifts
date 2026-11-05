@@ -31,9 +31,8 @@ export function WishForm({
   const [themeValue, setThemeValue] = useState(theme ?? "");
 
   return (
-    <section className="flex flex-col gap-6 rounded-xl border border-stone-200 bg-white p-5">
+    <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl">Twoje życzenia</h2>
         <p className="text-sm text-stone-500">
           {locked
             ? "Możesz teraz tylko dodawać nowe życzenia."
@@ -132,8 +131,8 @@ export function WishForm({
       <hr className="border-amber-200" />
 
       <div>
-        <h2 className="text-xl">Temat Twojego prezentu</h2>
-        <p className="text-sm text-stone-500">
+        <h3 className="text-base font-semibold">Temat Twojego prezentu</h3>
+        <p className="mt-1 text-sm text-stone-500">
           Osoba, która Cię wylosuje do prezentu tematycznego, kupi prezent
           zgodnie z tym tematem.
         </p>
@@ -172,6 +171,6 @@ export function WishForm({
           <p className="text-sm text-red-600">{themeState.error}</p>
         )}
       </form>
-    </section>
+    </div>
   );
 }
