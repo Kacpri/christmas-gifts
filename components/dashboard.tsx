@@ -246,7 +246,7 @@ function PanelCard({
           <ChevronIcon className={collapsed ? "" : "rotate-180"} />
         </button>
       </div>
-      {!collapsed && <div className="mt-3">{children}</div>}
+      <div className={collapsed ? "hidden" : "mt-3"}>{children}</div>
     </section>
   );
 }

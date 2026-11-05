@@ -33,6 +33,25 @@ const threadKey = (t: {
   draweeId: string;
 }) => `${t.lotteryType}-${t.drawerId}-${t.draweeId}`;
 
+type DbMessage = {
+  id: number;
+  lottery_type: number;
+  drawer_id: string;
+  drawee_id: string;
+  sender_id: string;
+  text: string;
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+};
+
+type DbRead = {
+  lottery_type: number;
+  drawer_id: string;
+  drawee_id: string;
+  last_read_at: string;
+};
+
 function ChatBubbleIcon() {
   return (
     <svg
@@ -272,6 +291,91 @@ export function ChatSection({
       return changed ? next : prev;
     });
   }, [threads]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const [msgsRes, readsRes] = await Promise.all([
+        supabase
+          .from("messages")
+          .select(
+            "id, lottery_type, drawer_id, drawee_id, sender_id, text, created_at, edited_at, deleted_at"
+          )
+          .or(`drawer_id.eq.${me},drawee_id.eq.${me}`)
+          .order("created_at"),
+        supabase
+          .from("thread_reads")
+          .select("lottery_type, drawer_id, drawee_id, last_read_at")
+          .eq("user_id", me),
+      ]);
+      if (cancelled) return;
+      const dbMsgs = (msgsRes.data ?? []) as DbMessage[];
+      const dbReads = (readsRes.data ?? []) as DbRead[];
+      setMessagesByThread((prev) => {
+        let changed = false;
+        const next: Record<string, ChatMessage[]> = { ...prev };
+        for (const t of threads) {
+          const key = threadKey(t);
+          const byId = new Map<number, ChatMessage>(
+            (next[key] ?? []).map((m) => [m.id, m])
+          );
+          for (const m of dbMsgs) {
+            if (`${m.lottery_type}-${m.drawer_id}-${m.drawee_id}` !== key)
+              continue;
+            const mapped: ChatMessage = {
+              id: m.id,
+              senderId: m.sender_id,
+              text: m.text,
+              createdAt: m.created_at,
+              editedAt: m.edited_at,
+              deleted: m.deleted_at != null,
+            };
+            const cur = byId.get(m.id);
+            if (
+              !cur ||
+              cur.text !== mapped.text ||
+              cur.editedAt !== mapped.editedAt ||
+              cur.deleted !== mapped.deleted
+            ) {
+              byId.set(m.id, mapped);
+              changed = true;
+            }
+          }
+          next[key] = [...byId.values()].sort((a, b) => a.id - b.id);
+        }
+        return changed ? next : prev;
+      });
+      setUnreadByThread((prev) => {
+        let changed = false;
+        const next: Record<string, number> = { ...prev };
+        for (const t of threads) {
+          const key = threadKey(t);
+          const read = dbReads.find(
+            (r) =>
+              r.lottery_type === t.lotteryType &&
+              r.drawer_id === t.drawerId &&
+              r.drawee_id === t.draweeId
+          );
+          const count = dbMsgs.filter(
+            (m) =>
+              `${m.lottery_type}-${m.drawer_id}-${m.drawee_id}` === key &&
+              m.deleted_at == null &&
+              m.sender_id !== me &&
+              (!read || m.created_at > read.last_read_at)
+          ).length;
+          if (next[key] !== count) {
+            next[key] = count;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [me, threads]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "nearest" });

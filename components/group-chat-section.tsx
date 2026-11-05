@@ -44,6 +44,35 @@ export function GroupChatSection({
   }, [messages]);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("group_messages")
+        .select("id, sender_id, text, created_at, edited_at, deleted_at")
+        .order("created_at");
+      if (cancelled || !data) return;
+      setLocal((prev) => {
+        const byId = new Map(prev.map((m) => [m.id, m]));
+        for (const m of data) {
+          byId.set(m.id, {
+            id: m.id,
+            senderId: m.sender_id,
+            text: m.text,
+            createdAt: m.created_at,
+            editedAt: m.edited_at,
+            deleted: m.deleted_at != null,
+          });
+        }
+        return [...byId.values()].sort((a, b) => a.id - b.id);
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;

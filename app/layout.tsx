@@ -31,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <Snow />
         <AuthCodeExchanger />
-        {children}
+        <div className="app-shell flex flex-1 flex-col">{children}</div>
       </body>
     </html>
   );

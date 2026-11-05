@@ -35,9 +35,14 @@
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0d4024, #165a32);
+  background: #0d4024;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0d4024 0%, #165a32 100%);
 }
 
 h1,
