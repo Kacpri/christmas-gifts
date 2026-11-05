@@ -6,6 +6,7 @@ import {
   cancelLottery,
   removeUser,
   runLottery,
+  sendLotteryEmails,
   type ActionResult,
 } from "@/app/actions";
 
@@ -31,6 +32,10 @@ export function OrganizerPanel({
   const [state, formAction, pending] = useActionState(runLottery, empty);
   const [cancelState, cancelAction, cancelPending] = useActionState(
     cancelLottery,
+    empty
+  );
+  const [emailState, emailAction, emailPending] = useActionState(
+    sendLotteryEmails,
     empty
   );
 
@@ -110,6 +115,34 @@ export function OrganizerPanel({
       )}
       {!cancelState.ok && cancelState.error && (
         <p className="text-sm text-red-600">{cancelState.error}</p>
+      )}
+
+      {lotteryDone && (
+        <form
+          action={(formData: FormData) => {
+            if (
+              window.confirm(
+                "Wysłać maile z wynikami losowania do wszystkich uczestników?"
+              )
+            ) {
+              emailAction(formData);
+            }
+          }}
+        >
+          <button
+            type="submit"
+            disabled={emailPending}
+            className="rounded-lg border border-green-800 px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50 disabled:opacity-50"
+          >
+            {emailPending ? "Wysyłanie…" : "Wyślij wyniki mailem"}
+          </button>
+        </form>
+      )}
+      {emailState.ok && (
+        <p className="text-sm font-medium text-green-700">Maile wysłane ✓</p>
+      )}
+      {!emailState.ok && emailState.error && (
+        <p className="text-sm text-red-600">{emailState.error}</p>
       )}
 
       <div>

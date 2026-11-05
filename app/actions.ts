@@ -364,3 +364,73 @@ export async function removeUser(formData: FormData): Promise<ActionResult> {
   revalidatePath("/");
   return { ok: true };
 }
+
+export async function sendLotteryEmails(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_organizer")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.is_organizer) {
+    return { ok: false, error: "Tylko organizator może wysyłać wyniki." };
+  }
+
+  const { data, error } = await supabase.rpc("lottery_email_data");
+  if (error) return { ok: false, error: error.message };
+  const rows = (data ?? []) as {
+    recipient_email: string;
+    recipient_name: string;
+    list_drawee_name: string;
+    list_wishes: { text: string; price: number | null; link: string | null }[];
+    theme_drawee_name: string;
+    theme_text: string | null;
+  }[];
+  if (rows.length === 0) {
+    return { ok: false, error: "Losowanie się jeszcze nie odbyło." };
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: "Brak sesji." };
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-lottery-emails`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        emails: rows.map((r) => ({
+          to: r.recipient_email,
+          name: r.recipient_name,
+          listPerson: r.list_drawee_name,
+          listWishes: r.list_wishes ?? [],
+          themePerson: r.theme_drawee_name,
+          theme: r.theme_text ?? "",
+        })),
+      }),
+    }
+  );
+  const payload = (await res.json()) as {
+    error?: string;
+    results?: { to: string; ok: boolean; error?: string }[];
+  };
+  if (!res.ok) {
+    return { ok: false, error: payload.error ?? "Błąd wysyłki." };
+  }
+  const failed = (payload.results ?? []).filter((r) => !r.ok);
+  if (failed.length > 0) {
+    return {
+      ok: false,
+      error: `Nie udało się wysłać: ${failed.map((f) => f.to).join(", ")}`,
+    };
+  }
+  return { ok: true };
+}

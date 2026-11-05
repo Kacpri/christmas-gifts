@@ -450,6 +450,61 @@ $$;
 revoke execute on function public.participant_status() from public;
 grant execute on function public.participant_status() to authenticated;
 
+-- Wyniki losowania do maila (tylko organizator): kogo dana osoba wylosowała
+create or replace function public.lottery_email_data()
+returns table (
+  recipient_email text,
+  recipient_name text,
+  list_drawee_name text,
+  list_wishes jsonb,
+  theme_drawee_name text,
+  theme_text text
+)
+language plpgsql
+security definer
+set search_path = public
+stable
+as $$
+begin
+  if not exists (
+    select 1 from public.profiles where id = auth.uid() and is_organizer
+  ) then
+    raise exception 'Tylko organizator może pobrać wyniki losowania.';
+  end if;
+
+  return query
+    select
+      u.email,
+      p.full_name,
+      lp.full_name,
+      (
+        select coalesce(
+          jsonb_agg(
+            jsonb_build_object('text', w.text, 'price', w.price, 'link', w.link)
+            order by w.created_at
+          ),
+          '[]'::jsonb
+        )
+        from public.wishes w
+        where w.user_id = a1.drawee_id
+      ),
+      tp.full_name,
+      (select t.theme from public.themes t where t.user_id = a2.drawee_id)
+    from public.assignments a1
+    join public.assignments a2
+      on a2.drawer_id = a1.drawer_id and a2.lottery_type = 2
+    join public.profiles p on p.id = a1.drawer_id
+    join auth.users u on u.id = a1.drawer_id
+    join public.profiles lp on lp.id = a1.drawee_id
+    join public.profiles tp on tp.id = a2.drawee_id
+    where a1.lottery_type = 1
+    order by p.full_name;
+end;
+$$;
+
+revoke execute on function public.lottery_email_data() from public;
+grant execute on function public.lottery_email_data() to authenticated;
+
 -- Realtime dla czatu
 do $$
 begin
