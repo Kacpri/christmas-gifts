@@ -450,12 +450,7 @@ export function ChatSection({
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate font-semibold text-ink">{who}</span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      {unread > 0 && (
-                        <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
-                          {unread}
-                        </span>
-                      )}
+                    <span className="flex shrink-0 items-center gap-1.5">
                       <span
                         className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-bold ${
                           isList
@@ -465,6 +460,11 @@ export function ChatSection({
                       >
                         {isList ? "lista" : "temat"}
                       </span>
+                      {unread > 0 && (
+                        <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                          {unread}
+                        </span>
+                      )}
                     </span>
                   </span>
                   {last && (
