@@ -20,10 +20,12 @@ create policy "wishes_delete_own_before_lottery" on public.wishes
 
 -- group_messages: otwarty dla wszystkich zalogowanych (także przed losowaniem)
 drop policy if exists "group_messages_select_participants" on public.group_messages;
+drop policy if exists "group_messages_select_all" on public.group_messages;
 create policy "group_messages_select_all" on public.group_messages
   for select to authenticated using (true);
 
 drop policy if exists "group_messages_insert_participant" on public.group_messages;
+drop policy if exists "group_messages_insert_own" on public.group_messages;
 create policy "group_messages_insert_own" on public.group_messages
   for insert to authenticated
   with check (sender_id = auth.uid());
