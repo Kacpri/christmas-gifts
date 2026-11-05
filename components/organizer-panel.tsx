@@ -11,11 +11,21 @@ import {
 
 const empty: ActionResult = { ok: false };
 
+const plural = (n: number, forms: [string, string, string]) => {
+  if (n === 1) return forms[0];
+  const d = n % 10;
+  const h = n % 100;
+  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return forms[1];
+  return forms[2];
+};
+
 export function OrganizerPanel({
   participants,
+  lateJoiners,
   lotteryDone,
 }: {
   participants: { id: string; full_name: string; is_ready: boolean }[];
+  lateJoiners: { id: string; full_name: string }[];
   lotteryDone: boolean;
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
@@ -36,13 +46,15 @@ export function OrganizerPanel({
       <div>
         <h2 className="text-lg font-semibold">Panel organizatora</h2>
         <p className="text-sm text-stone-500">
-          {participants.length} osób w grze, {readyCount}{" "}
-          {readyCount === 1 ? "gotowa" : readyCount >= 2 && readyCount <= 4 ? "gotowe" : "gotowych"}.
+          {participants.length}{" "}
+          {plural(participants.length, ["osoba", "osoby", "osób"])} w losowaniu,{" "}
+          {readyCount} {plural(readyCount, ["gotowa", "gotowe", "gotowych"])}.
           Losowanie wymaga minimum 3 osób.
         </p>
       </div>
 
       <form
+        className="flex flex-col items-start gap-2"
         action={(formData: FormData) => {
           if (
             lotteryDone &&
@@ -143,6 +155,42 @@ export function OrganizerPanel({
           ))}
         </ul>
       </div>
+
+      {lateJoiners.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-stone-600">
+            Dołączyli po losowaniu
+          </h3>
+          <ul className="mt-2 flex flex-col gap-1">
+            {lateJoiners.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center justify-between text-sm"
+              >
+                <span>{p.full_name}</span>
+                <form
+                  action={(formData) => {
+                    removeUser(formData);
+                  }}
+                  onSubmit={(e) => {
+                    if (!window.confirm(`Usunąć ${p.full_name}?`)) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <input type="hidden" name="id" value={p.id} />
+                  <button
+                    type="submit"
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    usuń
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

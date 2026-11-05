@@ -11,20 +11,24 @@ export function ReadySection({
   hasTheme,
   isReady,
   lotteryDone,
+  lateJoiner,
 }: {
   hasWish: boolean;
   hasTheme: boolean;
   isReady: boolean;
   lotteryDone: boolean;
+  lateJoiner: boolean;
 }) {
   const [state, formAction, pending] = useActionState(markReady, empty);
 
-  if (lotteryDone) {
+  if (lotteryDone || lateJoiner) {
     return (
       <section className="rounded-xl border border-stone-200 bg-white p-5">
         <h2 className="text-lg font-semibold">Gotowość do losowania</h2>
         <p className="mt-1 text-sm text-stone-500">
-          Losowanie już się odbyło.
+          {lateJoiner
+            ? "Losowanie już się odbyło — gotowość nie jest wymagana."
+            : "Losowanie już się odbyło."}
         </p>
       </section>
     );

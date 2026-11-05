@@ -6,6 +6,7 @@ import { NameForm } from "@/components/name-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
+import { formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
@@ -62,6 +63,36 @@ export default async function Home() {
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
   const isReady = profile?.is_ready ?? false;
   const locked = lotteryDone || isReady;
+
+  const { data: lotteryActiveData } = await supabase.rpc("lottery_active");
+  const lotteryActive = lotteryActiveData === true;
+  const isLateJoiner = !lotteryDone && lotteryActive;
+
+  let lotteryParticipants: {
+    id: string;
+    full_name: string;
+    is_ready: boolean;
+  }[] = [];
+  let lateJoiners: { id: string; full_name: string }[] = [];
+  if (profile?.is_organizer) {
+    const { data: statusData } = await supabase.rpc("participant_status");
+    const status = (statusData ?? []) as {
+      profile_id: string;
+      full_name: string;
+      is_ready: boolean;
+      in_lottery: boolean;
+    }[];
+    lotteryParticipants = status
+      .filter((p) => p.in_lottery)
+      .map((p) => ({
+        id: p.profile_id,
+        full_name: p.full_name,
+        is_ready: p.is_ready,
+      }));
+    lateJoiners = status
+      .filter((p) => !p.in_lottery)
+      .map((p) => ({ id: p.profile_id, full_name: p.full_name }));
+  }
 
   let listGift: { person: string; wishes: Wish[] } | null = null;
   let themeGift: { person: string; theme: string } | null = null;
@@ -187,7 +218,7 @@ export default async function Home() {
                     <p>{wish.text}</p>
                     <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
                       {wish.price != null && (
-                        <span>{wish.price.toFixed(2)} zł</span>
+                        <span>{formatPrice(wish.price)}</span>
                       )}
                       {wish.link && (
                         <a
@@ -220,6 +251,10 @@ export default async function Home() {
             </p>
           </div>
         </section>
+      ) : isLateJoiner ? (
+        <section className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-sm text-stone-600">
+          Losowanie już się odbyło. Dołączyłeś po jego rozpoczęciu.
+        </section>
       ) : (
         <section className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-sm text-stone-600">
           Czekamy na losowanie. W grze bierze udział{" "}
@@ -227,7 +262,12 @@ export default async function Home() {
         </section>
       )}
 
-      <ChatSection me={user.id} threads={threads} lotteryDone={lotteryDone} />
+      <ChatSection
+        me={user.id}
+        threads={threads}
+        lotteryDone={lotteryDone}
+        lateJoiner={isLateJoiner}
+      />
 
       <WishForm
         wishes={myWishes ?? []}
@@ -240,11 +280,13 @@ export default async function Home() {
         hasTheme={Boolean(myTheme?.theme)}
         isReady={isReady}
         lotteryDone={lotteryDone}
+        lateJoiner={isLateJoiner}
       />
 
       {profile?.is_organizer && (
         <OrganizerPanel
-          participants={participants ?? []}
+          participants={lotteryParticipants}
+          lateJoiners={lateJoiners}
           lotteryDone={lotteryDone}
         />
       )}

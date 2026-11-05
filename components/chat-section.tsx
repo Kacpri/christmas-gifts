@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useActionState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useActionState,
+  type ReactNode,
+} from "react";
 
 import {
   markThreadRead,
@@ -39,14 +45,41 @@ const timeOf = (iso: string) =>
     minute: "2-digit",
   });
 
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+
+function renderMessageText(text: string) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(URL_RE)) {
+    const idx = match.index ?? 0;
+    if (idx > last) parts.push(text.slice(last, idx));
+    parts.push(
+      <a
+        key={`${idx}-${match[0]}`}
+        href={match[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
+        {match[0]}
+      </a>
+    );
+    last = idx + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 export function ChatSection({
   me,
   threads,
   lotteryDone,
+  lateJoiner,
 }: {
   me: string;
   threads: Thread[];
   lotteryDone: boolean;
+  lateJoiner: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [messagesByThread, setMessagesByThread] = useState<
@@ -184,7 +217,9 @@ export function ChatSection({
       <h2 className="text-lg font-semibold">Czaty</h2>
       {!lotteryDone ? (
         <p className="mt-1 text-sm text-stone-500">
-          Czaty pojawią się po losowaniu.
+          {lateJoiner
+            ? "Czaty są dostępne tylko dla uczestników losowania."
+            : "Czaty pojawią się po losowaniu."}
         </p>
       ) : (
         <div className="mt-3 flex flex-col gap-4 md:flex-row">
@@ -251,7 +286,7 @@ export function ChatSection({
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words text-sm">
-                        {m.text}
+                        {renderMessageText(m.text)}
                       </p>
                       <p
                         suppressHydrationWarning

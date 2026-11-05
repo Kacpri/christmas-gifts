@@ -3,6 +3,7 @@
 import { useState, useActionState } from "react";
 
 import { addWish, removeWish, saveTheme, type ActionResult } from "@/app/actions";
+import { formatPrice } from "@/lib/format";
 
 export type Wish = {
   id: number;
@@ -51,7 +52,7 @@ export function WishForm({
                 <p>{wish.text}</p>
                 <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
                   {wish.price != null && (
-                    <span>{wish.price.toFixed(2)} zł</span>
+                    <span>{formatPrice(wish.price)}</span>
                   )}
                   {wish.link && (
                     <a
