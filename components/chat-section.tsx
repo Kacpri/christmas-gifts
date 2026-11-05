@@ -224,7 +224,7 @@ export function ChatSection({
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-lg font-semibold">Czaty</h2>
+      <h2 className="text-xl">Czaty</h2>
       {!lotteryDone ? (
         <p className="mt-1 text-sm text-stone-500">
           {lateJoiner

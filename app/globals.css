@@ -17,3 +17,42 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+h1,
+h2 {
+  font-family: var(--font-festive), cursive;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.snow-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.snowflake {
+  position: absolute;
+  top: -12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 6px 1px rgba(219, 234, 254, 0.6);
+  animation-name: snow-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+@keyframes snow-fall {
+  to {
+    transform: translate(var(--drift, 0px), 110vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snowflake {
+    display: none;
+  }
+}

@@ -44,7 +44,7 @@ export function OrganizerPanel({
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-stone-200 bg-white p-5">
       <div>
-        <h2 className="text-lg font-semibold">Panel organizatora</h2>
+        <h2 className="text-xl">Panel organizatora</h2>
         <p className="text-sm text-stone-500">
           {participants.length}{" "}
           {plural(participants.length, ["osoba", "osoby", "osób"])} w losowaniu,{" "}

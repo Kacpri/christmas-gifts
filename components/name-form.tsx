@@ -18,7 +18,7 @@ export function NameForm({
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-lg font-semibold">Twoje dane</h2>
+      <h2 className="text-xl">Twoje dane</h2>
       <p className="text-sm text-stone-500">
         {locked
           ? "Imię i nazwisko są zablokowane."

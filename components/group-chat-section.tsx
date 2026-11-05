@@ -128,7 +128,7 @@ export function GroupChatSection({
 
   return (
     <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-lg font-semibold">Czat wspólny</h2>
+      <h2 className="text-xl">Czat wspólny</h2>
       <p className="mt-0.5 text-xs text-stone-400">
         Anonimowy — nikt nie wie, kto co napisał.
       </p>

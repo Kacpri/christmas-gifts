@@ -214,7 +214,7 @@ export default async function Home() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Świąteczne Losowanie</h1>
+        <h1 className="text-3xl text-red-800">Świąteczne Losowanie</h1>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-stone-600">{profile?.full_name}</span>
           <LogoutButton />
@@ -226,7 +226,7 @@ export default async function Home() {
       {lotteryDone && listGift && themeGift ? (
         <section className="flex flex-col gap-4">
           <div className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="text-lg font-semibold">Prezent z listy</h2>
+            <h2 className="text-xl">Prezent z listy</h2>
             <p className="mt-1 text-sm text-stone-600">
               Kupujesz prezent dla: <strong>{listGift.person}</strong>
             </p>
@@ -264,7 +264,7 @@ export default async function Home() {
           </div>
 
           <div className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="text-lg font-semibold">Prezent tematyczny</h2>
+            <h2 className="text-xl">Prezent tematyczny</h2>
             <p className="mt-1 text-sm text-stone-600">
               Kupujesz prezent dla: <strong>{themeGift.person}</strong>
             </p>
@@ -278,7 +278,7 @@ export default async function Home() {
           Losowanie już się odbyło. Dołączyłeś po jego rozpoczęciu.
         </section>
       ) : (
-        <section className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-sm text-stone-600">
+        <section className="rounded-xl border border-dashed border-amber-300 bg-amber-50 p-5 text-sm text-stone-600">
           Czekamy na losowanie. W grze bierze udział{" "}
           <strong>{participants?.length ?? 0}</strong> osób.
         </section>

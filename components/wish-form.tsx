@@ -33,7 +33,7 @@ export function WishForm({
   return (
     <section className="flex flex-col gap-6 rounded-xl border border-stone-200 bg-white p-5">
       <div>
-        <h2 className="text-lg font-semibold">Twoje życzenia</h2>
+        <h2 className="text-xl">Twoje życzenia</h2>
         <p className="text-sm text-stone-500">
           {locked
             ? "Możesz teraz tylko dodawać nowe życzenia."
@@ -129,10 +129,10 @@ export function WishForm({
         )}
       </form>
 
-      <hr className="border-stone-200" />
+      <hr className="border-amber-200" />
 
       <div>
-        <h2 className="text-lg font-semibold">Temat Twojego prezentu</h2>
+        <h2 className="text-xl">Temat Twojego prezentu</h2>
         <p className="text-sm text-stone-500">
           Osoba, która Cię wylosuje do prezentu tematycznego, kupi prezent
           zgodnie z tym tematem.
