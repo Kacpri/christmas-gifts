@@ -452,7 +452,7 @@ export function ChatSection({
                     <span className="truncate font-semibold text-ink">{who}</span>
                     <span className="flex shrink-0 items-center gap-1">
                       {unread > 0 && (
-                        <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-bold text-white">
+                        <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
                           {unread}
                         </span>
                       )}

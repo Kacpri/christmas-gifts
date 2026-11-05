@@ -232,7 +232,7 @@ function PanelCard({
         )}
         <h2 className="flex-1 text-[26px] text-accent">{title}</h2>
         {badge > 0 && (
-          <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-white">
+          <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
             {badge}
           </span>
         )}
@@ -380,6 +380,7 @@ export function Dashboard({
   const [chatUnread, setChatUnread] = useState(() =>
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
   );
+  const [groupUnread, setGroupUnread] = useState(0);
 
   useEffect(() => {
     const saved = loadLayout();
@@ -404,6 +405,11 @@ export function Dashboard({
 
   const handleUnreadChange = useCallback(
     (total: number) => setChatUnread(total),
+    []
+  );
+
+  const handleGroupUnreadChange = useCallback(
+    (total: number) => setGroupUnread(total),
     []
   );
 
@@ -475,6 +481,8 @@ export function Dashboard({
           me={groupChat.me}
           open={groupChat.open}
           messages={groupChat.messages}
+          collapsed={!!collapsed["group-chat"]}
+          onUnreadChange={handleGroupUnreadChange}
         />
       ),
     },
@@ -503,7 +511,13 @@ export function Dashboard({
       key={id}
       id={id}
       title={panels[id].title}
-      badge={id === "chats" && collapsed[id] ? chatUnread : 0}
+      badge={
+        id === "chats" && collapsed[id]
+          ? chatUnread
+          : id === "group-chat" && collapsed[id]
+            ? groupUnread
+            : 0
+      }
       collapsed={!!collapsed[id]}
       onToggle={() =>
         setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }))

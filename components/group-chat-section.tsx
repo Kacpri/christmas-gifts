@@ -20,15 +20,24 @@ export function GroupChatSection({
   me,
   open,
   messages,
+  collapsed,
+  onUnreadChange,
 }: {
   me: string;
   open: boolean;
   messages: ChatMessage[];
+  collapsed: boolean;
+  onUnreadChange?: (total: number) => void;
 }) {
   const [local, setLocal] = useState<ChatMessage[]>(messages);
+  const [unread, setUnread] = useState(0);
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendGroupMessage, empty);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const collapsedRef = useRef(collapsed);
+  collapsedRef.current = collapsed;
+  const localRef = useRef(local);
+  localRef.current = local;
 
   useEffect(() => {
     if (state.ok) setValue("");
@@ -73,6 +82,14 @@ export function GroupChatSection({
   }, []);
 
   useEffect(() => {
+    if (!collapsed) setUnread(0);
+  }, [collapsed]);
+
+  useEffect(() => {
+    onUnreadChange?.(unread);
+  }, [unread, onUnreadChange]);
+
+  useEffect(() => {
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
@@ -100,22 +117,29 @@ export function GroupChatSection({
               text: string;
               created_at: string;
             };
-            setLocal((prev) => {
-              if (prev.some((x) => x.id === m.id)) return prev;
-              return [
-                ...prev,
-                {
-                  id: m.id,
-                  senderId: m.sender_id,
-                  text: m.text,
-                  createdAt: m.created_at,
-                  editedAt: null,
-                  deleted: false,
-                },
-              ];
-            });
-          }
-        )
+              setLocal((prev) => {
+                if (prev.some((x) => x.id === m.id)) return prev;
+                return [
+                  ...prev,
+                  {
+                    id: m.id,
+                    senderId: m.sender_id,
+                    text: m.text,
+                    createdAt: m.created_at,
+                    editedAt: null,
+                    deleted: false,
+                  },
+                ];
+              });
+              if (
+                !localRef.current.some((x) => x.id === m.id) &&
+                m.sender_id !== me &&
+                collapsedRef.current
+              ) {
+                setUnread((n) => n + 1);
+              }
+            }
+          )
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "group_messages" },
@@ -149,7 +173,7 @@ export function GroupChatSection({
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [me]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "nearest" });
