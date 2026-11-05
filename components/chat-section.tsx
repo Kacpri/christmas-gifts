@@ -33,6 +33,25 @@ const threadKey = (t: {
   draweeId: string;
 }) => `${t.lotteryType}-${t.drawerId}-${t.draweeId}`;
 
+function ChatBubbleIcon() {
+  return (
+    <svg
+      width="40"
+      height="40"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-stone-300"
+      aria-hidden
+    >
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  );
+}
+
 export function ChatSection({
   me,
   threads,
@@ -58,6 +77,14 @@ export function ChatSection({
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+
+  const allLastMine =
+    threads.length > 1 &&
+    threads.every((t) => {
+      const msgs = messagesByThread[threadKey(t)] ?? [];
+      const last = msgs[msgs.length - 1];
+      return !last || last.senderId === me;
+    });
 
   const selectedThread =
     threads.find((t) => threadKey(t) === selected) ?? null;
@@ -251,26 +278,30 @@ export function ChatSection({
                   key={key}
                   type="button"
                   onClick={() => openThread(t)}
-                  className={`rounded-lg border p-3 text-left text-sm hover:bg-stone-50 ${
+                  className={`rounded-xl border p-3 text-left text-sm transition-colors ${
                     selected === key
-                      ? "border-red-300 bg-red-50"
-                      : "border-stone-200"
+                      ? "border-[#165a32] bg-[#eaf5ee]"
+                      : "border-stone-200 hover:bg-[#f3faf5]"
                   }`}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{t.label}</span>
+                    <span className="truncate font-semibold">{t.label}</span>
                     {unread > 0 && (
-                      <span className="rounded-full bg-red-700 px-2 py-0.5 text-xs font-medium text-white">
+                      <span className="shrink-0 rounded-full bg-red-700 px-2 py-0.5 text-xs font-medium text-white">
                         {unread}
                       </span>
                     )}
                   </span>
                   {last && (
-                    <span className="mt-1 flex items-center justify-between gap-2 text-xs text-stone-500">
+                    <span className="mt-1 flex items-center justify-between gap-2 text-[13px] text-[#777]">
                       <span className="truncate">
                         {last.deleted
                           ? "Wiadomość usunięta"
-                          : `${last.senderId === me ? "Ty: " : ""}${last.text}`}
+                          : `${
+                              last.senderId === me && !allLastMine
+                                ? "Ty: "
+                                : ""
+                            }${last.text}`}
                       </span>
                       <span suppressHydrationWarning className="shrink-0">
                         {timeOf(last.createdAt)}
@@ -331,9 +362,14 @@ export function ChatSection({
                 </form>
               </div>
             ) : (
-              <p className="text-sm text-stone-500">
-                Wybierz wątek, aby rozpocząć rozmowę.
-              </p>
+              <div className="grid h-96 place-items-center rounded-xl border border-dashed border-stone-200">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <ChatBubbleIcon />
+                  <p className="text-sm text-stone-500">
+                    Wybierz wątek, aby rozpocząć rozmowę.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </div>

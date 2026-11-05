@@ -18,7 +18,7 @@ export function NameForm({
 
   return (
     <>
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-stone-600">
         {locked
           ? "Imię i nazwisko są zablokowane."
           : "Tak zobaczą Cię inni uczestnicy."}

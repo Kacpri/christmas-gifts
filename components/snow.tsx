@@ -5,12 +5,12 @@ function rand(i: number, salt: number) {
   return x - Math.floor(x);
 }
 
-const FLAKES = Array.from({ length: 40 }, (_, i) => ({
+const FLAKES = Array.from({ length: 70 }, (_, i) => ({
   left: rand(i, 1) * 100,
-  size: 3 + rand(i, 2) * 4,
+  size: 2 + rand(i, 2) * 3,
   duration: 9 + rand(i, 3) * 12,
   delay: -rand(i, 4) * 21,
-  opacity: 0.35 + rand(i, 5) * 0.4,
+  opacity: 0.3 + rand(i, 5) * 0.4,
   drift: -30 + rand(i, 6) * 60,
 }));
 

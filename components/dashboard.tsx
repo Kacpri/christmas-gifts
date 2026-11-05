@@ -99,6 +99,24 @@ function GripIcon() {
   );
 }
 
+function LayoutIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <rect x="2" y="2" width="12" height="5" rx="1" />
+      <rect x="2" y="9" width="12" height="5" rx="1" />
+    </svg>
+  );
+}
+
 function ChevronIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -152,7 +170,7 @@ function PanelCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`rounded-xl border p-5 ${
+      className={`rounded-xl border p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
         isHole
           ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
           : `border-stone-200 bg-white ${
@@ -172,7 +190,7 @@ function PanelCard({
             <GripIcon />
           </button>
         )}
-        <h2 className="flex-1 text-xl">{title}</h2>
+        <h2 className="flex-1 text-[22px] tracking-[0.3px]">{title}</h2>
         {badge > 0 && (
           <span className="rounded-full bg-red-700 px-2 py-0.5 text-xs font-medium text-white">
             {badge}
@@ -211,15 +229,24 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
   }
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border border-stone-200 p-4">
-        <h3 className="text-base font-semibold">Prezent z listy</h3>
-        <p className="mt-1 text-sm text-stone-600">
-          Kupujesz prezent dla: <strong>{gifts.listGift.person}</strong>
+      <div className="rounded-xl bg-[#f6f8f6] p-4">
+        <div className="flex items-center gap-2">
+          <span aria-hidden>🎁</span>
+          <h3 className="text-base font-semibold">Prezent z listy</h3>
+          <span className="rounded-full bg-[#eaf5ee] px-2 py-0.5 text-xs font-medium text-[#165a32]">
+            Z listy
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-stone-600">
+          Kupujesz prezent dla:{" "}
+          <span className="text-lg font-semibold text-[#165a32]">
+            {gifts.listGift.person}
+          </span>
         </p>
         {gifts.listGift.wishes.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-2">
             {gifts.listGift.wishes.map((wish) => (
-              <li key={wish.id} className="rounded-lg bg-stone-50 p-3 text-sm">
+              <li key={wish.id} className="rounded-lg bg-white p-3 text-sm">
                 <p>{wish.text}</p>
                 <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
                   {wish.price != null && (
@@ -246,10 +273,19 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         )}
       </div>
 
-      <div className="rounded-lg border border-stone-200 p-4">
-        <h3 className="text-base font-semibold">Prezent tematyczny</h3>
-        <p className="mt-1 text-sm text-stone-600">
-          Kupujesz prezent dla: <strong>{gifts.themeGift.person}</strong>
+      <div className="rounded-xl bg-[#f6f8f6] p-4">
+        <div className="flex items-center gap-2">
+          <span aria-hidden>🎨</span>
+          <h3 className="text-base font-semibold">Prezent tematyczny</h3>
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+            Tematyczny
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-stone-600">
+          Kupujesz prezent dla:{" "}
+          <span className="text-lg font-semibold text-[#165a32]">
+            {gifts.themeGift.person}
+          </span>
         </p>
         <p className="mt-3 text-sm">
           Temat: <em>{gifts.themeGift.theme}</em>
@@ -294,7 +330,9 @@ export function Dashboard({
   } | null;
 }) {
   const [order, setOrder] = useState<PanelId[]>(DEFAULT_ORDER);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    profile: true,
+  });
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -306,7 +344,7 @@ export function Dashboard({
     const saved = loadLayout();
     if (saved) {
       setOrder(normalizeOrder(saved.order));
-      setCollapsed(saved.collapsed ?? {});
+      setCollapsed((prev) => ({ ...prev, ...(saved.collapsed ?? {}) }));
     }
     setHydrated(true);
   }, []);
@@ -357,7 +395,7 @@ export function Dashboard({
 
   function resetLayout() {
     setOrder(DEFAULT_ORDER);
-    setCollapsed({});
+    setCollapsed({ profile: true });
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -440,7 +478,13 @@ export function Dashboard({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl text-amber-100">Świąteczne Losowanie</h1>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-amber-100/80">{userName}</span>
+          <span
+            aria-hidden
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-base font-semibold text-amber-50 ring-1 ring-white/25"
+          >
+            {userName.trim().charAt(0).toUpperCase()}
+          </span>
+          <span className="font-medium text-amber-50">{userName}</span>
           {editMode ? (
             <div className="flex items-center gap-2">
               <button
@@ -463,8 +507,9 @@ export function Dashboard({
               <button
                 type="button"
                 onClick={() => setEditMode(true)}
-                className="rounded-lg border border-amber-200/40 px-3 py-1.5 text-sm text-amber-100 hover:bg-white/10"
+                className="flex items-center gap-2 rounded-lg border border-amber-200/40 px-3 py-1.5 text-sm text-amber-100 hover:bg-white/10"
               >
+                <LayoutIcon />
                 Układ
               </button>
               <LogoutButton />
@@ -489,7 +534,7 @@ export function Dashboard({
           </SortableContext>
           <DragOverlay>
             {activeId ? (
-              <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-xl ring-2 ring-amber-300">
+              <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
                 <div className="flex items-center gap-2">
                   <GripIcon />
                   <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
