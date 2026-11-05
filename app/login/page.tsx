@@ -54,8 +54,8 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-16">
       <div className="text-center">
-        <h1 className="text-4xl text-red-800">Świąteczne Losowanie</h1>
-        <p className="mt-2 text-stone-600">
+        <h1 className="text-4xl text-amber-100">Świąteczne Losowanie</h1>
+        <p className="mt-2 text-amber-100/80">
           Zaloguj się, aby wpisać życzenia i wziąć udział w losowaniu.
         </p>
       </div>

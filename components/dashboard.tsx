@@ -438,15 +438,15 @@ export function Dashboard({
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl text-red-800">Świąteczne Losowanie</h1>
+        <h1 className="text-3xl text-amber-100">Świąteczne Losowanie</h1>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-stone-600">{userName}</span>
+          <span className="text-amber-100/80">{userName}</span>
           {editMode ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={resetLayout}
-                className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+                className="rounded-lg border border-amber-200/40 px-3 py-1.5 text-sm text-amber-100 hover:bg-white/10"
               >
                 Resetuj układ
               </button>
@@ -463,7 +463,7 @@ export function Dashboard({
               <button
                 type="button"
                 onClick={() => setEditMode(true)}
-                className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+                className="rounded-lg border border-amber-200/40 px-3 py-1.5 text-sm text-amber-100 hover:bg-white/10"
               >
                 Układ
               </button>
