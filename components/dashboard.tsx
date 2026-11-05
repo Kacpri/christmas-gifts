@@ -2,12 +2,14 @@
 
 import {
   DndContext,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -123,6 +125,7 @@ function PanelCard({
   collapsed,
   onToggle,
   editMode,
+  isHole,
   children,
 }: {
   id: PanelId;
@@ -131,6 +134,7 @@ function PanelCard({
   collapsed: boolean;
   onToggle: () => void;
   editMode: boolean;
+  isHole: boolean;
   children: ReactNode;
 }) {
   const {
@@ -139,7 +143,6 @@ function PanelCard({
     setNodeRef,
     transform,
     transition,
-    isDragging,
   } = useSortable({ id, disabled: !editMode });
 
   return (
@@ -149,12 +152,16 @@ function PanelCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`rounded-xl border border-stone-200 bg-white p-5 ${
-        isDragging ? "relative z-10 shadow-lg" : ""
-      } ${editMode ? "ring-2 ring-amber-300" : ""}`}
+      className={`rounded-xl border p-5 ${
+        isHole
+          ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
+          : `border-stone-200 bg-white ${
+              editMode ? "ring-2 ring-amber-300" : ""
+            }`
+      }`}
     >
       <div className="flex items-center gap-2">
-        {editMode && (
+        {editMode && !isHole && (
           <button
             type="button"
             {...attributes}
@@ -289,6 +296,7 @@ export function Dashboard({
   const [order, setOrder] = useState<PanelId[]>(DEFAULT_ORDER);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
+  const [activeId, setActiveId] = useState<PanelId | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [chatUnread, setChatUnread] = useState(() =>
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
@@ -327,7 +335,12 @@ export function Dashboard({
     })
   );
 
+  function onDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as PanelId);
+  }
+
   function onDragEnd(event: DragEndEvent) {
+    setActiveId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setOrder((prev) => {
@@ -336,6 +349,10 @@ export function Dashboard({
       if (oldIndex < 0 || newIndex < 0) return prev;
       return arrayMove(prev, oldIndex, newIndex);
     });
+  }
+
+  function onDragCancel() {
+    setActiveId(null);
   }
 
   function resetLayout() {
@@ -412,6 +429,7 @@ export function Dashboard({
         setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }))
       }
       editMode={editMode}
+      isHole={activeId === id}
     >
       {panels[id].body}
     </PanelCard>
@@ -459,7 +477,9 @@ export function Dashboard({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={onDragStart}
           onDragEnd={onDragEnd}
+          onDragCancel={onDragCancel}
         >
           <SortableContext
             items={visible}
@@ -467,6 +487,22 @@ export function Dashboard({
           >
             <div className="flex flex-col gap-6">{cards}</div>
           </SortableContext>
+          <DragOverlay>
+            {activeId ? (
+              <section className="rounded-xl border border-stone-200 bg-white p-5 shadow-xl ring-2 ring-amber-300">
+                <div className="flex items-center gap-2">
+                  <GripIcon />
+                  <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
+                  <ChevronIcon
+                    className={collapsed[activeId] ? "" : "rotate-180"}
+                  />
+                </div>
+                {!collapsed[activeId] && (
+                  <div className="mt-3">{panels[activeId].body}</div>
+                )}
+              </section>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       ) : (
         <div className="flex flex-col gap-6">{cards}</div>
