@@ -55,7 +55,7 @@ function buildHtml(e: EmailPayload): string {
   return `<div style="font-family:Arial,sans-serif;background-color:#fffaf3;color:#333">
   <div style="max-width:600px;margin:auto;background:white;border-radius:10px;padding:20px">
     <div style="text-align:center;margin-bottom:25px">
-      <div style="font-size:56px;line-height:1">🎅</div>
+      <img src="https://christmas-gifts-opal.vercel.app/santa.jpg" alt="Święty Mikołaj" style="width:140px;height:auto;border-radius:8px;display:inline-block">
     </div>
     <p style="font-size:16px">Hej <b>${esc(firstName)}</b>!</p>
     <p style="font-size:16px;line-height:1.5">
