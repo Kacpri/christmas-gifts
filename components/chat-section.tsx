@@ -238,6 +238,34 @@ export function ChatSection({
     if (editState.ok) setEditingId(null);
   }, [editState]);
 
+  const [menu, setMenu] = useState<{
+    messageId: number;
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const touchTimer = useRef<number | null>(null);
+  const touchOrigin = useRef<{ x: number; y: number } | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId != null) editInputRef.current?.focus();
+  }, [editingId]);
+
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenu(null);
+    };
+    const onScroll = () => setMenu(null);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [menu]);
+
   useEffect(() => {
     setMessagesByThread((prev) => {
       let changed = false;
@@ -338,17 +366,96 @@ export function ChatSection({
                       Brak wiadomości. Napisz pierwszą!
                     </p>
                   )}
-                  {selectedMessages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`group max-w-[80%] rounded-lg px-3 py-2 ${
-                        editingId === m.id ? "min-w-48" : ""
-                      } ${
-                        m.senderId === me
-                          ? "self-end bg-red-700 text-white"
-                          : "self-start bg-stone-100"
-                      }`}
-                    >
+                  {selectedMessages.map((m) => {
+                    const canMenu =
+                      m.senderId === me && !m.deleted && editingId !== m.id;
+                    return (
+                      <div
+                        key={m.id}
+                        className={`max-w-[80%] select-none rounded-lg px-3 py-2 ${
+                          editingId === m.id ? "min-w-48" : ""
+                        } ${
+                          m.senderId === me
+                            ? "self-end bg-red-700 text-white"
+                            : "self-start bg-stone-100"
+                        }`}
+                        onContextMenu={
+                          canMenu
+                            ? (e) => {
+                                if (
+                                  e.target instanceof HTMLElement &&
+                                  e.target.closest("a")
+                                ) {
+                                  return;
+                                }
+                                e.preventDefault();
+                                setMenu({
+                                  messageId: m.id,
+                                  text: m.text,
+                                  x: e.clientX,
+                                  y: e.clientY,
+                                });
+                              }
+                            : undefined
+                        }
+                        onTouchStart={
+                          canMenu
+                            ? (e) => {
+                                const t = e.touches[0];
+                                touchOrigin.current = {
+                                  x: t.clientX,
+                                  y: t.clientY,
+                                };
+                                if (touchTimer.current != null) {
+                                  window.clearTimeout(touchTimer.current);
+                                }
+                                touchTimer.current = window.setTimeout(
+                                  () => {
+                                    touchTimer.current = null;
+                                    setMenu({
+                                      messageId: m.id,
+                                      text: m.text,
+                                      x: t.clientX,
+                                      y: t.clientY,
+                                    });
+                                  },
+                                  500
+                                );
+                              }
+                            : undefined
+                        }
+                        onTouchMove={
+                          canMenu
+                            ? (e) => {
+                                if (
+                                  touchTimer.current == null ||
+                                  !touchOrigin.current
+                                ) {
+                                  return;
+                                }
+                                const t = e.touches[0];
+                                const o = touchOrigin.current;
+                                if (
+                                  Math.abs(t.clientX - o.x) > 10 ||
+                                  Math.abs(t.clientY - o.y) > 10
+                                ) {
+                                  window.clearTimeout(touchTimer.current);
+                                  touchTimer.current = null;
+                                }
+                              }
+                            : undefined
+                        }
+                        onTouchEnd={
+                          canMenu
+                            ? () => {
+                                if (touchTimer.current != null) {
+                                  window.clearTimeout(touchTimer.current);
+                                  touchTimer.current = null;
+                                }
+                              }
+                            : undefined
+                        }
+                      >
                       {m.deleted ? (
                         <p
                           className={`text-sm italic ${
@@ -363,6 +470,7 @@ export function ChatSection({
                         <form action={editAction} className="flex flex-col gap-2">
                           <input type="hidden" name="id" value={m.id} />
                           <input
+                            ref={editInputRef}
                             name="text"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
@@ -397,7 +505,7 @@ export function ChatSection({
                           <p className="whitespace-pre-wrap break-words text-sm">
                             {renderMessageText(m.text)}
                           </p>
-                          <div
+                          <p
                             suppressHydrationWarning
                             className={`mt-0.5 text-right text-[10px] ${
                               m.senderId === me
@@ -407,44 +515,12 @@ export function ChatSection({
                           >
                             {timeOf(m.createdAt)}
                             {m.editedAt ? " · edytowano" : ""}
-                            {m.senderId === me && (
-                              <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                                {" · "}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingId(m.id);
-                                    setEditValue(m.text);
-                                  }}
-                                  className="underline"
-                                >
-                                  edytuj
-                                </button>{" "}
-                                <form
-                                  className="inline"
-                                  action={(fd: FormData) => {
-                                    deleteMessage(fd);
-                                  }}
-                                  onSubmit={(e) => {
-                                    if (
-                                      !window.confirm("Usunąć wiadomość?")
-                                    ) {
-                                      e.preventDefault();
-                                    }
-                                  }}
-                                >
-                                  <input type="hidden" name="id" value={m.id} />
-                                  <button type="submit" className="underline">
-                                    usuń
-                                  </button>
-                                </form>
-                              </span>
-                            )}
-                          </div>
+                          </p>
                         </>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <div ref={bottomRef} />
                 </div>
                 <form
@@ -482,6 +558,58 @@ export function ChatSection({
       )}
       {!state.ok && state.error && (
         <p className="mt-2 text-sm text-red-600">{state.error}</p>
+      )}
+      {menu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setMenu(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenu(null);
+            }}
+          />
+          <div
+            className="fixed z-50 min-w-28 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 text-sm shadow-lg"
+            style={{
+              left: Math.max(8, Math.min(menu.x, window.innerWidth - 128)),
+              top: Math.max(8, Math.min(menu.y, window.innerHeight - 96)),
+            }}
+          >
+            <button
+              type="button"
+              className="block w-full px-3 py-1.5 text-left hover:bg-stone-100"
+              onClick={() => {
+                const id = menu.messageId;
+                const text = menu.text;
+                setMenu(null);
+                setEditingId(id);
+                setEditValue(text);
+              }}
+            >
+              Edytuj
+            </button>
+            <form
+              action={(fd: FormData) => {
+                deleteMessage(fd);
+              }}
+              onSubmit={(e) => {
+                if (!window.confirm("Usunąć wiadomość?")) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <input type="hidden" name="id" value={menu.messageId} />
+              <button
+                type="submit"
+                onClick={() => setMenu(null)}
+                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-stone-100"
+              >
+                Usuń
+              </button>
+            </form>
+          </div>
+        </>
       )}
     </section>
   );
