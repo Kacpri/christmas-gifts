@@ -51,7 +51,9 @@ export default async function Home() {
       .eq("drawee_id", user.id),
     supabase
       .from("messages")
-      .select("id, lottery_type, drawer_id, drawee_id, sender_id, text, created_at")
+      .select(
+        "id, lottery_type, drawer_id, drawee_id, sender_id, text, created_at, edited_at, deleted_at"
+      )
       .or(`drawer_id.eq.${user.id},drawee_id.eq.${user.id}`)
       .order("created_at"),
     supabase
@@ -161,9 +163,12 @@ export default async function Home() {
           senderId: m.sender_id,
           text: m.text,
           createdAt: m.created_at,
+          editedAt: m.edited_at,
+          deleted: m.deleted_at != null,
         })),
         unread: msgs.filter(
           (m) =>
+            m.deleted_at == null &&
             m.sender_id !== user.id &&
             (!read || m.created_at > read.last_read_at)
         ).length,

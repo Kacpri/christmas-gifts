@@ -236,6 +236,45 @@ export async function sendMessage(
   return { ok: true };
 }
 
+export async function editMessage(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  const text = String(formData.get("text") ?? "").trim();
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  const { error } = await supabase
+    .from("messages")
+    .update({ text, edited_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteMessage(formData: FormData): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  const { error } = await supabase
+    .from("messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function markThreadRead(formData: FormData): Promise<void> {
   const { supabase, user } = await requireUser();
   const lotteryType = Number(formData.get("lottery_type"));

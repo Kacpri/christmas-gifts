@@ -54,6 +54,10 @@ create table if not exists public.messages (
 create index if not exists messages_thread_idx
   on public.messages (lottery_type, drawer_id, drawee_id, id);
 
+-- edycja i miękkie usuwanie wiadomości
+alter table public.messages add column if not exists edited_at timestamptz;
+alter table public.messages add column if not exists deleted_at timestamptz;
+
 create table if not exists public.thread_reads (
   lottery_type smallint not null check (lottery_type in (1, 2)),
   drawer_id uuid not null references public.profiles (id) on delete cascade,
@@ -228,6 +232,13 @@ create policy "messages_insert_member" on public.messages
         and a.drawee_id = drawee_id
     )
   );
+
+-- nadawca może edytować i (miękkie) usuwać własne, nieusunięte wiadomości
+drop policy if exists "messages_update_sender" on public.messages;
+create policy "messages_update_sender" on public.messages
+  for update to authenticated
+  using (sender_id = auth.uid() and deleted_at is null)
+  with check (sender_id = auth.uid());
 
 -- thread_reads: tylko własne znaczniki odczytu
 drop policy if exists "thread_reads_select_own" on public.thread_reads;

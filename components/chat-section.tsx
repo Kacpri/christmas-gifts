@@ -9,6 +9,8 @@ import {
 } from "react";
 
 import {
+  deleteMessage,
+  editMessage,
   markThreadRead,
   sendMessage,
   type ActionResult,
@@ -20,6 +22,8 @@ export type ChatMessage = {
   senderId: string;
   text: string;
   createdAt: string;
+  editedAt: string | null;
+  deleted: boolean;
 };
 
 export type Thread = {
@@ -90,6 +94,12 @@ export function ChatSection({
   );
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendMessage, empty);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editState, editAction, editPending] = useActionState(
+    editMessage,
+    empty
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
@@ -144,6 +154,8 @@ export function ChatSection({
                     senderId: m.sender_id,
                     text: m.text,
                     createdAt: m.created_at,
+                    editedAt: null,
+                    deleted: false,
                   },
                 ],
               };
@@ -164,6 +176,51 @@ export function ChatSection({
             }
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "messages" },
+          (payload) => {
+            const m = payload.new as {
+              id: number;
+              lottery_type: number;
+              drawer_id: string;
+              drawee_id: string;
+              sender_id: string;
+              text: string;
+              created_at: string;
+              edited_at: string | null;
+              deleted_at: string | null;
+            };
+            const key = `${m.lottery_type}-${m.drawer_id}-${m.drawee_id}`;
+            setMessagesByThread((prev) => {
+              const list = prev[key];
+              if (!list || !list.some((x) => x.id === m.id)) return prev;
+              return {
+                ...prev,
+                [key]: list.map((x) =>
+                  x.id === m.id
+                    ? {
+                        ...x,
+                        text: m.text,
+                        editedAt: m.edited_at,
+                        deleted: m.deleted_at != null,
+                      }
+                    : x
+                ),
+              };
+            });
+            if (
+              m.deleted_at != null &&
+              m.sender_id !== me &&
+              key !== selectedRef.current
+            ) {
+              setUnreadByThread((prev) => ({
+                ...prev,
+                [key]: Math.max(0, (prev[key] ?? 0) - 1),
+              }));
+            }
+          }
+        )
         .subscribe();
     })();
 
@@ -176,6 +233,10 @@ export function ChatSection({
   useEffect(() => {
     if (state.ok) setValue("");
   }, [state]);
+
+  useEffect(() => {
+    if (editState.ok) setEditingId(null);
+  }, [editState]);
 
   useEffect(() => {
     setMessagesByThread((prev) => {
@@ -251,8 +312,9 @@ export function ChatSection({
                   {last && (
                     <span className="mt-1 flex items-center justify-between gap-2 text-xs text-stone-500">
                       <span className="truncate">
-                        {last.senderId === me ? "Ty: " : ""}
-                        {last.text}
+                        {last.deleted
+                          ? "Wiadomość usunięta"
+                          : `${last.senderId === me ? "Ty: " : ""}${last.text}`}
                       </span>
                       <span suppressHydrationWarning className="shrink-0">
                         {timeOf(last.createdAt)}
@@ -279,23 +341,107 @@ export function ChatSection({
                   {selectedMessages.map((m) => (
                     <div
                       key={m.id}
-                      className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                      className={`group max-w-[80%] rounded-lg px-3 py-2 ${
                         m.senderId === me
                           ? "self-end bg-red-700 text-white"
                           : "self-start bg-stone-100"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words text-sm">
-                        {renderMessageText(m.text)}
-                      </p>
-                      <p
-                        suppressHydrationWarning
-                        className={`mt-0.5 text-right text-[10px] ${
-                          m.senderId === me ? "text-red-200" : "text-stone-400"
-                        }`}
-                      >
-                        {timeOf(m.createdAt)}
-                      </p>
+                      {m.deleted ? (
+                        <p
+                          className={`text-sm italic ${
+                            m.senderId === me
+                              ? "text-red-200"
+                              : "text-stone-400"
+                          }`}
+                        >
+                          Wiadomość usunięta
+                        </p>
+                      ) : editingId === m.id ? (
+                        <form action={editAction} className="flex flex-col gap-2">
+                          <input type="hidden" name="id" value={m.id} />
+                          <input
+                            name="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            required
+                            maxLength={500}
+                            className="w-48 rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-900 focus:outline-none"
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="submit"
+                              disabled={editPending || !editValue.trim()}
+                              className="text-[10px] font-medium underline disabled:opacity-50"
+                            >
+                              Zapisz
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingId(null)}
+                              className="text-[10px] underline"
+                            >
+                              Anuluj
+                            </button>
+                            {!editState.ok && editState.error && (
+                              <span className="text-[10px] text-red-200">
+                                {editState.error}
+                              </span>
+                            )}
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <p className="whitespace-pre-wrap break-words text-sm">
+                            {renderMessageText(m.text)}
+                          </p>
+                          <p
+                            suppressHydrationWarning
+                            className={`mt-0.5 text-right text-[10px] ${
+                              m.senderId === me
+                                ? "text-red-200"
+                                : "text-stone-400"
+                            }`}
+                          >
+                            {timeOf(m.createdAt)}
+                            {m.editedAt ? " · edytowano" : ""}
+                          </p>
+                          {m.senderId === me && (
+                            <div className="mt-1 flex justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingId(m.id);
+                                  setEditValue(m.text);
+                                }}
+                                className="text-[10px] underline"
+                              >
+                                edytuj
+                              </button>
+                              <form
+                                action={(fd: FormData) => {
+                                  deleteMessage(fd);
+                                }}
+                                onSubmit={(e) => {
+                                  if (
+                                    !window.confirm("Usunąć wiadomość?")
+                                  ) {
+                                    e.preventDefault();
+                                  }
+                                }}
+                              >
+                                <input type="hidden" name="id" value={m.id} />
+                                <button
+                                  type="submit"
+                                  className="text-[10px] underline"
+                                >
+                                  usuń
+                                </button>
+                              </form>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   ))}
                   <div ref={bottomRef} />
