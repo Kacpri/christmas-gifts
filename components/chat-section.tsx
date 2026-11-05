@@ -342,6 +342,8 @@ export function ChatSection({
                     <div
                       key={m.id}
                       className={`group max-w-[80%] rounded-lg px-3 py-2 ${
+                        editingId === m.id ? "min-w-48" : ""
+                      } ${
                         m.senderId === me
                           ? "self-end bg-red-700 text-white"
                           : "self-start bg-stone-100"
@@ -366,7 +368,7 @@ export function ChatSection({
                             onChange={(e) => setEditValue(e.target.value)}
                             required
                             maxLength={500}
-                            className="w-48 rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-900 focus:outline-none"
+                            className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-900 focus:outline-none"
                           />
                           <div className="flex items-center gap-2">
                             <button
@@ -395,7 +397,7 @@ export function ChatSection({
                           <p className="whitespace-pre-wrap break-words text-sm">
                             {renderMessageText(m.text)}
                           </p>
-                          <p
+                          <div
                             suppressHydrationWarning
                             className={`mt-0.5 text-right text-[10px] ${
                               m.senderId === me
@@ -405,41 +407,40 @@ export function ChatSection({
                           >
                             {timeOf(m.createdAt)}
                             {m.editedAt ? " · edytowano" : ""}
-                          </p>
-                          {m.senderId === me && (
-                            <div className="mt-1 flex justify-end gap-3 opacity-0 transition-opacity group-hover:opacity-100">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingId(m.id);
-                                  setEditValue(m.text);
-                                }}
-                                className="text-[10px] underline"
-                              >
-                                edytuj
-                              </button>
-                              <form
-                                action={(fd: FormData) => {
-                                  deleteMessage(fd);
-                                }}
-                                onSubmit={(e) => {
-                                  if (
-                                    !window.confirm("Usunąć wiadomość?")
-                                  ) {
-                                    e.preventDefault();
-                                  }
-                                }}
-                              >
-                                <input type="hidden" name="id" value={m.id} />
+                            {m.senderId === me && (
+                              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                                {" · "}
                                 <button
-                                  type="submit"
-                                  className="text-[10px] underline"
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingId(m.id);
+                                    setEditValue(m.text);
+                                  }}
+                                  className="underline"
                                 >
-                                  usuń
-                                </button>
-                              </form>
-                            </div>
-                          )}
+                                  edytuj
+                                </button>{" "}
+                                <form
+                                  className="inline"
+                                  action={(fd: FormData) => {
+                                    deleteMessage(fd);
+                                  }}
+                                  onSubmit={(e) => {
+                                    if (
+                                      !window.confirm("Usunąć wiadomość?")
+                                    ) {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                >
+                                  <input type="hidden" name="id" value={m.id} />
+                                  <button type="submit" className="underline">
+                                    usuń
+                                  </button>
+                                </form>
+                              </span>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
