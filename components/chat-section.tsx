@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useActionState,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, useActionState } from "react";
 
 import {
   deleteMessage,
@@ -15,16 +9,12 @@ import {
   sendMessage,
   type ActionResult,
 } from "@/app/actions";
+import {
+  MessageBubble,
+  type ChatMessage,
+} from "@/components/message-bubble";
+import { timeOf } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
-
-export type ChatMessage = {
-  id: number;
-  senderId: string;
-  text: string;
-  createdAt: string;
-  editedAt: string | null;
-  deleted: boolean;
-};
 
 export type Thread = {
   lotteryType: number;
@@ -42,37 +32,6 @@ const threadKey = (t: {
   drawerId: string;
   draweeId: string;
 }) => `${t.lotteryType}-${t.drawerId}-${t.draweeId}`;
-
-const timeOf = (iso: string) =>
-  new Date(iso).toLocaleTimeString("pl-PL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-const URL_RE = /(https?:\/\/[^\s]+)/g;
-
-function renderMessageText(text: string) {
-  const parts: ReactNode[] = [];
-  let last = 0;
-  for (const match of text.matchAll(URL_RE)) {
-    const idx = match.index ?? 0;
-    if (idx > last) parts.push(text.slice(last, idx));
-    parts.push(
-      <a
-        key={`${idx}-${match[0]}`}
-        href={match[0]}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline"
-      >
-        {match[0]}
-      </a>
-    );
-    last = idx + match[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts;
-}
 
 export function ChatSection({
   me,
@@ -94,12 +53,6 @@ export function ChatSection({
   );
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendMessage, empty);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [editState, editAction, editPending] = useActionState(
-    editMessage,
-    empty
-  );
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
@@ -235,38 +188,6 @@ export function ChatSection({
   }, [state]);
 
   useEffect(() => {
-    if (editState.ok) setEditingId(null);
-  }, [editState]);
-
-  const [menu, setMenu] = useState<{
-    messageId: number;
-    text: string;
-    x: number;
-    y: number;
-  } | null>(null);
-  const touchTimer = useRef<number | null>(null);
-  const touchOrigin = useRef<{ x: number; y: number } | null>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editingId != null) editInputRef.current?.focus();
-  }, [editingId]);
-
-  useEffect(() => {
-    if (!menu) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenu(null);
-    };
-    const onScroll = () => setMenu(null);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, true);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll, true);
-    };
-  }, [menu]);
-
-  useEffect(() => {
     setMessagesByThread((prev) => {
       let changed = false;
       const next: Record<string, ChatMessage[]> = {};
@@ -366,161 +287,15 @@ export function ChatSection({
                       Brak wiadomości. Napisz pierwszą!
                     </p>
                   )}
-                  {selectedMessages.map((m) => {
-                    const canMenu =
-                      m.senderId === me && !m.deleted && editingId !== m.id;
-                    return (
-                      <div
-                        key={m.id}
-                        className={`max-w-[80%] select-none rounded-lg px-3 py-2 ${
-                          editingId === m.id ? "min-w-48" : ""
-                        } ${
-                          m.senderId === me
-                            ? "self-end bg-red-700 text-white"
-                            : "self-start bg-stone-100"
-                        }`}
-                        onContextMenu={
-                          canMenu
-                            ? (e) => {
-                                if (
-                                  e.target instanceof HTMLElement &&
-                                  e.target.closest("a")
-                                ) {
-                                  return;
-                                }
-                                e.preventDefault();
-                                setMenu({
-                                  messageId: m.id,
-                                  text: m.text,
-                                  x: e.clientX,
-                                  y: e.clientY,
-                                });
-                              }
-                            : undefined
-                        }
-                        onTouchStart={
-                          canMenu
-                            ? (e) => {
-                                const t = e.touches[0];
-                                touchOrigin.current = {
-                                  x: t.clientX,
-                                  y: t.clientY,
-                                };
-                                if (touchTimer.current != null) {
-                                  window.clearTimeout(touchTimer.current);
-                                }
-                                touchTimer.current = window.setTimeout(
-                                  () => {
-                                    touchTimer.current = null;
-                                    setMenu({
-                                      messageId: m.id,
-                                      text: m.text,
-                                      x: t.clientX,
-                                      y: t.clientY,
-                                    });
-                                  },
-                                  500
-                                );
-                              }
-                            : undefined
-                        }
-                        onTouchMove={
-                          canMenu
-                            ? (e) => {
-                                if (
-                                  touchTimer.current == null ||
-                                  !touchOrigin.current
-                                ) {
-                                  return;
-                                }
-                                const t = e.touches[0];
-                                const o = touchOrigin.current;
-                                if (
-                                  Math.abs(t.clientX - o.x) > 10 ||
-                                  Math.abs(t.clientY - o.y) > 10
-                                ) {
-                                  window.clearTimeout(touchTimer.current);
-                                  touchTimer.current = null;
-                                }
-                              }
-                            : undefined
-                        }
-                        onTouchEnd={
-                          canMenu
-                            ? () => {
-                                if (touchTimer.current != null) {
-                                  window.clearTimeout(touchTimer.current);
-                                  touchTimer.current = null;
-                                }
-                              }
-                            : undefined
-                        }
-                      >
-                      {m.deleted ? (
-                        <p
-                          className={`text-sm italic ${
-                            m.senderId === me
-                              ? "text-red-200"
-                              : "text-stone-400"
-                          }`}
-                        >
-                          Wiadomość usunięta
-                        </p>
-                      ) : editingId === m.id ? (
-                        <form action={editAction} className="flex flex-col gap-2">
-                          <input type="hidden" name="id" value={m.id} />
-                          <input
-                            ref={editInputRef}
-                            name="text"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            required
-                            maxLength={500}
-                            className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-sm text-stone-900 focus:outline-none"
-                          />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="submit"
-                              disabled={editPending || !editValue.trim()}
-                              className="text-[10px] font-medium underline disabled:opacity-50"
-                            >
-                              Zapisz
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingId(null)}
-                              className="text-[10px] underline"
-                            >
-                              Anuluj
-                            </button>
-                            {!editState.ok && editState.error && (
-                              <span className="text-[10px] text-red-200">
-                                {editState.error}
-                              </span>
-                            )}
-                          </div>
-                        </form>
-                      ) : (
-                        <>
-                          <p className="whitespace-pre-wrap break-words text-sm">
-                            {renderMessageText(m.text)}
-                          </p>
-                          <p
-                            suppressHydrationWarning
-                            className={`mt-0.5 text-right text-[10px] ${
-                              m.senderId === me
-                                ? "text-red-200"
-                                : "text-stone-400"
-                            }`}
-                          >
-                            {timeOf(m.createdAt)}
-                            {m.editedAt ? " · edytowano" : ""}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                    );
-                  })}
+                  {selectedMessages.map((m) => (
+                    <MessageBubble
+                      key={m.id}
+                      message={m}
+                      isOwn={m.senderId === me}
+                      editAction={editMessage}
+                      deleteAction={deleteMessage}
+                    />
+                  ))}
                   <div ref={bottomRef} />
                 </div>
                 <form
@@ -558,58 +333,6 @@ export function ChatSection({
       )}
       {!state.ok && state.error && (
         <p className="mt-2 text-sm text-red-600">{state.error}</p>
-      )}
-      {menu && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setMenu(null)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setMenu(null);
-            }}
-          />
-          <div
-            className="fixed z-50 min-w-28 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 text-sm shadow-lg"
-            style={{
-              left: Math.max(8, Math.min(menu.x, window.innerWidth - 128)),
-              top: Math.max(8, Math.min(menu.y, window.innerHeight - 96)),
-            }}
-          >
-            <button
-              type="button"
-              className="block w-full px-3 py-1.5 text-left hover:bg-stone-100"
-              onClick={() => {
-                const id = menu.messageId;
-                const text = menu.text;
-                setMenu(null);
-                setEditingId(id);
-                setEditValue(text);
-              }}
-            >
-              Edytuj
-            </button>
-            <form
-              action={(fd: FormData) => {
-                deleteMessage(fd);
-              }}
-              onSubmit={(e) => {
-                if (!window.confirm("Usunąć wiadomość?")) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <input type="hidden" name="id" value={menu.messageId} />
-              <button
-                type="submit"
-                onClick={() => setMenu(null)}
-                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-stone-100"
-              >
-                Usuń
-              </button>
-            </form>
-          </div>
-        </>
       )}
     </section>
   );

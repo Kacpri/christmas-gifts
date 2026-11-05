@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ChatSection, type Thread } from "@/components/chat-section";
+import { GroupChatSection } from "@/components/group-chat-section";
 import { LogoutButton } from "@/components/logout-button";
 import { NameForm } from "@/components/name-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
@@ -94,6 +95,22 @@ export default async function Home() {
     lateJoiners = status
       .filter((p) => !p.in_lottery)
       .map((p) => ({ id: p.profile_id, full_name: p.full_name }));
+  }
+
+  let groupMessages: {
+    id: number;
+    sender_id: string;
+    text: string;
+    created_at: string;
+    edited_at: string | null;
+    deleted_at: string | null;
+  }[] = [];
+  if (lotteryDone) {
+    const { data } = await supabase
+      .from("group_messages")
+      .select("id, sender_id, text, created_at, edited_at, deleted_at")
+      .order("created_at");
+    groupMessages = (data ?? []) as typeof groupMessages;
   }
 
   let listGift: { person: string; wishes: Wish[] } | null = null;
@@ -272,6 +289,19 @@ export default async function Home() {
         threads={threads}
         lotteryDone={lotteryDone}
         lateJoiner={isLateJoiner}
+      />
+
+      <GroupChatSection
+        me={user.id}
+        open={lotteryDone}
+        messages={groupMessages.map((m) => ({
+          id: m.id,
+          senderId: m.sender_id,
+          text: m.text,
+          createdAt: m.created_at,
+          editedAt: m.edited_at,
+          deleted: m.deleted_at != null,
+        }))}
       />
 
       <WishForm

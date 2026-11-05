@@ -58,6 +58,19 @@ create index if not exists messages_thread_idx
 alter table public.messages add column if not exists edited_at timestamptz;
 alter table public.messages add column if not exists deleted_at timestamptz;
 
+-- Czat wspólny (anonimowy) dla uczestników losowania
+create table if not exists public.group_messages (
+  id bigint generated always as identity primary key,
+  sender_id uuid not null references public.profiles (id) on delete cascade,
+  text text not null check (char_length(text) between 1 and 500),
+  edited_at timestamptz,
+  deleted_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists group_messages_created_idx
+  on public.group_messages (created_at);
+
 create table if not exists public.thread_reads (
   lottery_type smallint not null check (lottery_type in (1, 2)),
   drawer_id uuid not null references public.profiles (id) on delete cascade,
@@ -119,6 +132,7 @@ alter table public.wishes enable row level security;
 alter table public.themes enable row level security;
 alter table public.assignments enable row level security;
 alter table public.messages enable row level security;
+alter table public.group_messages enable row level security;
 alter table public.thread_reads enable row level security;
 
 -- profiles
@@ -240,6 +254,34 @@ create policy "messages_update_sender" on public.messages
   using (sender_id = auth.uid() and deleted_at is null)
   with check (sender_id = auth.uid());
 
+-- group_messages: widać i pisze tylko uczestnicy losowania
+drop policy if exists "group_messages_select_participants" on public.group_messages;
+create policy "group_messages_select_participants" on public.group_messages
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.assignments a
+      where a.drawer_id = auth.uid() or a.drawee_id = auth.uid()
+    )
+  );
+
+drop policy if exists "group_messages_insert_participant" on public.group_messages;
+create policy "group_messages_insert_participant" on public.group_messages
+  for insert to authenticated
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1 from public.assignments a
+      where a.drawer_id = auth.uid() or a.drawee_id = auth.uid()
+    )
+  );
+
+drop policy if exists "group_messages_update_sender" on public.group_messages;
+create policy "group_messages_update_sender" on public.group_messages
+  for update to authenticated
+  using (sender_id = auth.uid() and deleted_at is null)
+  with check (sender_id = auth.uid());
+
 -- thread_reads: tylko własne znaczniki odczytu
 drop policy if exists "thread_reads_select_own" on public.thread_reads;
 create policy "thread_reads_select_own" on public.thread_reads
@@ -323,6 +365,7 @@ begin
 
   delete from public.assignments where true;
   delete from public.messages where true;
+  delete from public.group_messages where true;
   delete from public.thread_reads where true;
   insert into public.assignments (lottery_type, drawer_id, drawee_id)
   select 1, user_ids[x], user_ids[sigma[x]] from generate_series(1, n) as g(x)
@@ -350,6 +393,7 @@ begin
 
   delete from public.assignments where true;
   delete from public.messages where true;
+  delete from public.group_messages where true;
   delete from public.thread_reads where true;
   update public.profiles set is_ready = false where is_ready = true;
 end;
@@ -410,6 +454,14 @@ grant execute on function public.participant_status() to authenticated;
 do $$
 begin
   alter publication supabase_realtime add table public.messages;
+exception
+  when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.group_messages;
 exception
   when duplicate_object then null;
 end

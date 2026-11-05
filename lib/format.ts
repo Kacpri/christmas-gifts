@@ -9,3 +9,9 @@ export function formatPrice(
     }) + " zł"
   );
 }
+
+export const timeOf = (iso: string) =>
+  new Date(iso).toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
