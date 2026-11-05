@@ -32,7 +32,7 @@ export function ReadySection({
   }
 
   const missing = [
-    !hasWish && "przynajmniej jedno życzenie",
+    !hasWish && "przynajmniej dwa życzenia",
     !hasTheme && "temat prezentu",
   ]
     .filter(Boolean)
@@ -53,7 +53,7 @@ export function ReadySection({
             action={(formData: FormData) => {
               if (
                 window.confirm(
-                  "Po potwierdzeniu gotowości nie będziesz mógł usuwać życzeń, zmieniać tematu ani imienia i nazwiska. Dodawanie nowych życzeń nadal będzie możliwe. Tej operacji nie można cofnąć."
+                  "Po potwierdzeniu gotowości nie będziesz mógł zmieniać tematu ani imienia i nazwiska. Listę życzeń nadal będziesz mógł edytować do losowania. Tej operacji nie można cofnąć."
                 )
               ) {
                 formAction(formData);

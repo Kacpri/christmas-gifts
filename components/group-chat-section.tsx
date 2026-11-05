@@ -18,13 +18,11 @@ const empty: ActionResult = { ok: false };
 
 export function GroupChatSection({
   me,
-  open,
   messages,
   collapsed,
   onUnreadChange,
 }: {
   me: string;
-  open: boolean;
   messages: ChatMessage[];
   collapsed: boolean;
   onUnreadChange?: (total: number) => void;
@@ -184,66 +182,60 @@ export function GroupChatSection({
       <p className="text-xs text-faint">
         Anonimowy — nikt nie wie, kto co napisał.
       </p>
-      {!open ? (
-        <p className="mt-3 text-sm text-muted">
-          Czat wspólny pojawi się po losowaniu.
-        </p>
-      ) : (
-        <div className="mt-3 flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
-          <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
-            {local.length === 0 && (
-              <p className="text-sm text-faint">
-                Brak wiadomości. Napisz pierwszą!
-              </p>
-            )}
-            {local.map((m) => (
-              <MessageBubble
-                key={m.id}
-                message={m}
-                isOwn={m.senderId === me}
-                editAction={editGroupMessage}
-                deleteAction={deleteGroupMessage}
-              />
-            ))}
-            <div ref={bottomRef} />
-          </div>
-          <form
-            action={sendAction}
-            className="flex items-center gap-2 border-t border-line bg-white p-3"
-          >
-            <input
-              name="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              required
-              maxLength={500}
-              placeholder="Napisz wiadomość…"
-              className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
+      <div className="mt-3 flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
+        <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
+          {local.length === 0 && (
+            <p className="text-sm text-faint">
+              Brak wiadomości. Napisz pierwszą!
+            </p>
+          )}
+          {local.map((m) => (
+            <MessageBubble
+              key={m.id}
+              message={m}
+              isOwn={m.senderId === me}
+              editAction={editGroupMessage}
+              deleteAction={deleteGroupMessage}
             />
-            <button
-              type="submit"
-              disabled={pending || !value.trim()}
-              aria-label="Wyślij"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M22 2L11 13" />
-                <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-              </svg>
-            </button>
-          </form>
+          ))}
+          <div ref={bottomRef} />
         </div>
-      )}
+        <form
+          action={sendAction}
+          className="flex items-center gap-2 border-t border-line bg-white p-3"
+        >
+          <input
+            name="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            required
+            maxLength={500}
+            placeholder="Napisz wiadomość…"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
+          />
+          <button
+            type="submit"
+            disabled={pending || !value.trim()}
+            aria-label="Wyślij"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M22 2L11 13" />
+              <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+            </svg>
+          </button>
+        </form>
+      </div>
       {!state.ok && state.error && (
         <p className="mt-2 text-sm text-red-600">{state.error}</p>
       )}

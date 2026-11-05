@@ -63,6 +63,45 @@ export async function addWish(
   return { ok: true };
 }
 
+export async function editWish(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  const text = String(formData.get("text") ?? "").trim();
+  const link = String(formData.get("link") ?? "").trim();
+  const priceRaw = String(formData.get("price") ?? "").trim();
+  if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowe życzenie." };
+  if (!text) return { ok: false, error: "Wpisz, czego sobie życzysz." };
+  if (link && !/^https?:\/\/\S+$/i.test(link)) {
+    return { ok: false, error: "Link musi zaczynać się od http:// lub https://" };
+  }
+  let price: number | null = null;
+  if (priceRaw) {
+    price = Number(priceRaw.replace(",", "."));
+    if (Number.isNaN(price) || price < 0) {
+      return { ok: false, error: "Cena musi być dodatnią liczbą." };
+    }
+  }
+  const { error } = await supabase
+    .from("wishes")
+    .update({ text, link: link || null, price })
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) {
+    return {
+      ok: false,
+      error:
+        error.code === "42501"
+          ? "Po losowaniu nie można edytować życzeń."
+          : error.message,
+    };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function removeWish(formData: FormData): Promise<ActionResult> {
   const { supabase } = await requireUser();
   const id = Number(formData.get("id"));
@@ -113,8 +152,8 @@ export async function markReady(
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
   if (countError) return { ok: false, error: countError.message };
-  if ((count ?? 0) < 1) {
-    return { ok: false, error: "Dodaj przynajmniej jedno życzenie." };
+  if ((count ?? 0) < 2) {
+    return { ok: false, error: "Dodaj przynajmniej dwa życzenia." };
   }
   const { data: theme } = await supabase
     .from("themes")

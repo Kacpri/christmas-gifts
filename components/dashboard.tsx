@@ -355,8 +355,13 @@ export function Dashboard({
     lotteryDone: boolean;
     lateJoiner: boolean;
   };
-  groupChat: { me: string; open: boolean; messages: ChatMessage[] };
-  wishes: { wishes: Wish[]; theme: string | null; locked: boolean };
+  groupChat: { me: string; messages: ChatMessage[] };
+  wishes: {
+    wishes: Wish[];
+    theme: string | null;
+    wishesLocked: boolean;
+    themeLocked: boolean;
+  };
   ready: {
     hasWish: boolean;
     hasTheme: boolean;
@@ -479,7 +484,6 @@ export function Dashboard({
       body: (
         <GroupChatSection
           me={groupChat.me}
-          open={groupChat.open}
           messages={groupChat.messages}
           collapsed={!!collapsed["group-chat"]}
           onUnreadChange={handleGroupUnreadChange}
@@ -492,7 +496,8 @@ export function Dashboard({
         <WishForm
           wishes={wishes.wishes}
           theme={wishes.theme}
-          locked={wishes.locked}
+          wishesLocked={wishes.wishesLocked}
+          themeLocked={wishes.themeLocked}
         />
       ),
     },

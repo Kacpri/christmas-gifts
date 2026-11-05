@@ -61,6 +61,7 @@ export default async function Home() {
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
   const isReady = profile?.is_ready ?? false;
   const locked = lotteryDone || isReady;
+  const wishesLocked = lotteryDone;
 
   const { data: lotteryActiveData } = await supabase.rpc("lottery_active");
   const lotteryActive = lotteryActiveData === true;
@@ -92,21 +93,18 @@ export default async function Home() {
       .map((p) => ({ id: p.profile_id, full_name: p.full_name }));
   }
 
-  let groupMessages: {
+  const { data: groupMessagesData } = await supabase
+    .from("group_messages")
+    .select("id, sender_id, text, created_at, edited_at, deleted_at")
+    .order("created_at");
+  const groupMessages = (groupMessagesData ?? []) as {
     id: number;
     sender_id: string;
     text: string;
     created_at: string;
     edited_at: string | null;
     deleted_at: string | null;
-  }[] = [];
-  if (lotteryDone) {
-    const { data } = await supabase
-      .from("group_messages")
-      .select("id, sender_id, text, created_at, edited_at, deleted_at")
-      .order("created_at");
-    groupMessages = (data ?? []) as typeof groupMessages;
-  }
+  }[];
 
   let listGift: { person: string; wishes: Wish[] } | null = null;
   let themeGift: { person: string; theme: string } | null = null;
@@ -226,7 +224,6 @@ export default async function Home() {
       }}
       groupChat={{
         me: user.id,
-        open: lotteryDone,
         messages: groupMessages.map((m) => ({
           id: m.id,
           senderId: m.sender_id,
@@ -239,10 +236,11 @@ export default async function Home() {
       wishes={{
         wishes: myWishes ?? [],
         theme: myTheme?.theme ?? null,
-        locked,
+        wishesLocked,
+        themeLocked: locked,
       }}
       ready={{
-        hasWish: (myWishes ?? []).length > 0,
+        hasWish: (myWishes ?? []).length >= 2,
         hasTheme: Boolean(myTheme?.theme),
         isReady,
         lotteryDone,
