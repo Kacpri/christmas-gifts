@@ -113,12 +113,14 @@ export function ChatSection({
   threads,
   lotteryDone,
   lateJoiner,
+  collapsed,
   onUnreadChange,
 }: {
   me: string;
   threads: Thread[];
   lotteryDone: boolean;
   lateJoiner: boolean;
+  collapsed: boolean;
   onUnreadChange?: (total: number) => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
@@ -133,6 +135,10 @@ export function ChatSection({
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const collapsedRef = useRef(collapsed);
+  collapsedRef.current = collapsed;
+  const threadsRef = useRef(threads);
+  threadsRef.current = threads;
 
   const allLastMine =
     threads.length > 1 &&
@@ -199,7 +205,7 @@ export function ChatSection({
               };
             });
             if (m.sender_id === me) return;
-            if (key === selectedRef.current) {
+            if (key === selectedRef.current && !collapsedRef.current) {
               setUnreadByThread((prev) => ({ ...prev, [key]: 0 }));
               const fd = new FormData();
               fd.set("lottery_type", String(m.lottery_type));
@@ -376,6 +382,20 @@ export function ChatSection({
       cancelled = true;
     };
   }, [me, threads]);
+
+  useEffect(() => {
+    if (collapsed) return;
+    const key = selectedRef.current;
+    if (!key) return;
+    const t = threadsRef.current.find((x) => threadKey(x) === key);
+    if (!t) return;
+    setUnreadByThread((prev) => ({ ...prev, [key]: 0 }));
+    const fd = new FormData();
+    fd.set("lottery_type", String(t.lotteryType));
+    fd.set("drawer_id", t.drawerId);
+    fd.set("drawee_id", t.draweeId);
+    markThreadRead(fd);
+  }, [collapsed]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "nearest" });

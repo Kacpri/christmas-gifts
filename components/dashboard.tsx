@@ -463,6 +463,7 @@ export function Dashboard({
           threads={chats.threads}
           lotteryDone={chats.lotteryDone}
           lateJoiner={chats.lateJoiner}
+          collapsed={!!collapsed["chats"]}
           onUnreadChange={handleUnreadChange}
         />
       ),
