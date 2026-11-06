@@ -24,7 +24,7 @@ export function NameForm({
           : "Tak zobaczą Cię inni uczestnicy."}
       </p>
       <form action={formAction} className="mt-3 flex flex-col gap-3">
-        <div className="flex items-center gap-2">
+        <div className="relative">
           <input
             name="full_name"
             value={nameValue}
@@ -35,12 +35,12 @@ export function NameForm({
             onKeyDown={(e) => {
               if (locked && e.key === "Enter") e.preventDefault();
             }}
-            className={`min-w-0 flex-1 rounded-xl border border-input-line px-3.5 py-2.5 text-sm ${
-              locked ? "bg-mist text-faint" : "bg-input-bg text-ink"
+            className={`rounded-xl border border-input-line px-3.5 py-2.5 text-sm ${
+              locked ? "bg-mist pr-10 text-faint" : "bg-input-bg text-ink"
             }`}
           />
           {locked && (
-            <span className="shrink-0 text-faint">
+            <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-faint">
               <LockIcon />
             </span>
           )}
