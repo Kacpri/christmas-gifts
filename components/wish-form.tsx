@@ -165,11 +165,11 @@ export function WishForm({
                   </p>
                 </div>
                 {!wishesLocked && (
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 overflow-hidden rounded-lg border border-line bg-white text-xs">
                     <button
                       type="button"
                       onClick={() => startEdit(wish)}
-                      className="w-14 text-center text-xs text-muted hover:underline"
+                      className="w-14 py-1 text-center text-muted hover:bg-mist"
                     >
                       edytuj
                     </button>
@@ -177,11 +177,12 @@ export function WishForm({
                       action={(formData) => {
                         removeWish(formData);
                       }}
+                      className="border-l border-line"
                     >
                       <input type="hidden" name="id" value={wish.id} />
                       <button
                         type="submit"
-                        className="w-14 text-center text-xs text-red-600 hover:underline"
+                        className="w-14 py-1 text-center text-red-600 hover:bg-mist"
                       >
                         usuń
                       </button>
