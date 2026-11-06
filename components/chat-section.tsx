@@ -133,6 +133,7 @@ export function ChatSection({
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendMessage, empty);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastSentRef = useRef("");
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const collapsedRef = useRef(collapsed);
@@ -275,7 +276,9 @@ export function ChatSection({
   }, [me]);
 
   useEffect(() => {
-    if (state.ok) setValue("");
+    if (!state.ok && state.error) {
+      setValue((v) => v || lastSentRef.current);
+    }
   }, [state]);
 
   useEffect(() => {
@@ -528,6 +531,10 @@ export function ChatSection({
                 </div>
                 <form
                   action={sendAction}
+                  onSubmit={() => {
+                    lastSentRef.current = value;
+                    setValue("");
+                  }}
                   className="flex items-center gap-2 border-t border-line bg-white p-3"
                 >
                   <input type="hidden" name="lottery_type" value={selectedThread.lotteryType} />

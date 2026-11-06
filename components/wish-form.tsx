@@ -47,6 +47,11 @@ export function WishForm({
   const [editLink, setEditLink] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [undoWish, setUndoWish] = useState<Wish | null>(null);
+  const [localWishes, setLocalWishes] = useState<Wish[]>(wishes);
+
+  useEffect(() => {
+    setLocalWishes(wishes);
+  }, [wishes]);
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);
@@ -74,6 +79,7 @@ export function WishForm({
   }
 
   function handleRemove(wish: Wish) {
+    setLocalWishes((prev) => prev.filter((w) => w.id !== wish.id));
     setUndoWish(wish);
     const fd = new FormData();
     fd.set("id", String(wish.id));
@@ -82,6 +88,7 @@ export function WishForm({
 
   function handleUndo() {
     if (!undoWish) return;
+    setLocalWishes((prev) => [...prev, undoWish]);
     const fd = new FormData();
     fd.set("text", undoWish.text);
     fd.set("link", undoWish.link ?? "");
@@ -100,9 +107,9 @@ export function WishForm({
         </p>
       </div>
 
-      {wishes.length > 0 && (
+      {localWishes.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {wishes.map((wish) =>
+          {localWishes.map((wish) =>
             editingId === wish.id ? (
               <li
                 key={wish.id}
@@ -212,7 +219,7 @@ export function WishForm({
         </ul>
       )}
 
-      {wishes.length >= 5 ? (
+      {localWishes.length >= 5 ? (
         <p className="text-sm text-muted">
           Osiągnięto limit — usuń któreś życzenie, aby dodać nowe
         </p>
@@ -265,20 +272,32 @@ export function WishForm({
       </div>
 
       <form action={saveThemeAction} className="flex flex-col gap-3">
-        <input
-          name="theme"
-          value={themeValue}
-          onChange={(e) => setThemeValue(e.target.value)}
-          required
-          maxLength={300}
-          disabled={themeLocked}
-          placeholder={
-            themeLocked
-              ? "Temat zablokowany"
-              : "np. coś ciepłego na zimowe wieczory"
-          }
-          className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder disabled:bg-mist disabled:text-faint"
-        />
+        <div className="relative">
+          <input
+            name="theme"
+            value={themeValue}
+            onChange={(e) => setThemeValue(e.target.value)}
+            required
+            maxLength={300}
+            readOnly={themeLocked}
+            onKeyDown={(e) => {
+              if (themeLocked && e.key === "Enter") e.preventDefault();
+            }}
+            placeholder={
+              themeLocked
+                ? "Temat zablokowany"
+                : "np. coś ciepłego na zimowe wieczory"
+            }
+            className={`rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
+              themeLocked ? "bg-mist pr-10 text-faint" : "bg-white text-ink"
+            }`}
+          />
+          {themeLocked && (
+            <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-faint">
+              <LockIcon />
+            </span>
+          )}
+        </div>
         {!themeLocked && (
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -335,6 +354,25 @@ export function WishForm({
         )}
       </div>
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
   );
 }
 

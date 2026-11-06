@@ -32,13 +32,16 @@ export function GroupChatSection({
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendGroupMessage, empty);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastSentRef = useRef("");
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
   const localRef = useRef(local);
   localRef.current = local;
 
   useEffect(() => {
-    if (state.ok) setValue("");
+    if (!state.ok && state.error) {
+      setValue((v) => v || lastSentRef.current);
+    }
   }, [state]);
 
   useEffect(() => {
@@ -202,6 +205,10 @@ export function GroupChatSection({
         </div>
         <form
           action={sendAction}
+          onSubmit={() => {
+            lastSentRef.current = value;
+            setValue("");
+          }}
           className="flex items-center gap-2 border-t border-line bg-white p-3"
         >
           <input
