@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 
 import { saveName, type ActionResult } from "@/app/actions";
 
@@ -15,6 +15,15 @@ export function NameForm({
 }) {
   const [state, formAction, pending] = useActionState(saveName, empty);
   const [nameValue, setNameValue] = useState(fullName);
+  const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    if (!pending && state.ok) {
+      setJustSaved(true);
+      const t = setTimeout(() => setJustSaved(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [pending, state]);
 
   return (
     <>
@@ -42,9 +51,14 @@ export function NameForm({
             >
               {pending ? "Zapisywanie…" : "Zapisz"}
             </button>
-            {nameValue.trim() !== "" && nameValue.trim() === fullName && (
-              <span className="text-sm text-accent">Zapisano ✓</span>
-            )}
+            <span aria-live="polite" className="text-sm text-accent">
+              {justSaved && (
+                <span className="inline-flex items-center gap-1">
+                  <CheckIcon />
+                  Zapisano
+                </span>
+              )}
+            </span>
           </div>
         )}
         {!state.ok && state.error && (
@@ -52,5 +66,23 @@ export function NameForm({
         )}
       </form>
     </>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
   );
 }

@@ -25,6 +25,7 @@
   --color-input-line: #cfdcd3;
   --color-input-bg: #f9fbfa;
   --color-list-ink: #0f4a29;
+  --color-placeholder: #6b766f;
 }
 
 @theme inline {

@@ -181,6 +181,7 @@ function TagIcon() {
 function PanelCard({
   id,
   title,
+  titleBadge,
   badge,
   subtitle,
   headerRight,
@@ -194,6 +195,7 @@ function PanelCard({
 }: {
   id: PanelId;
   title: string;
+  titleBadge?: ReactNode;
   badge: number;
   subtitle?: string;
   headerRight?: ReactNode;
@@ -242,11 +244,14 @@ function PanelCard({
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <h2
-            className={`${compact ? "text-[22px]" : "text-[26px]"} text-accent`}
-          >
-            {title}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              className={`${compact ? "text-[22px]" : "text-[26px]"} text-accent`}
+            >
+              {title}
+            </h2>
+            {titleBadge}
+          </div>
           {subtitle && (
             <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
           )}
@@ -631,6 +636,13 @@ export function Dashboard({
         key={id}
         id={id}
         title={panels[id].title}
+        titleBadge={
+          id === "wishes" ? (
+            <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent">
+              {wishes.wishes.length}/5
+            </span>
+          ) : undefined
+        }
         badge={
           id === "chats" && collapsed[id]
             ? chatUnread

@@ -46,10 +46,19 @@ export function WishForm({
   const [editText, setEditText] = useState("");
   const [editLink, setEditLink] = useState("");
   const [editPrice, setEditPrice] = useState("");
+  const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);
   }, [editState]);
+
+  useEffect(() => {
+    if (!savingTheme && themeState.ok) {
+      setJustSaved(true);
+      const t = setTimeout(() => setJustSaved(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [savingTheme, themeState]);
 
   function startEdit(wish: Wish) {
     setEditingId(wish.id);
@@ -72,7 +81,7 @@ export function WishForm({
         <p className="text-sm text-stone-500">
           {wishesLocked
             ? "Po losowaniu możesz tylko dodawać nowe życzenia."
-            : "Maksymalnie 5 pozycji. Widzi je tylko osoba, która Cię wylosuje."}
+            : "Widzi je tylko osoba, która Cię wylosuje."}
         </p>
       </div>
 
@@ -97,7 +106,7 @@ export function WishForm({
                     onChange={(e) => setEditText(e.target.value)}
                     required
                     maxLength={500}
-                    className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+                    className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
                   />
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <input
@@ -106,17 +115,17 @@ export function WishForm({
                       value={editLink}
                       onChange={(e) => setEditLink(e.target.value)}
                       placeholder="Link (opcjonalnie)"
-                      className="flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+                      className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
                     />
                     <input
                       name="price"
                       type="number"
                       min="0"
                       step="0.01"
-                      value={editPrice}
-                      onChange={(e) => setEditPrice(e.target.value)}
-                      placeholder="Cena (zł, opcjonalnie)"
-                      className="w-full rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink sm:w-44"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    placeholder="Cena (zł)"
+                    className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
                     />
                   </div>
                   <div className="flex items-center gap-3">
@@ -201,22 +210,22 @@ export function WishForm({
           required
           maxLength={500}
           placeholder="Czego sobie życzysz? (np. kubek, książka, voucher)"
-          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+          className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             name="link"
             type="url"
             placeholder="Link (opcjonalnie)"
-            className="flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+            className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
           <input
             name="price"
             type="number"
             min="0"
             step="0.01"
-            placeholder="Cena (zł, opcjonalnie)"
-            className="w-full rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink sm:w-44"
+            placeholder="Cena (zł)"
+            className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
           />
         </div>
         <div className="flex items-center gap-3">
@@ -228,9 +237,7 @@ export function WishForm({
             {addingWish ? "Dodawanie…" : "Dodaj życzenie"}
           </button>
           {wishes.length >= 5 && (
-            <span className="text-xs text-stone-500">
-              Limit 5 życzeń osiągnięty
-            </span>
+            <span className="text-xs text-stone-500">Osiągnięto limit</span>
           )}
         </div>
         {!wishState.ok && wishState.error && (
@@ -261,13 +268,13 @@ export function WishForm({
               ? "Temat zablokowany"
               : "np. coś ciepłego na zimowe wieczory"
           }
-          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink disabled:bg-mist disabled:text-faint"
+          className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder disabled:bg-mist disabled:text-faint"
         />
         {!themeLocked && (
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
-              disabled={savingTheme}
+              disabled={savingTheme || themeValue.trim() === (theme ?? "")}
               className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
             >
               {savingTheme ? "Zapisywanie…" : "Zapisz temat"}
@@ -276,13 +283,19 @@ export function WishForm({
               type="button"
               onClick={drawTheme}
               disabled={savingTheme}
-              className="w-fit rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+              className="w-fit inline-flex items-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
             >
-              Losuj temat dla mnie
+              <DiceIcon />
+              Podpowiedz temat
             </button>
-            {theme != null && themeValue.trim() === theme && (
-              <span className="text-sm text-accent">Zapisano ✓</span>
-            )}
+            <span aria-live="polite" className="text-sm text-accent">
+              {justSaved && (
+                <span className="inline-flex items-center gap-1">
+                  <CheckIcon />
+                  Zapisano
+                </span>
+              )}
+            </span>
           </div>
         )}
         {!themeState.ok && themeState.error && (
@@ -290,5 +303,46 @@ export function WishForm({
         )}
       </form>
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+function DiceIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <circle cx="8.5" cy="8.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="8.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
   );
 }
