@@ -144,7 +144,7 @@ export function WishForm({
             ) : (
               <li
                 key={wish.id}
-                className="flex items-start justify-between gap-3 rounded-[10px] bg-mist p-3"
+                className="flex items-center justify-between gap-3 rounded-[10px] bg-mist p-3"
               >
                 <div className="text-sm">
                   <p>{wish.text}</p>
@@ -165,11 +165,11 @@ export function WishForm({
                   </p>
                 </div>
                 {!wishesLocked && (
-                  <div className="flex shrink-0 items-center gap-3">
+                  <div className="flex shrink-0 items-center gap-2">
                     <button
                       type="button"
                       onClick={() => startEdit(wish)}
-                      className="text-xs text-muted hover:underline"
+                      className="w-14 text-center text-xs text-muted hover:underline"
                     >
                       edytuj
                     </button>
@@ -181,7 +181,7 @@ export function WishForm({
                       <input type="hidden" name="id" value={wish.id} />
                       <button
                         type="submit"
-                        className="text-xs text-red-600 hover:underline"
+                        className="w-14 text-center text-xs text-red-600 hover:underline"
                       >
                         usuń
                       </button>

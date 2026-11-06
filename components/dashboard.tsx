@@ -182,6 +182,10 @@ function PanelCard({
   id,
   title,
   badge,
+  subtitle,
+  headerRight,
+  noCollapse,
+  compact,
   collapsed,
   onToggle,
   editMode,
@@ -191,6 +195,10 @@ function PanelCard({
   id: PanelId;
   title: string;
   badge: number;
+  subtitle?: string;
+  headerRight?: ReactNode;
+  noCollapse?: boolean;
+  compact?: boolean;
   collapsed: boolean;
   onToggle: () => void;
   editMode: boolean;
@@ -207,12 +215,15 @@ function PanelCard({
 
   return (
     <section
+      id={`panel-${id}`}
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`rounded-2xl p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+      className={`rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+        compact ? "px-5 py-3.5" : "p-5"
+      } ${
         isHole
           ? "border border-dashed border-amber-400 bg-amber-50/60 opacity-60"
           : `bg-white ${editMode ? "ring-2 ring-amber-300" : ""}`
@@ -230,23 +241,42 @@ function PanelCard({
             <GripIcon />
           </button>
         )}
-        <h2 className="flex-1 text-[26px] text-accent">{title}</h2>
-        {badge > 0 && (
-          <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
-            {badge}
-          </span>
+        <div className="min-w-0 flex-1">
+          <h2
+            className={`${compact ? "text-[22px]" : "text-[26px]"} text-accent`}
+          >
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
+          )}
+        </div>
+        {headerRight !== undefined ? (
+          headerRight
+        ) : (
+          <>
+            {badge > 0 && (
+              <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
+                {badge}
+              </span>
+            )}
+            {!noCollapse && (
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? `Rozwiń: ${title}` : `Zwiń: ${title}`}
+                className="rounded p-1 text-muted hover:bg-mist hover:text-ink"
+              >
+                <ChevronIcon className={collapsed ? "" : "rotate-180"} />
+              </button>
+            )}
+          </>
         )}
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? `Rozwiń: ${title}` : `Zwiń: ${title}`}
-          className="rounded p-1 text-muted hover:bg-mist hover:text-ink"
-        >
-          <ChevronIcon className={collapsed ? "" : "rotate-180"} />
-        </button>
       </div>
-      <div className={collapsed ? "hidden" : "mt-3"}>{children}</div>
+      {children ? (
+        <div className={collapsed ? "hidden" : "mt-3"}>{children}</div>
+      ) : null}
     </section>
   );
 }
@@ -334,6 +364,69 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
       </article>
     </div>
   );
+}
+
+function ReadyDoneBadge() {
+  return (
+    <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-sage-200 px-2.5 text-xs font-bold text-list-ink">
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
+      Gotowe
+    </span>
+  );
+}
+
+function readyHeader(
+  ready: {
+    hasWish: boolean;
+    hasTheme: boolean;
+    isReady: boolean;
+    lotteryDone: boolean;
+    lateJoiner: boolean;
+  },
+  onMissingClick: () => void
+): { subtitle: string; badge: ReactNode } {
+  if (ready.lateJoiner) {
+    return {
+      subtitle: "Losowanie już się odbyło — gotowość nie jest wymagana.",
+      badge: null,
+    };
+  }
+  if (ready.lotteryDone) {
+    return { subtitle: "Losowanie już się odbyło.", badge: null };
+  }
+  if (ready.isReady) {
+    return { subtitle: "Dodane: życzenia i temat prezentu", badge: <ReadyDoneBadge /> };
+  }
+  const missing = [
+    !ready.hasWish && "życzenia",
+    !ready.hasTheme && "temat",
+  ]
+    .filter(Boolean)
+    .join(" i ");
+  return {
+    subtitle: "Potwierdź gotowość, gdy uzupełnisz listę życzeń i temat.",
+    badge: (
+      <button
+        type="button"
+        onClick={onMissingClick}
+        className="inline-flex h-[26px] items-center rounded-full bg-honey-200 px-2.5 text-xs font-bold text-honey-800 hover:opacity-80"
+      >
+        Brakuje: {missing}
+      </button>
+    ),
+  };
 }
 
 export function Dashboard({
@@ -511,28 +604,48 @@ export function Dashboard({
     },
   };
 
-  const cards = visible.map((id) => (
-    <PanelCard
-      key={id}
-      id={id}
-      title={panels[id].title}
-      badge={
-        id === "chats" && collapsed[id]
-          ? chatUnread
-          : id === "group-chat" && collapsed[id]
-            ? groupUnread
-            : 0
-      }
-      collapsed={!!collapsed[id]}
-      onToggle={() =>
-        setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }))
-      }
-      editMode={editMode}
-      isHole={activeId === id}
-    >
-      {panels[id].body}
-    </PanelCard>
-  ));
+  function goToWishes() {
+    setCollapsed((prev) => ({ ...prev, wishes: false }));
+    document
+      .getElementById("panel-wishes")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const cards = visible.map((id) => {
+    const isReadyPanel = id === "ready";
+    const readyInfo = isReadyPanel
+      ? readyHeader(ready, goToWishes)
+      : null;
+    return (
+      <PanelCard
+        key={id}
+        id={id}
+        title={panels[id].title}
+        badge={
+          id === "chats" && collapsed[id]
+            ? chatUnread
+            : id === "group-chat" && collapsed[id]
+              ? groupUnread
+              : 0
+        }
+        subtitle={readyInfo?.subtitle}
+        headerRight={readyInfo ? readyInfo.badge : undefined}
+        noCollapse={isReadyPanel}
+        compact={isReadyPanel}
+        collapsed={isReadyPanel ? false : !!collapsed[id]}
+        onToggle={() =>
+          setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }))
+        }
+        editMode={editMode}
+        isHole={activeId === id}
+      >
+        {isReadyPanel &&
+        (ready.isReady || ready.lotteryDone || ready.lateJoiner)
+          ? null
+          : panels[id].body}
+      </PanelCard>
+    );
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-[680px] flex-1 flex-col gap-5 px-5 pb-16 pt-7">
@@ -600,16 +713,18 @@ export function Dashboard({
           <DragOverlay>
             {activeId ? (
               <section className="rounded-2xl bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
-                <div className="flex items-center gap-2">
-                  <GripIcon />
-                  <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
+              <div className="flex items-center gap-2">
+                <GripIcon />
+                <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
+                {activeId !== "ready" && (
                   <ChevronIcon
                     className={collapsed[activeId] ? "" : "rotate-180"}
                   />
-                </div>
-                {!collapsed[activeId] && (
-                  <div className="mt-3">{panels[activeId].body}</div>
                 )}
+              </div>
+              {(activeId === "ready" || !collapsed[activeId]) && (
+                <div className="mt-3">{panels[activeId].body}</div>
+              )}
               </section>
             ) : null}
           </DragOverlay>
