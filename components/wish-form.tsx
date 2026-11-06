@@ -288,7 +288,7 @@ export function WishForm({
                 ? "Temat zablokowany"
                 : "np. coś ciepłego na zimowe wieczory"
             }
-            className={`rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
+            className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
               themeLocked ? "bg-mist pr-10 text-faint" : "bg-white text-ink"
             }`}
           />

@@ -35,7 +35,7 @@ export function NameForm({
             onKeyDown={(e) => {
               if (locked && e.key === "Enter") e.preventDefault();
             }}
-            className={`rounded-xl border border-input-line px-3.5 py-2.5 text-sm ${
+            className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm ${
               locked ? "bg-mist pr-10 text-faint" : "bg-input-bg text-ink"
             }`}
           />
