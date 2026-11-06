@@ -61,7 +61,6 @@ export default async function Home() {
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
   const isReady = profile?.is_ready ?? false;
   const locked = lotteryDone || isReady;
-  const wishesLocked = lotteryDone;
 
   const { data: lotteryActiveData } = await supabase.rpc("lottery_active");
   const lotteryActive = lotteryActiveData === true;
@@ -236,7 +235,6 @@ export default async function Home() {
       wishes={{
         wishes: myWishes ?? [],
         theme: myTheme?.theme ?? null,
-        wishesLocked,
         themeLocked: locked,
       }}
       ready={{

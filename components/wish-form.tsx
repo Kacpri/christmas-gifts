@@ -24,12 +24,10 @@ const empty: ActionResult = { ok: false };
 export function WishForm({
   wishes,
   theme,
-  wishesLocked,
   themeLocked,
 }: {
   wishes: Wish[];
   theme: string | null;
-  wishesLocked: boolean;
   themeLocked: boolean;
 }) {
   const [wishState, addWishAction, addingWish] = useActionState(addWish, empty);
@@ -101,8 +99,8 @@ export function WishForm({
     <div className="flex flex-col gap-6">
       <div>
         <p className="text-sm text-stone-500">
-          {wishesLocked
-            ? "Po losowaniu możesz tylko dodawać nowe życzenia."
+          {themeLocked
+            ? "Temat prezentu pozostaje zablokowany."
             : "Widzi je tylko osoba, która Cię wylosuje."}
         </p>
       </div>
@@ -195,24 +193,22 @@ export function WishForm({
                     )}
                   </p>
                 </div>
-                {!wishesLocked && (
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(wish)}
-                      className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-muted hover:bg-sage-50"
-                    >
-                      edytuj
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(wish)}
-                      className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-[#a3201a] hover:bg-sage-50"
-                    >
-                      usuń
-                    </button>
-                  </div>
-                )}
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(wish)}
+                    className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-muted hover:bg-sage-50"
+                  >
+                    edytuj
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(wish)}
+                    className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-[#a3201a] hover:bg-sage-50"
+                  >
+                    usuń
+                  </button>
+                </div>
               </li>
             )
           )}

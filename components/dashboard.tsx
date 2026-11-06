@@ -467,7 +467,6 @@ export function Dashboard({
   wishes: {
     wishes: Wish[];
     theme: string | null;
-    wishesLocked: boolean;
     themeLocked: boolean;
   };
   ready: {
@@ -604,7 +603,6 @@ export function Dashboard({
         <WishForm
           wishes={wishes.wishes}
           theme={wishes.theme}
-          wishesLocked={wishes.wishesLocked}
           themeLocked={wishes.themeLocked}
         />
       ),
