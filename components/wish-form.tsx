@@ -47,6 +47,7 @@ export function WishForm({
   const [editLink, setEditLink] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [justSaved, setJustSaved] = useState(false);
+  const [undoWish, setUndoWish] = useState<Wish | null>(null);
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);
@@ -59,6 +60,12 @@ export function WishForm({
       return () => clearTimeout(t);
     }
   }, [savingTheme, themeState]);
+
+  useEffect(() => {
+    if (!undoWish) return;
+    const t = setTimeout(() => setUndoWish(null), 5000);
+    return () => clearTimeout(t);
+  }, [undoWish]);
 
   function startEdit(wish: Wish) {
     setEditingId(wish.id);
@@ -73,6 +80,23 @@ export function WishForm({
     const fd = new FormData();
     fd.set("theme", idea);
     saveThemeAction(fd);
+  }
+
+  function handleRemove(wish: Wish) {
+    setUndoWish(wish);
+    const fd = new FormData();
+    fd.set("id", String(wish.id));
+    removeWish(fd);
+  }
+
+  function handleUndo() {
+    if (!undoWish) return;
+    const fd = new FormData();
+    fd.set("text", undoWish.text);
+    fd.set("link", undoWish.link ?? "");
+    fd.set("price", undoWish.price != null ? String(undoWish.price) : "");
+    addWishAction(fd);
+    setUndoWish(null);
   }
 
   return (
@@ -153,7 +177,7 @@ export function WishForm({
             ) : (
               <li
                 key={wish.id}
-                className="flex items-center justify-between gap-3 rounded-[10px] bg-mist p-3"
+                className="flex min-h-16 items-center justify-between gap-3 rounded-[10px] bg-mist p-3"
               >
                 <div className="text-sm">
                   <p>{wish.text}</p>
@@ -174,28 +198,21 @@ export function WishForm({
                   </p>
                 </div>
                 {!wishesLocked && (
-                  <div className="flex shrink-0 overflow-hidden rounded-lg border border-line bg-white text-xs">
+                  <div className="flex shrink-0 gap-2">
                     <button
                       type="button"
                       onClick={() => startEdit(wish)}
-                      className="w-14 py-1 text-center text-muted hover:bg-mist"
+                      className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-muted hover:bg-sage-50"
                     >
                       edytuj
                     </button>
-                    <form
-                      action={(formData) => {
-                        removeWish(formData);
-                      }}
-                      className="border-l border-line"
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(wish)}
+                      className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-[#a3201a] hover:bg-sage-50"
                     >
-                      <input type="hidden" name="id" value={wish.id} />
-                      <button
-                        type="submit"
-                        className="w-14 py-1 text-center text-red-600 hover:bg-mist"
-                      >
-                        usuń
-                      </button>
-                    </form>
+                      usuń
+                    </button>
                   </div>
                 )}
               </li>
@@ -204,46 +221,47 @@ export function WishForm({
         </ul>
       )}
 
-      <form action={addWishAction} className="flex flex-col gap-3">
-        <input
-          name="text"
-          required
-          maxLength={500}
-          placeholder="Czego sobie życzysz? (np. kubek, książka, voucher)"
-          className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-        />
-        <div className="flex flex-col gap-3 sm:flex-row">
+      {wishes.length >= 5 ? (
+        <p className="text-sm text-muted">
+          Osiągnięto limit — usuń któreś życzenie, aby dodać nowe
+        </p>
+      ) : (
+        <form action={addWishAction} className="flex flex-col gap-3">
           <input
-            name="link"
-            type="url"
-            placeholder="Link (opcjonalnie)"
-            className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            name="text"
+            required
+            maxLength={500}
+            placeholder="Czego sobie życzysz? (np. kubek, książka, voucher)"
+            className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
-          <input
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Cena (zł)"
-            className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
-          />
-        </div>
-        <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              name="link"
+              type="url"
+              placeholder="Link (opcjonalnie)"
+              className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            />
+            <input
+              name="price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Cena (zł)"
+              className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
+            />
+          </div>
           <button
             type="submit"
-            disabled={addingWish || wishes.length >= 5}
+            disabled={addingWish}
             className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
           >
             {addingWish ? "Dodawanie…" : "Dodaj życzenie"}
           </button>
-          {wishes.length >= 5 && (
-            <span className="text-xs text-stone-500">Osiągnięto limit</span>
+          {!wishState.ok && wishState.error && (
+            <p className="text-sm text-red-600">{wishState.error}</p>
           )}
-        </div>
-        {!wishState.ok && wishState.error && (
-          <p className="text-sm text-red-600">{wishState.error}</p>
-        )}
-      </form>
+        </form>
+      )}
 
       <hr className="border-line" />
 
@@ -302,6 +320,24 @@ export function WishForm({
           <p className="text-sm text-red-600">{themeState.error}</p>
         )}
       </form>
+
+      <div
+        aria-live="polite"
+        className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2"
+      >
+        {undoWish && (
+          <div className="flex items-center gap-3 rounded-xl bg-ink px-4 py-2.5 text-sm text-white shadow-lg">
+            Usunięto
+            <button
+              type="button"
+              onClick={handleUndo}
+              className="font-semibold underline underline-offset-2 hover:text-cream"
+            >
+              Cofnij
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
