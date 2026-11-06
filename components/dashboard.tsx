@@ -409,6 +409,16 @@ function readyHeader(
   if (ready.isReady) {
     return { subtitle: "Dodane: życzenia i temat prezentu", badge: <ReadyDoneBadge /> };
   }
+  if (ready.hasWish && ready.hasTheme) {
+    return {
+      subtitle: "Wszystko uzupełnione — potwierdź gotowość.",
+      badge: (
+        <span className="inline-flex h-[26px] items-center rounded-full bg-honey-200 px-2.5 text-xs font-bold text-honey-800">
+          Do potwierdzenia
+        </span>
+      ),
+    };
+  }
   const missing = [
     !ready.hasWish && "życzenia",
     !ready.hasTheme && "temat",
