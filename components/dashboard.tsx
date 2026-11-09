@@ -402,12 +402,12 @@ function PanelCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+      className={`rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
-          ? "border border-dashed border-amber-400 bg-amber-50/60 opacity-60"
-          : `bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
+          ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
+          : `border-line bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
       } ${wide ? "md:col-span-2" : ""}`}
     >
       <div className="flex items-center gap-2">

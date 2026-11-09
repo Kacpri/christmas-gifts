@@ -276,7 +276,10 @@ export function WishForm({
                 Dodawanie…
               </>
             ) : (
-              "Dodaj życzenie"
+              <>
+                <PlusCircleIcon />
+                Dodaj życzenie
+              </>
             )}
           </button>
           {!wishState.ok && wishState.error && (
@@ -432,6 +435,26 @@ function SpinnerIcon() {
       aria-hidden
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
+}
+
+function PlusCircleIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 12h8" />
+      <path d="M12 8v8" />
     </svg>
   );
 }

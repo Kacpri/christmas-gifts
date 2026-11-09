@@ -413,6 +413,16 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
 
       <form action={addAction} className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row">
+          <Select
+            name="category"
+            value={addCategory}
+            onChange={(v) => setAddCategory(v as DishCategory)}
+            options={CATEGORY_OPTIONS}
+            direction="up"
+            scrollable={false}
+            leadingIcon={<TagIcon />}
+            className="sm:w-[150px]"
+          />
           <input
             name="name"
             required
@@ -425,15 +435,6 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             maxLength={50}
             placeholder="Ilość (np. 2 kg)"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
-          />
-          <Select
-            name="category"
-            value={addCategory}
-            onChange={(v) => setAddCategory(v as DishCategory)}
-            options={CATEGORY_OPTIONS}
-            direction="up"
-            scrollable={false}
-            className="sm:w-[150px]"
           />
         </div>
         <button

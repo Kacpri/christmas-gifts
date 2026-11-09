@@ -91,8 +91,8 @@ html[data-theme="dark"] .app-shell {
   background: linear-gradient(180deg, #061a13 0%, #0d3524 100%);
 }
 
-html[data-theme="dark"] input::-webkit-calendar-picker-indicator {
-  filter: invert(0.85) brightness(1.2);
+input::-webkit-calendar-picker-indicator {
+  opacity: 0;
 }
 
 h1,
