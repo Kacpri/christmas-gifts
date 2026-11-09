@@ -563,7 +563,11 @@ export function Dashboard({
     }
   }
 
-  const visible = order.filter((id) => id !== "organizer" || organizer);
+  const visible = order.filter(
+    (id) =>
+      (id !== "organizer" || organizer) &&
+      (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner))
+  );
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
     profile: {
