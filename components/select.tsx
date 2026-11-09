@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type SelectOption = { value: string; label: string };
 
@@ -12,6 +12,7 @@ export function Select({
   className,
   direction = "down",
   scrollable = true,
+  leadingIcon,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -20,6 +21,7 @@ export function Select({
   className?: string;
   direction?: "down" | "up";
   scrollable?: boolean;
+  leadingIcon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -51,9 +53,14 @@ export function Select({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-left text-sm text-ink"
+        className="flex w-full items-center gap-2 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-left text-sm text-ink"
       >
-        <span className="truncate">{selected?.label ?? ""}</span>
+        {leadingIcon && (
+          <span className="shrink-0 text-muted" aria-hidden>
+            {leadingIcon}
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate">{selected?.label ?? ""}</span>
         <svg
           width="14"
           height="14"

@@ -84,6 +84,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [editQuantity, setEditQuantity] = useState("");
   const [editCategory, setEditCategory] = useState<DishCategory>("glowne");
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);
@@ -166,53 +167,83 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
           Wspólna lista potraw — każdy dodaje to, co przynosi.
         </p>
         <div className="mt-2 flex flex-col gap-2">
-          <input
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Szukaj potrawy…"
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-          />
           <div className="flex gap-2">
-            <Select
-              value={personFilter}
-              onChange={(v) => {
-                setPersonFilter(v);
-                setPage(1);
-              }}
-              options={personOptions}
-              className="flex-1"
-            />
-            <Select
-              value={categoryFilter}
-              onChange={(v) => {
-                setCategoryFilter(v);
-                setPage(1);
-              }}
-              options={categoryFilterOptions}
-              scrollable={false}
-              className="flex-1"
-            />
-            <div className="flex flex-1 items-center gap-1.5">
+            <div className="relative flex-1">
+              <span
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                aria-hidden
+              >
+                <SearchIcon />
+              </span>
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Szukaj potrawy…"
+                className="w-full rounded-xl border border-input-line bg-surface py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder:text-placeholder"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((o) => !o)}
+              aria-expanded={filtersOpen}
+              aria-label={filtersOpen ? "Ukryj filtry" : "Pokaż filtry"}
+              className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
+            >
+              <FunnelIcon />
+              {(personFilter !== "all" || categoryFilter !== "all") && (
+                <span
+                  className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent"
+                  aria-hidden
+                />
+              )}
+            </button>
+          </div>
+          {filtersOpen && (
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Select
-                value={sortField}
-                onChange={handleSortField}
-                options={SORT_OPTIONS}
+                leadingIcon={<UserIcon />}
+                value={personFilter}
+                onChange={(v) => {
+                  setPersonFilter(v);
+                  setPage(1);
+                }}
+                options={personOptions}
                 className="flex-1"
               />
-              <button
-                type="button"
-                onClick={toggleSortDir}
-                aria-label="Odwróć kierunek sortowania"
-                title={sortDir === "asc" ? "Rosnąco" : "Malejąco"}
-                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
-              >
-                <SortDirIcon dir={sortDir} />
-              </button>
+              <Select
+                leadingIcon={<TagIcon />}
+                value={categoryFilter}
+                onChange={(v) => {
+                  setCategoryFilter(v);
+                  setPage(1);
+                }}
+                options={categoryFilterOptions}
+                scrollable={false}
+                className="flex-1"
+              />
+              <div className="flex flex-1 items-center gap-1.5">
+                <Select
+                  leadingIcon={<SortFieldIcon field={sortField} />}
+                  value={sortField}
+                  onChange={handleSortField}
+                  options={SORT_OPTIONS}
+                  className="flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={toggleSortDir}
+                  aria-label="Odwróć kierunek sortowania"
+                  title={sortDir === "asc" ? "Rosnąco" : "Malejąco"}
+                  className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
+                >
+                  <SortDirIcon dir={sortDir} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -409,7 +440,10 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               Dodawanie…
             </>
           ) : (
-            "Dodaj potrawę"
+            <>
+              <PlusCircleIcon />
+              Dodaj potrawę
+            </>
           )}
         </button>
         {!addState.ok && addState.error && (
@@ -499,4 +533,145 @@ function SpinnerIcon() {
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
     </svg>
   );
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
+      <path d="M7.5 7.5h.01" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
+function TypeIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <polyline points="4 7 4 4 20 4 20 7" />
+      <line x1="9" x2="15" y1="20" y2="20" />
+      <line x1="12" x2="12" y1="4" y2="20" />
+    </svg>
+  );
+}
+
+function FunnelIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
+}
+
+function PlusCircleIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 12h8" />
+      <path d="M12 8v8" />
+    </svg>
+  );
+}
+
+function SortFieldIcon({ field }: { field: SortField }) {
+  if (field === "time") return <ClockIcon />;
+  if (field === "name") return <TypeIcon />;
+  if (field === "person") return <UserIcon />;
+  return <TagIcon />;
 }
