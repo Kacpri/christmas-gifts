@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { type ActionResult } from "@/app/actions";
+import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { timeOf } from "@/lib/format";
 
 const empty: ActionResult = { ok: false };
@@ -68,6 +69,7 @@ export function MessageBubble({
     empty
   );
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const touchTimer = useRef<number | null>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -255,19 +257,21 @@ export function MessageBubble({
               Edytuj
             </button>
             <form
-              action={(fd: FormData) => {
-                deleteAction(fd);
-              }}
               onSubmit={(e) => {
-                if (!window.confirm("Usunąć wiadomość?")) {
-                  e.preventDefault();
-                }
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                setMenu(null);
+                setConfirm({
+                  message: "Usunąć wiadomość?",
+                  confirmLabel: "Usuń",
+                  tone: "danger",
+                  onConfirm: () => deleteAction(fd),
+                });
               }}
             >
               <input type="hidden" name="id" value={message.id} />
               <button
                 type="submit"
-                onClick={() => setMenu(null)}
                 className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-stone-100"
               >
                 Usuń
@@ -276,6 +280,8 @@ export function MessageBubble({
           </div>
         </>
       )}
+
+      <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

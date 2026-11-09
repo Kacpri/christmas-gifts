@@ -11,6 +11,7 @@ import {
   setReadyForUser,
   type ActionResult,
 } from "@/app/actions";
+import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 
 const empty: ActionResult = { ok: false };
 
@@ -56,6 +57,7 @@ export function OrganizerPanel({
   );
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
   function startEditName(p: { id: string; full_name: string }) {
     setEditingNameId(p.id);
@@ -82,16 +84,19 @@ export function OrganizerPanel({
 
       <form
         className="flex flex-col items-start gap-2"
-        action={(formData: FormData) => {
-          if (
-            lotteryDone &&
-            !window.confirm(
-              "Powtórzyć losowanie? Obecne wyniki zostaną zastąpione."
-            )
-          ) {
+        onSubmit={(e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          if (lotteryDone) {
+            setConfirm({
+              message: "Powtórzyć losowanie? Obecne wyniki zostaną zastąpione.",
+              confirmLabel: "Powtórz",
+              tone: "danger",
+              onConfirm: () => formAction(fd),
+            });
             return;
           }
-          formAction(formData);
+          formAction(fd);
         }}
       >
         <button
@@ -122,14 +127,16 @@ export function OrganizerPanel({
 
       {lotteryDone && (
         <form
-          action={(formData: FormData) => {
-            if (
-              window.confirm(
-                "Anulować losowanie? Wyniki zostaną usunięte, a życzenia i tematy odblokowane."
-              )
-            ) {
-              cancelAction(formData);
-            }
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            setConfirm({
+              message:
+                "Anulować losowanie? Wyniki zostaną usunięte, a życzenia i tematy odblokowane.",
+              confirmLabel: "Anuluj",
+              tone: "danger",
+              onConfirm: () => cancelAction(fd),
+            });
           }}
         >
           <button
@@ -154,14 +161,16 @@ export function OrganizerPanel({
 
       {lotteryDone && (
         <form
-          action={(formData: FormData) => {
-            if (
-              window.confirm(
-                "Wysłać maile z wynikami losowania do wszystkich uczestników?"
-              )
-            ) {
-              emailAction(formData);
-            }
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            setConfirm({
+              message:
+                "Wysłać maile z wynikami losowania do wszystkich uczestników?",
+              confirmLabel: "Wyślij",
+              tone: "primary",
+              onConfirm: () => emailAction(fd),
+            });
           }}
         >
           <button
@@ -219,27 +228,28 @@ export function OrganizerPanel({
                     edytuj
                   </button>
                   <form
-                    action={(formData) => {
-                      formData.set("id", p.id);
-                      formData.set("is_ready", String(!p.is_ready));
-                      setReadyAction(formData);
-                    }}
                     onSubmit={(e) => {
+                      e.preventDefault();
+                      const fd = new FormData(e.currentTarget);
+                      fd.set("id", p.id);
+                      fd.set("is_ready", String(!p.is_ready));
                       if (!p.is_ready) {
                         const missing: string[] = [];
                         if (!p.has_theme) missing.push("tematu");
                         if (p.wish_count < 2) missing.push("min. 2 życzeń");
-                        if (
-                          missing.length > 0 &&
-                          !window.confirm(
-                            `${p.full_name} nie ma: ${missing.join(
+                        if (missing.length > 0) {
+                          setConfirm({
+                            message: `${p.full_name} nie ma: ${missing.join(
                               " i "
-                            )}. Oznaczyć jako gotowego mimo to?`
-                          )
-                        ) {
-                          e.preventDefault();
+                            )}. Oznaczyć jako gotowego mimo to?`,
+                            confirmLabel: "Oznacz mimo to",
+                            tone: "primary",
+                            onConfirm: () => setReadyAction(fd),
+                          });
+                          return;
                         }
                       }
+                      setReadyAction(fd);
                     }}
                   >
                     <button
@@ -251,15 +261,15 @@ export function OrganizerPanel({
                     </button>
                   </form>
                   <form
-                    action={(formData) => {
-                      removeUser(formData);
-                    }}
                     onSubmit={(e) => {
-                      if (
-                        !window.confirm(`Usunąć ${p.full_name} z losowania?`)
-                      ) {
-                        e.preventDefault();
-                      }
+                      e.preventDefault();
+                      const fd = new FormData(e.currentTarget);
+                      setConfirm({
+                        message: `Usunąć ${p.full_name} z losowania?`,
+                        confirmLabel: "Usuń",
+                        tone: "danger",
+                        onConfirm: () => removeUser(fd),
+                      });
                     }}
                   >
                     <input type="hidden" name="id" value={p.id} />
@@ -331,13 +341,15 @@ export function OrganizerPanel({
               >
                 <span>{p.full_name}</span>
                 <form
-                  action={(formData) => {
-                    removeUser(formData);
-                  }}
                   onSubmit={(e) => {
-                    if (!window.confirm(`Usunąć ${p.full_name}?`)) {
-                      e.preventDefault();
-                    }
+                    e.preventDefault();
+                    const fd = new FormData(e.currentTarget);
+                    setConfirm({
+                      message: `Usunąć ${p.full_name}?`,
+                      confirmLabel: "Usuń",
+                      tone: "danger",
+                      onConfirm: () => removeUser(fd),
+                    });
                   }}
                 >
                   <input type="hidden" name="id" value={p.id} />
@@ -353,6 +365,8 @@ export function OrganizerPanel({
           </ul>
         </div>
       )}
+
+      <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </div>
   );
 }

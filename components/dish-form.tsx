@@ -9,6 +9,7 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { Select } from "@/components/select";
+import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import {
   DISH_CATEGORIES,
   dishCategoryBadge,
@@ -82,6 +83,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [editName, setEditName] = useState("");
   const [editQuantity, setEditQuantity] = useState("");
   const [editCategory, setEditCategory] = useState<DishCategory>("glowne");
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);
@@ -133,13 +135,16 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   }
 
   function handleRemove(dish: Dish) {
-    const ok = window.confirm(
-      `Usunąć potrawę „${dish.name}"? Tej operacji nie można cofnąć.`
-    );
-    if (!ok) return;
-    const fd = new FormData();
-    fd.set("id", String(dish.id));
-    removeDish(fd);
+    setConfirm({
+      message: `Usunąć potrawę „${dish.name}"? Tej operacji nie można cofnąć.`,
+      confirmLabel: "Usuń",
+      tone: "danger",
+      onConfirm: () => {
+        const fd = new FormData();
+        fd.set("id", String(dish.id));
+        removeDish(fd);
+      },
+    });
   }
 
   function handleSortField(v: string) {
@@ -411,6 +416,8 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
           <p className="text-sm text-red-600">{addState.error}</p>
         )}
       </form>
+
+      <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { markReady, type ActionResult } from "@/app/actions";
+import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { plural } from "@/lib/format";
 
 const empty: ActionResult = { ok: false };
@@ -23,6 +24,7 @@ export function ReadySection({
   count: number;
 }) {
   const [state, formAction, pending] = useActionState(markReady, empty);
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
   if (lotteryDone || lateJoiner) return null;
 
@@ -34,14 +36,16 @@ export function ReadySection({
       </p>
       {!isReady && (
         <form
-          action={(formData: FormData) => {
-            if (
-              window.confirm(
-                "Po potwierdzeniu gotowości nie będziesz mógł zmieniać tematu ani imienia i nazwiska. Listę życzeń nadal będziesz mógł edytować do losowania. Tej operacji nie można cofnąć."
-              )
-            ) {
-              formAction(formData);
-            }
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            setConfirm({
+              message:
+                "Po potwierdzeniu gotowości nie będziesz mógł zmieniać tematu ani imienia i nazwiska. Listę życzeń nadal będziesz mógł edytować do losowania. Tej operacji nie można cofnąć.",
+              confirmLabel: "Wszystko gotowe",
+              tone: "primary",
+              onConfirm: () => formAction(fd),
+            });
           }}
           className="flex flex-col gap-2"
         >
@@ -64,6 +68,8 @@ export function ReadySection({
           )}
         </form>
       )}
+
+      <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </div>
   );
 }
