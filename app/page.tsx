@@ -60,7 +60,7 @@ export default async function Home() {
       .eq("user_id", user.id),
     supabase
       .from("dishes")
-      .select("id, user_id, name, category")
+      .select("id, user_id, name, category, quantity")
       .order("created_at"),
   ]);
 
@@ -75,6 +75,7 @@ export default async function Home() {
     category: d.category as DishCategory,
     author: nameById.get(d.user_id) ?? "??",
     isMine: d.user_id === user.id,
+    quantity: d.quantity,
   }));
 
   const { data: lotteryActiveData } = await supabase.rpc("lottery_active");

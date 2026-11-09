@@ -211,20 +211,24 @@ export function WishForm({
                     )}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
                     onClick={() => startEdit(wish)}
-                    className="min-h-10 rounded-xl px-3 text-xs font-medium text-muted hover:bg-[#e0e6e1]"
+                    aria-label="Edytuj życzenie"
+                    title="Edytuj"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-[#e0e6e1]"
                   >
-                    edytuj
+                    <PencilIcon />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(wish)}
-                    className="min-h-10 rounded-xl px-3 text-xs font-medium text-[#a3201a] hover:bg-[#f1d7d4]"
+                    aria-label="Usuń życzenie"
+                    title="Usuń"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[#a3201a] hover:bg-[#f1d7d4]"
                   >
-                    usuń
+                    <TrashIcon />
                   </button>
                 </div>
               </li>
@@ -451,6 +455,47 @@ function DiceIcon() {
       <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
       <circle cx="8.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
       <circle cx="15.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </svg>
   );
 }

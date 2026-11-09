@@ -1,26 +1,34 @@
 export const DISH_CATEGORIES = [
-  { value: "zupa", label: "Zupa", badge: "bg-amber-100 text-amber-800" },
+  { value: "zupa", label: "Zupy", badge: "bg-[#f3ecdd] text-[#8a7042]" },
   {
     value: "przystawka",
-    label: "Przystawka",
-    badge: "bg-lime-100 text-lime-800",
+    label: "Przystawki",
+    badge: "bg-[#eef0dd] text-[#6f7a40]",
   },
-  { value: "glowne", label: "Główne", badge: "bg-rose-100 text-rose-800" },
+  {
+    value: "glowne",
+    label: "Dania główne",
+    badge: "bg-[#f4e5e3] text-[#8a5049]",
+  },
   {
     value: "dodatek",
-    label: "Dodatek",
-    badge: "bg-sky-100 text-sky-800",
+    label: "Dodatki",
+    badge: "bg-[#e4edf1] text-[#4f6d7a]",
   },
   {
     value: "deser",
-    label: "Deser",
-    badge: "bg-fuchsia-100 text-fuchsia-800",
+    label: "Desery",
+    badge: "bg-[#f0e5ee] text-[#7a507a]",
   },
-  { value: "napoj", label: "Napój", badge: "bg-cyan-100 text-cyan-800" },
+  {
+    value: "napoj",
+    label: "Napoje",
+    badge: "bg-[#e1eef0] text-[#3f6d7a]",
+  },
   {
     value: "inne",
     label: "Inne",
-    badge: "bg-stone-200 text-stone-700",
+    badge: "bg-[#ececec] text-[#6b6b6b]",
   },
 ] as const;
 

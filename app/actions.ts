@@ -128,6 +128,7 @@ export async function addDish(
   const { supabase, user } = await requireUser();
   const name = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "");
+  const quantity = String(formData.get("quantity") ?? "").trim();
   if (!name || name.length > 120) {
     return { ok: false, error: "Nazwa potrawy: 1–120 znaków." };
   }
@@ -136,7 +137,7 @@ export async function addDish(
   }
   const { error } = await supabase
     .from("dishes")
-    .insert({ user_id: user.id, name, category });
+    .insert({ user_id: user.id, name, category, quantity: quantity || null });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
@@ -150,6 +151,7 @@ export async function editDish(
   const id = Number(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "");
+  const quantity = String(formData.get("quantity") ?? "").trim();
   if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowa potrawa." };
   if (!name || name.length > 120) {
     return { ok: false, error: "Nazwa potrawy: 1–120 znaków." };
@@ -159,7 +161,7 @@ export async function editDish(
   }
   const { error } = await supabase
     .from("dishes")
-    .update({ name, category })
+    .update({ name, category, quantity: quantity || null })
     .eq("id", id)
     .eq("user_id", user.id);
   if (error) return { ok: false, error: error.message };
