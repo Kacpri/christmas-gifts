@@ -11,6 +11,7 @@ export function Select({
   name,
   className,
   direction = "down",
+  scrollable = true,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -18,6 +19,7 @@ export function Select({
   name?: string;
   className?: string;
   direction?: "down" | "up";
+  scrollable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -80,7 +82,7 @@ export function Select({
           role="listbox"
           className={`absolute z-30 ${
             direction === "up" ? "bottom-full mb-1" : "mt-1"
-          } max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
+          } ${scrollable ? "max-h-64 overflow-auto" : ""} w-full rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
         >
           {options.map((o) => (
             <li key={o.value}>

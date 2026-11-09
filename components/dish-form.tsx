@@ -187,6 +187,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 setPage(1);
               }}
               options={categoryFilterOptions}
+              scrollable={false}
               className="flex-1"
             />
             <div className="flex flex-1 items-center gap-1.5">
@@ -254,6 +255,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         value={editCategory}
                         onChange={(v) => setEditCategory(v as DishCategory)}
                         options={CATEGORY_OPTIONS}
+                        scrollable={false}
                         className="sm:w-[150px]"
                       />
                     </div>
@@ -292,7 +294,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                   className="flex min-h-12 items-center gap-3 rounded-[10px] bg-mist px-3 py-2"
                 >
                   <span
-                    className={`w-[110px] shrink-0 rounded-full px-2 py-0.5 text-center text-xs font-semibold ${dishCategoryBadge(dish.category)}`}
+                    className={`w-[110px] shrink-0 rounded-full px-2 py-1 text-center text-xs font-semibold ${dishCategoryBadge(dish.category)}`}
                   >
                     {dishCategoryLabel(dish.category)}
                   </span>
@@ -302,35 +304,36 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                     </p>
                     <p className="truncate text-xs text-stone-500">
                       {dish.author}
+                      {dish.isMine && " · Ty"}
                     </p>
                   </div>
-                  {dish.quantity && (
-                    <span className="shrink-0 text-sm text-muted">
-                      {dish.quantity}
-                    </span>
-                  )}
-                  {dish.isMine && (
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(dish)}
-                        aria-label="Edytuj potrawę"
-                        title="Edytuj"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-[#e0e6e1]"
-                      >
-                        <PencilIcon />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(dish)}
-                        aria-label="Usuń potrawę"
-                        title="Usuń"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-[#a3201a] hover:bg-[#f1d7d4]"
-                      >
-                        <TrashIcon />
-                      </button>
-                    </div>
-                  )}
+                  <span className="w-[72px] shrink-0 text-right text-sm text-muted">
+                    {dish.quantity ?? ""}
+                  </span>
+                  <div className="flex w-[74px] shrink-0 items-center justify-end gap-0.5">
+                    {dish.isMine && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(dish)}
+                          aria-label="Edytuj potrawę"
+                          title="Edytuj"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-[#e0e6e1]"
+                        >
+                          <PencilIcon />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(dish)}
+                          aria-label="Usuń potrawę"
+                          title="Usuń"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-[#a3201a] hover:bg-[#f1d7d4]"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </li>
               )
             )}
@@ -386,6 +389,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             onChange={(v) => setAddCategory(v as DishCategory)}
             options={CATEGORY_OPTIONS}
             direction="up"
+            scrollable={false}
             className="sm:w-[150px]"
           />
         </div>
