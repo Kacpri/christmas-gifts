@@ -33,7 +33,7 @@ import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, participationVerb, plural } from "@/lib/format";
 
 export type PanelId =
   | "profile"
@@ -52,8 +52,8 @@ const DEFAULT_ORDER: PanelId[] = [
   "chats",
   "group-chat",
   "wishes",
-  "organizer",
   "potrawy",
+  "organizer",
 ];
 
 const WIDE_PANELS = new Set<PanelId>(["chats", "group-chat", "organizer"]);
@@ -344,8 +344,9 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
   if (gifts.kind === "waiting") {
     return (
       <div className="rounded-[10px] border border-dashed border-honey-200 bg-honey-50 p-4 text-sm text-muted">
-        Czekamy na losowanie. W grze bierze udział{" "}
-        <strong>{gifts.count}</strong> osób.
+        Czekamy na losowanie. W grze {participationVerb(gifts.count)} udział{" "}
+        <strong>{gifts.count}</strong>{" "}
+        {plural(gifts.count, ["osoba", "osoby", "osób"])}.
       </div>
     );
   }
@@ -625,7 +626,8 @@ export function Dashboard({
     (id) =>
       (id !== "organizer" || organizer) &&
       (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
-      (id !== "gifts" || gifts.kind !== "waiting")
+      (id !== "gifts" || gifts.kind !== "waiting") &&
+      (id !== "chats" || chats.lotteryDone)
   );
 
   const isTwoCol = view === "2col";
@@ -740,7 +742,7 @@ export function Dashboard({
         wide={WIDE_PANELS.has(id)}
       >
         {isReadyPanel &&
-        (ready.isReady || ready.lotteryDone || ready.lateJoiner)
+        (ready.lotteryDone || ready.lateJoiner)
           ? null
           : panels[id].body}
       </PanelCard>

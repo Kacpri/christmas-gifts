@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { markReady, type ActionResult } from "@/app/actions";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
-import { plural } from "@/lib/format";
+import { participationVerb, plural } from "@/lib/format";
 
 const empty: ActionResult = { ok: false };
 
@@ -30,10 +30,12 @@ export function ReadySection({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm text-muted">
-        Czekamy na losowanie. W grze bierze udział{" "}
-        <strong>{count}</strong> {plural(count, ["osoba", "osoby", "osób"])}.
-      </p>
+      {isReady && (
+        <p className="text-sm text-muted">
+          Czekamy na losowanie. W grze {participationVerb(count)} udział{" "}
+          <strong>{count}</strong> {plural(count, ["osoba", "osoby", "osób"])}.
+        </p>
+      )}
       {!isReady && (
         <form
           onSubmit={(e) => {

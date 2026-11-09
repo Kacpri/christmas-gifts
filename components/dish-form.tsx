@@ -252,7 +252,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         value={editQuantity}
                         onChange={(e) => setEditQuantity(e.target.value)}
                         maxLength={50}
-                        placeholder="Ilość (np. 2 blachy)"
+                        placeholder="Ilość (np. 2 kg)"
                         className="w-full rounded-xl border border-input-line bg-white px-3 py-2 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
                       />
                       <Select
@@ -294,10 +294,10 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                   </form>
                 </li>
               ) : (
-                <li
-                  key={dish.id}
-                  className="flex min-h-12 items-center gap-3 rounded-[10px] bg-mist px-3 py-2"
-                >
+              <li
+                key={dish.id}
+                className="flex min-h-12 items-center gap-3 rounded-[10px] bg-mist px-3 py-2 transition-colors hover:bg-sage-100"
+              >
                   <span
                     className={`w-[110px] shrink-0 rounded-full px-2 py-1 text-center text-xs font-semibold ${dishCategoryBadge(dish.category)}`}
                   >

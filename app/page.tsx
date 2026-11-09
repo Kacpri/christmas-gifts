@@ -91,15 +91,34 @@ export default async function Home() {
   }[] = [];
   let lateJoiners: { id: string; full_name: string }[] = [];
   if (profile?.is_organizer) {
-    const { data: statusData } = await supabase.rpc("participant_status");
-    const status = (statusData ?? []) as {
-      profile_id: string;
-      full_name: string;
-      is_ready: boolean;
-      in_lottery: boolean;
-      has_theme: boolean;
-      wish_count: number;
-    }[];
+    const [
+      { data: themesData },
+      { data: wishRows },
+      { data: assignmentRows },
+    ] = await Promise.all([
+      supabase.from("themes").select("user_id"),
+      supabase.from("wishes").select("user_id"),
+      supabase.from("assignments").select("drawer_id, drawee_id"),
+    ]);
+    const themeIds = new Set((themesData ?? []).map((t) => t.user_id));
+    const wishCountById = new Map<string, number>();
+    for (const w of wishRows ?? []) {
+      wishCountById.set(w.user_id, (wishCountById.get(w.user_id) ?? 0) + 1);
+    }
+    const inLotteryIds = new Set<string>();
+    for (const a of assignmentRows ?? []) {
+      inLotteryIds.add(a.drawer_id);
+      inLotteryIds.add(a.drawee_id);
+    }
+    const lotteryActive = (assignmentRows ?? []).length > 0;
+    const status = (participants ?? []).map((p) => ({
+      profile_id: p.id,
+      full_name: p.full_name,
+      is_ready: p.is_ready,
+      in_lottery: lotteryActive ? inLotteryIds.has(p.id) : true,
+      has_theme: themeIds.has(p.id),
+      wish_count: wishCountById.get(p.id) ?? 0,
+    }));
     lotteryParticipants = status
       .filter((p) => p.in_lottery)
       .map((p) => ({
