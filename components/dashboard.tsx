@@ -230,9 +230,133 @@ function TagIcon() {
   );
 }
 
+function PanelIconSvg({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
+function ProfileIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </PanelIconSvg>
+  );
+}
+
+function ReadyIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <path d="m9 11 3 3L22 4" />
+    </PanelIconSvg>
+  );
+}
+
+function PartyIcon() {
+  return (
+    <PanelIconSvg>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4" />
+      <path d="M8 2v4" />
+      <path d="M3 10h18" />
+    </PanelIconSvg>
+  );
+}
+
+function GiftsIcon() {
+  return (
+    <PanelIconSvg>
+      <rect x="3" y="8" width="18" height="4" rx="1" />
+      <path d="M12 8v13" />
+      <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+      <path d="M7.5 8a2.5 2.5 0 0 1 0-5C9.5 3 12 5 12 8c0-3 2.5-5 4.5-5a2.5 2.5 0 0 1 0 5" />
+    </PanelIconSvg>
+  );
+}
+
+function ChatsIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </PanelIconSvg>
+  );
+}
+
+function GroupChatIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </PanelIconSvg>
+  );
+}
+
+function WishesIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    </PanelIconSvg>
+  );
+}
+
+function PotrawyIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+      <path d="M7 2v20" />
+      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+    </PanelIconSvg>
+  );
+}
+
+function OrganizerIcon() {
+  return (
+    <PanelIconSvg>
+      <line x1="4" x2="4" y1="21" y2="14" />
+      <line x1="4" x2="4" y1="10" y2="3" />
+      <line x1="12" x2="12" y1="21" y2="12" />
+      <line x1="12" x2="12" y1="8" y2="3" />
+      <line x1="20" x2="20" y1="21" y2="16" />
+      <line x1="20" x2="20" y1="12" y2="3" />
+      <line x1="2" x2="6" y1="14" y2="14" />
+      <line x1="10" x2="14" y1="8" y2="8" />
+      <line x1="18" x2="22" y1="16" y2="16" />
+    </PanelIconSvg>
+  );
+}
+
+const PANEL_ICONS: Record<PanelId, ReactNode> = {
+  profile: <ProfileIcon />,
+  ready: <ReadyIcon />,
+  impreza: <PartyIcon />,
+  gifts: <GiftsIcon />,
+  chats: <ChatsIcon />,
+  "group-chat": <GroupChatIcon />,
+  wishes: <WishesIcon />,
+  potrawy: <PotrawyIcon />,
+  organizer: <OrganizerIcon />,
+};
+
 function PanelCard({
   id,
   title,
+  titleIcon,
   titleBadge,
   badge,
   subtitle,
@@ -248,6 +372,7 @@ function PanelCard({
 }: {
   id: PanelId;
   title: string;
+  titleIcon?: ReactNode;
   titleBadge?: ReactNode;
   badge: number;
   subtitle?: string;
@@ -299,6 +424,14 @@ function PanelCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
+            {titleIcon && (
+              <span
+                aria-hidden
+                className="shrink-0 text-accent dark:text-[#7cc99a]"
+              >
+                {titleIcon}
+              </span>
+            )}
             <h2
               className={`${compact ? "text-[22px]" : "text-[26px]"} text-accent dark:text-[#7cc99a]`}
             >
@@ -367,7 +500,7 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
           </span>
           <span className="text-sm text-muted">Kupujesz prezent dla</span>
         </div>
-        <p className="text-[22px] font-bold leading-tight text-accent">
+        <p className="text-[22px] font-bold leading-tight text-accent dark:text-[#7cc99a]">
           {gifts.listGift.person}
         </p>
         {gifts.listGift.wishes.length > 0 ? (
@@ -412,7 +545,7 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
           </span>
           <span className="text-sm text-muted">Kupujesz prezent dla</span>
         </div>
-        <p className="text-[22px] font-bold leading-tight text-accent">
+        <p className="text-[22px] font-bold leading-tight text-accent dark:text-[#7cc99a]">
           {gifts.themeGift.person}
         </p>
         <div className="mt-1 flex items-center gap-2.5 rounded-[10px] bg-surface px-3.5 py-3">
@@ -751,6 +884,7 @@ export function Dashboard({
         key={id}
         id={id}
         title={panels[id].title}
+        titleIcon={PANEL_ICONS[id]}
         titleBadge={
           id === "wishes" ? (
             <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent">
@@ -805,7 +939,7 @@ export function Dashboard({
           <div className="mr-1.5 flex items-center gap-2">
             <span
               aria-hidden
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
             >
               {userName.trim().charAt(0).toUpperCase()}
             </span>
