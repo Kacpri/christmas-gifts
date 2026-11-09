@@ -176,7 +176,8 @@ export function OrganizerPanel({
             setConfirm({
               message:
                 "Anulować losowanie? Wyniki zostaną usunięte, a życzenia i tematy odblokowane.",
-              confirmLabel: "Anuluj",
+              confirmLabel: "Tak, anuluj",
+              cancelLabel: "Wróć",
               tone: "danger",
               onConfirm: () => cancelAction(fd),
             });

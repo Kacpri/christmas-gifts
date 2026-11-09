@@ -300,7 +300,7 @@ function PanelCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2
-              className={`${compact ? "text-[22px]" : "text-[26px]"} text-accent`}
+              className={`${compact ? "text-[22px]" : "text-[26px]"} text-accent dark:text-[#7cc99a]`}
             >
               {title}
             </h2>

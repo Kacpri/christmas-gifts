@@ -49,7 +49,7 @@ export function LotteryReveal({ onDone }: { onDone: () => void }) {
 
   return (
     <div
-      className={`fixed inset-0 z-[70] flex items-center justify-center bg-accent-deep/70 backdrop-blur-[2px] transition-opacity duration-700 ${
+      className={`fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-accent-deep/70 backdrop-blur-[2px] transition-opacity duration-700 ${
         closing ? "opacity-0" : "opacity-100"
       }`}
       onClick={onDone}
