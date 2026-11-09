@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useActionState } from "react";
+import { useEffect, useMemo, useState, useActionState } from "react";
 
 import {
   addDish,
@@ -15,6 +15,7 @@ import {
   dishCategoryLabel,
   type DishCategory,
 } from "@/lib/dishes";
+import { plural } from "@/lib/format";
 
 export type Dish = {
   id: number;
@@ -26,14 +27,6 @@ export type Dish = {
 
 const empty: ActionResult = { ok: false };
 const PER_PAGE = 10;
-
-const plural = (n: number, forms: [string, string, string]) => {
-  if (n === 1) return forms[0];
-  const d = n % 10;
-  const h = n % 100;
-  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return forms[1];
-  return forms[2];
-};
 
 const CATEGORY_OPTIONS = DISH_CATEGORIES.map((c) => ({
   value: c.value,
@@ -51,6 +44,10 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState<DishCategory>("glowne");
+
+  useEffect(() => {
+    if (editState.ok) setEditingId(null);
+  }, [editState]);
 
   const authors = useMemo(
     () =>
@@ -292,6 +289,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             value={addCategory}
             onChange={(v) => setAddCategory(v as DishCategory)}
             options={CATEGORY_OPTIONS}
+            direction="up"
             className="sm:w-[160px]"
           />
         </div>

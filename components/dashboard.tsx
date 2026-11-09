@@ -47,13 +47,13 @@ export type PanelId =
 
 const DEFAULT_ORDER: PanelId[] = [
   "profile",
+  "ready",
   "gifts",
   "chats",
   "group-chat",
   "wishes",
-  "potrawy",
-  "ready",
   "organizer",
+  "potrawy",
 ];
 
 const WIDE_PANELS = new Set<PanelId>(["chats", "group-chat", "organizer"]);
@@ -624,7 +624,8 @@ export function Dashboard({
   const visible = order.filter(
     (id) =>
       (id !== "organizer" || organizer) &&
-      (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner))
+      (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
+      (id !== "gifts" || gifts.kind !== "waiting")
   );
 
   const isTwoCol = view === "2col";
@@ -682,7 +683,12 @@ export function Dashboard({
     },
     ready: {
       title: "Gotowość",
-      body: <ReadySection {...ready} />,
+      body: (
+        <ReadySection
+          {...ready}
+          count={gifts.kind === "waiting" ? gifts.count : 0}
+        />
+      ),
     },
     organizer: {
       title: "Panel organizatora",

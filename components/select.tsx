@@ -10,12 +10,14 @@ export function Select({
   options,
   name,
   className,
+  direction = "down",
 }: {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
   name?: string;
   className?: string;
+  direction?: "down" | "up";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -60,7 +62,13 @@ export function Select({
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`shrink-0 text-muted transition-transform ${
-            open ? "rotate-180" : ""
+            direction === "up"
+              ? open
+                ? ""
+                : "rotate-180"
+              : open
+                ? "rotate-180"
+                : ""
           }`}
           aria-hidden
         >
@@ -70,7 +78,9 @@ export function Select({
       {open && (
         <ul
           role="listbox"
-          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+          className={`absolute z-30 ${
+            direction === "up" ? "bottom-full mb-1" : "mt-1"
+          } max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
         >
           {options.map((o) => (
             <li key={o.value}>
