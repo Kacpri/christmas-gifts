@@ -385,7 +385,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
           <input
             name="quantity"
             maxLength={50}
-            placeholder="Ilość (np. 2 blachy)"
+            placeholder="Ilość (np. 2 kg)"
             className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
           />
           <Select
