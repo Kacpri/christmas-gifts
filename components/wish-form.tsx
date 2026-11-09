@@ -48,6 +48,7 @@ export function WishForm({
   const [editPrice, setEditPrice] = useState("");
   const [undoWish, setUndoWish] = useState<Wish | null>(null);
   const [localWishes, setLocalWishes] = useState<Wish[]>(wishes);
+  const [justDrew, setJustDrew] = useState(false);
 
   useEffect(() => {
     setLocalWishes(wishes);
@@ -67,6 +68,10 @@ export function WishForm({
     return () => clearTimeout(t);
   }, [undoWish]);
 
+  useEffect(() => {
+    if (justDrew && themeValue.trim() === theme) setJustDrew(false);
+  }, [justDrew, themeValue, theme]);
+
   function startEdit(wish: Wish) {
     setEditingId(wish.id);
     setEditText(wish.text);
@@ -77,6 +82,7 @@ export function WishForm({
   function drawTheme() {
     const idea = THEME_IDEAS[Math.floor(Math.random() * THEME_IDEAS.length)];
     setThemeValue(idea);
+    setJustDrew(true);
     const fd = new FormData();
     fd.set("theme", idea);
     saveThemeAction(fd);
@@ -302,7 +308,7 @@ export function WishForm({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
-              disabled={savingTheme || themeValue.trim() === (theme ?? "")}
+              disabled={savingTheme || justDrew || themeValue.trim() === (theme ?? "")}
               aria-live="polite"
               className="w-fit inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
             >
@@ -311,7 +317,7 @@ export function WishForm({
                   <SpinnerIcon />
                   Zapisuję…
                 </>
-              ) : themeValue.trim() === theme && theme != null ? (
+              ) : justDrew || (themeValue.trim() === theme && theme != null) ? (
                 <>
                   <CheckIcon />
                   Zapisano
