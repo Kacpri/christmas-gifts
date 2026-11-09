@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Lobster } from "next/font/google";
 
 import { AuthCodeExchanger } from "@/components/auth-code-exchanger";
+import { PwaRegister } from "@/components/pwa-register";
 import { Snow } from "@/components/snow";
 
 import "./globals.css";
@@ -20,6 +21,15 @@ const lobster = Lobster({
 export const metadata: Metadata = {
   title: "Świąteczne Losowanie",
   description: "Losowanie prezentów świątecznych",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Świąteczne Losowanie",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d4024",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -36,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         <Snow />
         <AuthCodeExchanger />
+        <PwaRegister />
         <div className="app-shell flex flex-1 flex-col">{children}</div>
       </body>
     </html>

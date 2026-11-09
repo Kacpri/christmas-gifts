@@ -12,6 +12,7 @@ import {
   MessageBubble,
   type ChatMessage,
 } from "@/components/message-bubble";
+import { notify } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/client";
 
 const empty: ActionResult = { ok: false };
@@ -138,6 +139,9 @@ export function GroupChatSection({
                 collapsedRef.current
               ) {
                 setUnread((n) => n + 1);
+              }
+              if (m.sender_id !== me) {
+                notify("Czat wspólny", "Nowa wiadomość w czacie wspólnym");
               }
             }
           )

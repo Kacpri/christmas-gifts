@@ -139,8 +139,28 @@ a:focus-visible {
   }
 }
 
+.confetti-piece {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  will-change: transform;
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translate(var(--drift, 0px), 112vh) rotate(var(--spin, 720deg));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .snowflake {
+    display: none;
+  }
+
+  .confetti-piece {
     display: none;
   }
 }

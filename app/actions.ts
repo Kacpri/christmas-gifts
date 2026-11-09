@@ -600,3 +600,97 @@ export async function sendLotteryEmails(
   }
   return { ok: true };
 }
+
+export async function saveParty(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może edytować imprezę." };
+  }
+  const { supabase } = org;
+  const startsRaw = String(formData.get("starts_at") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  let startsAt: string | null = null;
+  if (startsRaw) {
+    const d = new Date(startsRaw);
+    if (Number.isNaN(d.getTime())) {
+      return { ok: false, error: "Nieprawidłowa data lub godzina imprezy." };
+    }
+    startsAt = d.toISOString();
+  }
+  if (location.length > 200) {
+    return { ok: false, error: "Lokalizacja: maks. 200 znaków." };
+  }
+  if (notes.length > 1000) {
+    return { ok: false, error: "Notatki: maks. 1000 znaków." };
+  }
+  const { error } = await supabase
+    .from("party")
+    .upsert(
+      {
+        id: 1,
+        starts_at: startsAt,
+        location: location || null,
+        notes: notes || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function sendReadyReminders(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może wysyłać przypomnienia." };
+  }
+  const { supabase } = org;
+  const { data, error } = await supabase.rpc("not_ready_emails");
+  if (error) return { ok: false, error: error.message };
+  const rows = (data ?? []) as { email: string; full_name: string }[];
+  if (rows.length === 0) {
+    return { ok: false, error: "Wszyscy uczestnicy są już gotowi." };
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: "Brak sesji." };
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-reminders`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        reminders: rows.map((r) => ({ to: r.email, name: r.full_name })),
+      }),
+    }
+  );
+  const payload = (await res.json()) as {
+    error?: string;
+    results?: { to: string; ok: boolean; error?: string }[];
+  };
+  if (!res.ok) {
+    return { ok: false, error: payload.error ?? "Błąd wysyłki." };
+  }
+  const failed = (payload.results ?? []).filter((r) => !r.ok);
+  if (failed.length > 0) {
+    return {
+      ok: false,
+      error: `Nie udało się wysłać: ${failed.map((f) => f.to).join(", ")}`,
+    };
+  }
+  return { ok: true };
+}

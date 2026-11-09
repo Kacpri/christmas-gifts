@@ -14,6 +14,7 @@ import {
   type ChatMessage,
 } from "@/components/message-bubble";
 import { timeOf } from "@/lib/format";
+import { notify } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/client";
 
 export type Thread = {
@@ -218,6 +219,11 @@ export function ChatSection({
                 ...prev,
                 [key]: (prev[key] ?? 0) + 1,
               }));
+              const t = threadsRef.current.find((x) => threadKey(x) === key);
+              const who = t
+                ? t.label.replace(/ — (lista|temat)$/, "")
+                : "Nowa wiadomość";
+              notify("Nowa wiadomość", who);
             }
           }
         )

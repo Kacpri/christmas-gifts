@@ -23,15 +23,19 @@ import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { ChatSection, type Thread } from "@/components/chat-section";
+import { Countdown } from "@/components/countdown";
 import {
   GroupChatSection,
 } from "@/components/group-chat-section";
 import type { ChatMessage } from "@/components/message-bubble";
 import { LogoutButton } from "@/components/logout-button";
+import { LotteryReveal } from "@/components/lottery-reveal";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NameForm } from "@/components/name-form";
+import { NotificationToggle } from "@/components/notification-toggle";
 import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
+import { PartyPanel } from "@/components/party-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
 import { formatPrice, participationVerb, plural } from "@/lib/format";
@@ -44,11 +48,13 @@ export type PanelId =
   | "wishes"
   | "potrawy"
   | "ready"
+  | "impreza"
   | "organizer";
 
 const DEFAULT_ORDER: PanelId[] = [
   "profile",
   "ready",
+  "impreza",
   "gifts",
   "chats",
   "group-chat",
@@ -501,6 +507,7 @@ export function Dashboard({
   groupChat,
   wishes,
   dishes,
+  party,
   ready,
   organizer,
 }: {
@@ -520,6 +527,12 @@ export function Dashboard({
     themeLocked: boolean;
   };
   dishes: Dish[];
+  party: {
+    startsAt: string | null;
+    location: string | null;
+    notes: string | null;
+    isOrganizer: boolean;
+  };
   ready: {
     hasWish: boolean;
     hasTheme: boolean;
@@ -552,6 +565,24 @@ export function Dashboard({
   );
   const [groupUnread, setGroupUnread] = useState(0);
   const [wishCount, setWishCount] = useState(wishes.wishes.length);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("lottery-revealed-v1")) setRevealed(true);
+    } catch {
+      // localStorage niedostępny — ignoruj
+    }
+  }, []);
+
+  const markRevealed = useCallback(() => {
+    try {
+      localStorage.setItem("lottery-revealed-v1", "1");
+    } catch {
+      // localStorage niedostępny — ignoruj
+    }
+    setRevealed(true);
+  }, []);
 
   useEffect(() => {
     const saved = loadLayout();
@@ -693,6 +724,10 @@ export function Dashboard({
         />
       ),
     },
+    impreza: {
+      title: "Impreza",
+      body: <PartyPanel {...party} />,
+    },
     organizer: {
       title: "Panel organizatora",
       body: organizer ? <OrganizerPanel {...organizer} /> : null,
@@ -756,10 +791,16 @@ export function Dashboard({
         isTwoCol ? "max-w-[1120px]" : "max-w-[680px]"
       }`}
     >
+      {hydrated && gifts.kind === "done" && !revealed && (
+        <LotteryReveal onDone={markRevealed} />
+      )}
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[38px] leading-tight text-cream">
-          Świąteczne Losowanie
-        </h1>
+        <div>
+          <h1 className="text-[38px] leading-tight text-cream">
+            Świąteczne Losowanie
+          </h1>
+          <Countdown startsAt={party.startsAt} />
+        </div>
         <div className="flex items-center gap-2 text-sm">
           <div className="mr-1.5 flex items-center gap-2">
             <span
@@ -810,6 +851,7 @@ export function Dashboard({
                 <LayoutIcon />
                 Układ
               </button>
+              <NotificationToggle />
               <ThemeToggle />
               <LogoutButton />
             </>

@@ -7,6 +7,7 @@ import {
   removeUser,
   runLottery,
   sendLotteryEmails,
+  sendReadyReminders,
   setNameForUser,
   setReadyForUser,
   type ActionResult,
@@ -45,6 +46,10 @@ export function OrganizerPanel({
   );
   const [emailState, emailAction, emailPending] = useActionState(
     sendLotteryEmails,
+    empty
+  );
+  const [remindState, remindAction, remindPending] = useActionState(
+    sendReadyReminders,
     empty
   );
   const [nameState, setNameAction, namePending] = useActionState(
@@ -123,6 +128,44 @@ export function OrganizerPanel({
       </form>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
+      )}
+
+      {!lotteryDone && notReadyNames.length > 0 && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            setConfirm({
+              message: `Wysłać przypomnienie mailem do: ${notReadyNames.join(
+                ", "
+              )}?`,
+              confirmLabel: "Wyślij",
+              tone: "primary",
+              onConfirm: () => remindAction(fd),
+            });
+          }}
+        >
+          <button
+            type="submit"
+            disabled={remindPending}
+            className="inline-flex min-w-[192px] items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
+          >
+            {remindPending ? (
+              <>
+                <SpinnerIcon />
+                Wysyłanie…
+              </>
+            ) : (
+              `Wyślij przypomnienia (${notReadyNames.length})`
+            )}
+          </button>
+        </form>
+      )}
+      {remindState.ok && (
+        <p className="text-sm font-medium text-accent">Przypomnienia wysłane ✓</p>
+      )}
+      {!remindState.ok && remindState.error && (
+        <p className="text-sm text-red-600">{remindState.error}</p>
       )}
 
       {lotteryDone && (

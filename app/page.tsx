@@ -23,6 +23,7 @@ export default async function Home() {
     { data: myMessages },
     { data: myReads },
     { data: allDishes },
+    { data: partyRow },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -62,6 +63,11 @@ export default async function Home() {
       .from("dishes")
       .select("id, user_id, name, category, quantity")
       .order("created_at"),
+    supabase
+      .from("party")
+      .select("starts_at, location, notes")
+      .eq("id", 1)
+      .maybeSingle(),
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
@@ -279,6 +285,12 @@ export default async function Home() {
         themeLocked: locked,
       }}
       dishes={dishes}
+      party={{
+        startsAt: partyRow?.starts_at ?? null,
+        location: partyRow?.location ?? null,
+        notes: partyRow?.notes ?? null,
+        isOrganizer: Boolean(profile?.is_organizer),
+      }}
       ready={{
         hasWish: (myWishes ?? []).length >= 2,
         hasTheme: Boolean(myTheme?.theme),
