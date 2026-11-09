@@ -139,9 +139,8 @@ export function WishForm({
                     />
                     <input
                       name="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                     value={editPrice}
                     onChange={(e) => setEditPrice(e.target.value)}
                     placeholder="Cena (zł)"
@@ -197,14 +196,14 @@ export function WishForm({
                   <button
                     type="button"
                     onClick={() => startEdit(wish)}
-                    className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-muted hover:bg-sage-50"
+                    className="min-h-10 rounded-xl border border-line bg-mist px-3 text-xs font-medium text-muted hover:bg-[#e0e6e1]"
                   >
                     edytuj
                   </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(wish)}
-                    className="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-medium text-[#a3201a] hover:bg-sage-50"
+                    className="min-h-10 rounded-xl border border-line bg-mist px-3 text-xs font-medium text-[#a3201a] hover:bg-[#f1d7d4]"
                   >
                     usuń
                   </button>
@@ -237,9 +236,8 @@ export function WishForm({
             />
             <input
               name="price"
-              type="number"
-              min="0"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="Cena (zł)"
               className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
             />
