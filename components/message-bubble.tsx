@@ -247,7 +247,7 @@ export function MessageBubble({
           >
             <button
               type="button"
-              className="block w-full px-3 py-1.5 text-left hover:bg-stone-100"
+              className="block w-full px-3 py-1.5 text-left hover:bg-sage-150"
               onClick={() => {
                 setMenu(null);
                 setEditValue(message.text);
@@ -272,7 +272,7 @@ export function MessageBubble({
               <input type="hidden" name="id" value={message.id} />
               <button
                 type="submit"
-                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-stone-100"
+                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-sage-150"
               >
                 Usuń
               </button>

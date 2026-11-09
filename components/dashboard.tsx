@@ -307,7 +307,7 @@ function PanelCard({
             {titleBadge}
           </div>
           {subtitle && (
-            <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
+            <p className="mt-0.5 text-sm text-muted">{subtitle}</p>
           )}
         </div>
         {headerRight !== undefined ? (

@@ -430,7 +430,7 @@ export function ChatSection({
   return (
     <>
       {!lotteryDone ? (
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-muted">
           {lateJoiner
             ? "Czaty są dostępne tylko dla uczestników losowania."
             : "Czaty pojawią się po losowaniu."}

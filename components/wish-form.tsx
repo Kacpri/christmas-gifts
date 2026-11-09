@@ -110,7 +110,7 @@ export function WishForm({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           {themeLocked
             ? "Temat prezentu pozostaje zablokowany."
             : "Widzi je tylko osoba, która Cię wylosuje."}
@@ -195,7 +195,7 @@ export function WishForm({
               >
                 <div className="text-sm">
                   <p>{wish.text}</p>
-                  <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-500">
+                  <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
                     {wish.price != null && (
                       <span>{formatPrice(wish.price)}</span>
                     )}
@@ -289,7 +289,7 @@ export function WishForm({
 
       <div>
         <h3 className="text-base font-semibold">Temat Twojego prezentu</h3>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-muted">
           Osoba, która Cię wylosuje do prezentu tematycznego, kupi prezent
           zgodnie z tym tematem.
         </p>

@@ -162,7 +162,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           Wspólna lista potraw — każdy dodaje to, co przynosi.
         </p>
         <div className="mt-2 flex flex-col gap-2">
@@ -307,7 +307,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                     <p className="truncate text-sm font-medium text-ink">
                       {dish.name}
                     </p>
-                    <p className="truncate text-xs text-stone-500">
+                    <p className="truncate text-xs text-muted">
                       {dish.author}
                       {dish.isMine && " · Ty"}
                     </p>
@@ -354,7 +354,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               >
                 ← Poprzednia
               </button>
-              <span className="text-xs text-stone-500">
+              <span className="text-xs text-muted">
                 Strona {currentPage} z {totalPages} · {filtered.length}{" "}
                 {plural(filtered.length, ["potrawa", "potrawy", "potraw"])}
               </span>

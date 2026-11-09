@@ -79,7 +79,7 @@ export function OrganizerPanel({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-muted">
           {participants.length}{" "}
           {plural(participants.length, ["osoba", "osoby", "osób"])} w losowaniu,{" "}
           {readyCount} {plural(readyCount, ["gotowa", "gotowe", "gotowych"])}.
@@ -121,7 +121,7 @@ export function OrganizerPanel({
           )}
         </button>
         {!allReady && (
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-muted">
             Czekamy na: {notReadyNames.join(", ")}
           </span>
         )}
@@ -240,7 +240,7 @@ export function OrganizerPanel({
       )}
 
       <div>
-        <h3 className="text-sm font-medium text-stone-600">Uczestnicy</h3>
+        <h3 className="text-sm font-medium text-muted">Uczestnicy</h3>
         <ul className="mt-2 flex flex-col gap-2">
           {participants.map((p) => (
             <li
@@ -373,7 +373,7 @@ export function OrganizerPanel({
 
       {lateJoiners.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-stone-600">
+          <h3 className="text-sm font-medium text-muted">
             Dołączyli po losowaniu
           </h3>
           <ul className="mt-2 flex flex-col gap-1">

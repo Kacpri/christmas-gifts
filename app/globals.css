@@ -54,13 +54,14 @@ body {
 }
 
 html[data-theme="dark"] {
+  color-scheme: dark;
   --background: #071e16;
   --foreground: #eef4f0;
   --color-accent: #2f855a;
   --color-accent-deep: #8fb89e;
   --color-ink: #eef4f0;
-  --color-muted: #b6c4b9;
-  --color-faint: #97a89b;
+  --color-muted: #bdcabf;
+  --color-faint: #a8b8ab;
   --color-mist: #161a17;
   --color-sage-50: #171b18;
   --color-sage-100: #1c211d;
@@ -88,6 +89,10 @@ html[data-theme="dark"] body {
 
 html[data-theme="dark"] .app-shell {
   background: linear-gradient(180deg, #061a13 0%, #0d3524 100%);
+}
+
+html[data-theme="dark"] input::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) brightness(1.2);
 }
 
 h1,
