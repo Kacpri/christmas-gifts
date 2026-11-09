@@ -29,6 +29,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${lobster.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "(function(){try{var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();",
+          }}
+        />
         <Snow />
         <AuthCodeExchanger />
         <div className="app-shell flex flex-1 flex-col">{children}</div>

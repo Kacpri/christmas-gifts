@@ -60,12 +60,12 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+      <div className="flex flex-col gap-4 rounded-2xl bg-surface p-6 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
         <button
           type="button"
           onClick={signInWithGoogle}
           disabled={pending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2.5 text-sm font-medium hover:bg-mist disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface px-4 py-2.5 text-sm font-medium hover:bg-mist disabled:opacity-50"
         >
           <Image src="/g-logo.png" alt="Google" width={20} height={20} />
           Zaloguj się przez Google

@@ -209,7 +209,7 @@ export function GroupChatSection({
             lastSentRef.current = value;
             setValue("");
           }}
-          className="flex items-center gap-2 border-t border-line bg-white p-3"
+          className="flex items-center gap-2 border-t border-line bg-surface p-3"
         >
           <input
             name="text"

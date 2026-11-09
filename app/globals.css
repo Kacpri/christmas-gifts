@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #0d4024;
   --foreground: #1c2a22;
@@ -26,6 +28,11 @@
   --color-input-bg: #f9fbfa;
   --color-list-ink: #0f4a29;
   --color-placeholder: #6b766f;
+  --color-surface: #ffffff;
+  --color-danger: #a3201a;
+  --color-danger-deep: #8a1a15;
+  --color-danger-soft: #f1d7d4;
+  --color-icon-hover: #e0e6e1;
 }
 
 @theme inline {
@@ -44,6 +51,42 @@ body {
 .app-shell {
   min-height: 100vh;
   background: linear-gradient(180deg, #0d4024 0%, #165a32 100%);
+}
+
+html[data-theme="dark"] {
+  --background: #072018;
+  --foreground: #e9f1ec;
+  --color-accent: #2f9e63;
+  --color-ink: #e9f1ec;
+  --color-muted: #a9b9ae;
+  --color-faint: #8b9b90;
+  --color-mist: #152119;
+  --color-sage-50: #16241c;
+  --color-sage-100: #1a2a20;
+  --color-sage-150: #1e3026;
+  --color-sage-200: #26392d;
+  --color-sage-300: #3a5344;
+  --color-honey-50: #2a2416;
+  --color-honey-200: #3d3319;
+  --color-honey-800: #d9b878;
+  --color-line: #2a3a30;
+  --color-input-line: #35473b;
+  --color-input-bg: #142019;
+  --color-list-ink: #a6d8bc;
+  --color-placeholder: #7f8f84;
+  --color-surface: #1b2b22;
+  --color-danger: #e0685c;
+  --color-danger-deep: #c24a40;
+  --color-danger-soft: #3a211d;
+  --color-icon-hover: #26362b;
+}
+
+html[data-theme="dark"] body {
+  background: #072018;
+}
+
+html[data-theme="dark"] .app-shell {
+  background: linear-gradient(180deg, #061c14 0%, #0e3a26 100%);
 }
 
 h1,

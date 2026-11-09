@@ -51,7 +51,7 @@ export function Select({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-left text-sm text-ink"
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-left text-sm text-ink"
       >
         <span className="truncate">{selected?.label ?? ""}</span>
         <svg
@@ -82,7 +82,7 @@ export function Select({
           role="listbox"
           className={`absolute z-30 ${
             direction === "up" ? "bottom-full mb-1" : "mt-1"
-          } ${scrollable ? "max-h-64 overflow-auto" : ""} w-full rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
+          } ${scrollable ? "max-h-64 overflow-auto" : ""} w-full rounded-xl border border-line bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
         >
           {options.map((o) => (
             <li key={o.value}>

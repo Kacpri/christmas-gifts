@@ -498,7 +498,7 @@ export function ChatSection({
           <div className="min-w-0 flex-1">
             {selectedThread ? (
               <div className="flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
-                <div className="flex items-center gap-2.5 border-b border-line bg-white px-4.5 py-3.5">
+                <div className="flex items-center gap-2.5 border-b border-line bg-surface px-4.5 py-3.5">
                   <span className="truncate text-[15px] font-bold text-accent">
                     {selectedThread.label.replace(/ — (lista|temat)$/, "")}
                   </span>
@@ -535,7 +535,7 @@ export function ChatSection({
                     lastSentRef.current = value;
                     setValue("");
                   }}
-                  className="flex items-center gap-2 border-t border-line bg-white p-3"
+                  className="flex items-center gap-2 border-t border-line bg-surface p-3"
                 >
                   <input type="hidden" name="lottery_type" value={selectedThread.lotteryType} />
                   <input type="hidden" name="drawer_id" value={selectedThread.drawerId} />

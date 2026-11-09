@@ -109,7 +109,7 @@ export function MessageBubble({
         } ${
           isOwn
             ? "self-end rounded-[16px_16px_4px_16px] bg-accent text-white"
-            : "self-start rounded-[16px_16px_16px_4px] bg-white"
+            : "self-start rounded-[16px_16px_16px_4px] bg-surface"
         }`}
         onContextMenu={
           canMenu
@@ -187,7 +187,7 @@ export function MessageBubble({
               onChange={(e) => setEditValue(e.target.value)}
               required
               maxLength={500}
-              className="w-full rounded border border-input-line bg-white px-2 py-1 text-sm text-ink"
+              className="w-full rounded border border-input-line bg-surface px-2 py-1 text-sm text-ink"
             />
             <div className="flex items-center gap-2">
               <button
@@ -239,7 +239,7 @@ export function MessageBubble({
             }}
           />
           <div
-            className="fixed z-50 min-w-28 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 text-sm shadow-lg"
+            className="fixed z-50 min-w-28 overflow-hidden rounded-lg border border-line bg-surface py-1 text-sm shadow-lg"
             style={{
               left: Math.max(8, Math.min(menu.x, window.innerWidth - 128)),
               top: Math.max(8, Math.min(menu.y, window.innerHeight - 96)),

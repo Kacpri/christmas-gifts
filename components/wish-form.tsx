@@ -138,7 +138,7 @@ export function WishForm({
                     onChange={(e) => setEditText(e.target.value)}
                     required
                     maxLength={500}
-                    className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+                    className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
                   />
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <input
@@ -147,7 +147,7 @@ export function WishForm({
                       value={editLink}
                       onChange={(e) => setEditLink(e.target.value)}
                       placeholder="Link (opcjonalnie)"
-                      className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+                      className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
                     />
                     <input
                       name="price"
@@ -156,7 +156,7 @@ export function WishForm({
                     value={editPrice}
                     onChange={(e) => setEditPrice(e.target.value)}
                     placeholder="Cena (zł)"
-                    className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
+                    className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
                     />
                   </div>
                   <div className="flex items-center gap-3">
@@ -178,7 +178,7 @@ export function WishForm({
                       type="button"
                       onClick={() => setEditingId(null)}
                       disabled={editingWish}
-                      className="rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+                      className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
                     >
                       Anuluj
                     </button>
@@ -217,7 +217,7 @@ export function WishForm({
                     onClick={() => startEdit(wish)}
                     aria-label="Edytuj życzenie"
                     title="Edytuj"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-[#e0e6e1]"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
                   >
                     <PencilIcon />
                   </button>
@@ -226,7 +226,7 @@ export function WishForm({
                     onClick={() => handleRemove(wish)}
                     aria-label="Usuń życzenie"
                     title="Usuń"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[#a3201a] hover:bg-[#f1d7d4]"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
                   >
                     <TrashIcon />
                   </button>
@@ -248,21 +248,21 @@ export function WishForm({
             required
             maxLength={500}
             placeholder="Czego sobie życzysz? (np. kubek, książka, voucher)"
-            className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               name="link"
               type="url"
               placeholder="Link (opcjonalnie)"
-              className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+              className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
             />
             <input
               name="price"
               type="text"
               inputMode="decimal"
               placeholder="Cena (zł)"
-              className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
+              className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
             />
           </div>
           <button
@@ -313,7 +313,7 @@ export function WishForm({
                 : "np. coś ciepłego na zimowe wieczory"
             }
             className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
-              themeLocked ? "bg-mist pr-10 text-faint" : "bg-white text-ink"
+              themeLocked ? "bg-mist pr-10 text-faint" : "bg-surface text-ink"
             }`}
           />
           {themeLocked && (
@@ -348,7 +348,7 @@ export function WishForm({
               type="button"
               onClick={drawTheme}
               disabled={savingTheme}
-              className="w-fit inline-flex min-w-[184px] items-center justify-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+              className="w-fit inline-flex min-w-[184px] items-center justify-center gap-2 rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
             >
               <DiceIcon />
               Podpowiedz temat

@@ -173,7 +173,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               setPage(1);
             }}
             placeholder="Szukaj potrawy…"
-            className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
           <div className="flex gap-2">
             <Select
@@ -207,7 +207,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 onClick={toggleSortDir}
                 aria-label="Odwróć kierunek sortowania"
                 title={sortDir === "asc" ? "Rosnąco" : "Malejąco"}
-                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-white text-muted hover:bg-mist"
+                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
               >
                 <SortDirIcon dir={sortDir} />
               </button>
@@ -245,7 +245,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         onChange={(e) => setEditName(e.target.value)}
                         required
                         maxLength={120}
-                        className="flex-1 rounded-xl border border-input-line bg-white px-3 py-2 text-sm text-ink"
+                        className="flex-1 rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink"
                       />
                       <input
                         name="quantity"
@@ -253,7 +253,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         onChange={(e) => setEditQuantity(e.target.value)}
                         maxLength={50}
                         placeholder="Ilość (np. 2 kg)"
-                        className="w-full rounded-xl border border-input-line bg-white px-3 py-2 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
+                        className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
                       />
                       <Select
                         name="category"
@@ -283,7 +283,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         type="button"
                         onClick={() => setEditingId(null)}
                         disabled={editing}
-                        className="rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+                        className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
                       >
                         Anuluj
                       </button>
@@ -323,7 +323,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                           onClick={() => startEdit(dish)}
                           aria-label="Edytuj potrawę"
                           title="Edytuj"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-[#e0e6e1]"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
                         >
                           <PencilIcon />
                         </button>
@@ -332,7 +332,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                           onClick={() => handleRemove(dish)}
                           aria-label="Usuń potrawę"
                           title="Usuń"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-[#a3201a] hover:bg-[#f1d7d4]"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
                         >
                           <TrashIcon />
                         </button>
@@ -350,7 +350,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 type="button"
                 onClick={() => setPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="rounded-lg border border-input-line bg-white px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
               >
                 ← Poprzednia
               </button>
@@ -362,7 +362,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 type="button"
                 onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-lg border border-input-line bg-white px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
               >
                 Następna →
               </button>
@@ -380,13 +380,13 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             required
             maxLength={120}
             placeholder="Co przynosisz? (np. szarlotka)"
-            className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
           <input
             name="quantity"
             maxLength={50}
             placeholder="Ilość (np. 2 kg)"
-            className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
           />
           <Select
             name="category"

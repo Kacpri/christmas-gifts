@@ -28,6 +28,7 @@ import {
 } from "@/components/group-chat-section";
 import type { ChatMessage } from "@/components/message-bubble";
 import { LogoutButton } from "@/components/logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { NameForm } from "@/components/name-form";
 import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
@@ -275,7 +276,7 @@ function PanelCard({
       } ${
         isHole
           ? "border border-dashed border-amber-400 bg-amber-50/60 opacity-60"
-          : `bg-white ${editMode ? "ring-2 ring-amber-300" : ""}`
+          : `bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
       } ${wide ? "md:col-span-2" : ""}`}
     >
       <div className="flex items-center gap-2">
@@ -366,7 +367,7 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         {gifts.listGift.wishes.length > 0 ? (
           <ul className="mt-1 flex flex-col gap-2">
             {gifts.listGift.wishes.map((wish) => (
-              <li key={wish.id} className="rounded-[10px] bg-white px-3.5 py-3">
+              <li key={wish.id} className="rounded-[10px] bg-surface px-3.5 py-3">
                 <p className="text-[15px] font-semibold text-ink">
                   {wish.text}
                 </p>
@@ -408,7 +409,7 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         <p className="text-[22px] font-bold leading-tight text-accent">
           {gifts.themeGift.person}
         </p>
-        <div className="mt-1 flex items-center gap-2.5 rounded-[10px] bg-white px-3.5 py-3">
+        <div className="mt-1 flex items-center gap-2.5 rounded-[10px] bg-surface px-3.5 py-3">
           <span className="text-[13px] text-faint">Temat</span>
           <span className="text-[15px] font-semibold italic text-ink">
             {gifts.themeGift.theme}
@@ -809,6 +810,7 @@ export function Dashboard({
                 <LayoutIcon />
                 Układ
               </button>
+              <ThemeToggle />
               <LogoutButton />
             </>
           )}
@@ -831,7 +833,7 @@ export function Dashboard({
           </SortableContext>
           <DragOverlay>
             {activeId ? (
-              <section className="rounded-2xl bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
+              <section className="rounded-2xl bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
               <div className="flex items-center gap-2">
                 <GripIcon />
                 <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>

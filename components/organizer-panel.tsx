@@ -223,7 +223,7 @@ export function OrganizerPanel({
                   <button
                     type="button"
                     onClick={() => startEditName(p)}
-                    className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-muted hover:bg-[#e0e6e1]"
+                    className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-muted hover:bg-icon-hover"
                   >
                     edytuj
                   </button>
@@ -275,7 +275,7 @@ export function OrganizerPanel({
                     <input type="hidden" name="id" value={p.id} />
                     <button
                       type="submit"
-                      className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-[#a3201a] hover:bg-[#f1d7d4]"
+                      className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-danger hover:bg-danger-soft"
                     >
                       usuń
                     </button>
@@ -296,7 +296,7 @@ export function OrganizerPanel({
                     onChange={(e) => setEditNameValue(e.target.value)}
                     required
                     maxLength={100}
-                    className="flex-1 rounded-lg border border-input-line bg-white px-3 py-1.5 text-sm text-ink"
+                    className="flex-1 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-sm text-ink"
                   />
                   <div className="flex items-center gap-2">
                     <button
@@ -310,7 +310,7 @@ export function OrganizerPanel({
                       type="button"
                       onClick={() => setEditingNameId(null)}
                       disabled={namePending}
-                      className="rounded-lg border border-input-line bg-white px-3 py-1.5 text-xs font-medium hover:bg-mist disabled:opacity-50"
+                      className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-mist disabled:opacity-50"
                     >
                       Anuluj
                     </button>

@@ -31,23 +31,23 @@ export function ConfirmDialog({
   const tone = state.tone ?? "danger";
   const confirmClass =
     tone === "danger"
-      ? "bg-[#a3201a] text-white hover:bg-[#8a1a15]"
+      ? "bg-danger text-white hover:bg-danger-deep"
       : "bg-accent text-white hover:bg-accent/90";
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-sm rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
       >
         <p className="text-sm leading-relaxed text-ink">{state.message}</p>
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
+            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
           >
             {state.cancelLabel ?? "Anuluj"}
           </button>
