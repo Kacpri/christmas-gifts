@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { DISH_CATEGORY_VALUES } from "@/lib/dishes";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -116,6 +117,66 @@ export async function removeWish(formData: FormData): Promise<ActionResult> {
           : error.message,
     };
   }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function addDish(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  const category = String(formData.get("category") ?? "");
+  if (!name || name.length > 120) {
+    return { ok: false, error: "Nazwa potrawy: 1–120 znaków." };
+  }
+  if (!(DISH_CATEGORY_VALUES as string[]).includes(category)) {
+    return { ok: false, error: "Wybierz kategorię." };
+  }
+  const { error } = await supabase
+    .from("dishes")
+    .insert({ user_id: user.id, name, category });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function editDish(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  const name = String(formData.get("name") ?? "").trim();
+  const category = String(formData.get("category") ?? "");
+  if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowa potrawa." };
+  if (!name || name.length > 120) {
+    return { ok: false, error: "Nazwa potrawy: 1–120 znaków." };
+  }
+  if (!(DISH_CATEGORY_VALUES as string[]).includes(category)) {
+    return { ok: false, error: "Wybierz kategorię." };
+  }
+  const { error } = await supabase
+    .from("dishes")
+    .update({ name, category })
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function removeDish(formData: FormData): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowa potrawa." };
+  const { error } = await supabase
+    .from("dishes")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
 }
@@ -400,6 +461,70 @@ export async function removeUser(formData: FormData): Promise<ActionResult> {
   }
   const { error } = await supabase.from("profiles").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+async function requireOrganizer() {
+  const { supabase, user } = await requireUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_organizer")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.is_organizer) return null;
+  return { supabase, user };
+}
+
+export async function setNameForUser(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może zarządzać uczestnikami." };
+  }
+  const { supabase } = org;
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("full_name") ?? "").trim();
+  if (!id) return { ok: false, error: "Nieprawidłowy uczestnik." };
+  if (!name || name.length > 100) {
+    return { ok: false, error: "Imię i nazwisko: 1–100 znaków." };
+  }
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ full_name: name })
+    .eq("id", id)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Nie udało się zapisać nazwy." };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function setReadyForUser(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może zarządzać uczestnikami." };
+  }
+  const { supabase } = org;
+  const id = String(formData.get("id") ?? "");
+  const isReady = formData.get("is_ready") === "true";
+  if (!id) return { ok: false, error: "Nieprawidłowy uczestnik." };
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ is_ready: isReady })
+    .eq("id", id)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Nie udało się zmienić gotowości." };
+  }
   revalidatePath("/");
   return { ok: true };
 }

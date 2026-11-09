@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Dashboard, type GiftsData } from "@/components/dashboard";
 import type { Thread } from "@/components/chat-section";
 import type { Wish } from "@/components/wish-form";
+import type { DishCategory } from "@/lib/dishes";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
@@ -21,6 +22,7 @@ export default async function Home() {
     { data: myAsDrawee },
     { data: myMessages },
     { data: myReads },
+    { data: allDishes },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -56,11 +58,24 @@ export default async function Home() {
       .from("thread_reads")
       .select("lottery_type, drawer_id, drawee_id, last_read_at")
       .eq("user_id", user.id),
+    supabase
+      .from("dishes")
+      .select("id, user_id, name, category")
+      .order("created_at"),
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
   const isReady = profile?.is_ready ?? false;
   const locked = lotteryDone || isReady;
+
+  const nameById = new Map((participants ?? []).map((p) => [p.id, p.full_name]));
+  const dishes = (allDishes ?? []).map((d) => ({
+    id: d.id,
+    name: d.name,
+    category: d.category as DishCategory,
+    author: nameById.get(d.user_id) ?? "??",
+    isMine: d.user_id === user.id,
+  }));
 
   const { data: lotteryActiveData } = await supabase.rpc("lottery_active");
   const lotteryActive = lotteryActiveData === true;
@@ -237,6 +252,7 @@ export default async function Home() {
         theme: myTheme?.theme ?? null,
         themeLocked: locked,
       }}
+      dishes={dishes}
       ready={{
         hasWish: (myWishes ?? []).length >= 2,
         hasTheme: Boolean(myTheme?.theme),

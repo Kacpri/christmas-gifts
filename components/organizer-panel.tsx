@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   cancelLottery,
   removeUser,
   runLottery,
   sendLotteryEmails,
+  setNameForUser,
+  setReadyForUser,
   type ActionResult,
 } from "@/app/actions";
 
@@ -38,6 +40,21 @@ export function OrganizerPanel({
     sendLotteryEmails,
     empty
   );
+  const [nameState, setNameAction, namePending] = useActionState(
+    setNameForUser,
+    empty
+  );
+  const [readyState, setReadyAction, readyPending] = useActionState(
+    setReadyForUser,
+    empty
+  );
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editNameValue, setEditNameValue] = useState("");
+
+  function startEditName(p: { id: string; full_name: string }) {
+    setEditingNameId(p.id);
+    setEditNameValue(p.full_name);
+  }
 
   const readyCount = participants.filter((p) => p.is_ready).length;
   const allReady =
@@ -152,45 +169,116 @@ export function OrganizerPanel({
 
       <div>
         <h3 className="text-sm font-medium text-stone-600">Uczestnicy</h3>
-        <ul className="mt-2 flex flex-col gap-1">
+        <ul className="mt-2 flex flex-col gap-2">
           {participants.map((p) => (
             <li
               key={p.id}
-              className="flex items-center justify-between text-sm"
+              className="flex flex-col gap-2 rounded-[10px] bg-mist px-3 py-2.5"
             >
-              <span className="flex items-center gap-2">
-                <span>{p.full_name}</span>
-                <span
-                  className={
-                    p.is_ready
-                      ? "text-xs font-medium text-accent"
-                      : "text-xs text-faint"
-                  }
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-sm font-medium text-ink">
+                    {p.full_name}
+                  </span>
+                  <span
+                    className={
+                      p.is_ready
+                        ? "shrink-0 text-xs font-medium text-accent"
+                        : "shrink-0 text-xs text-faint"
+                    }
+                  >
+                    {p.is_ready ? "gotowy" : "oczekuje"}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => startEditName(p)}
+                    className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-muted hover:bg-[#e0e6e1]"
+                  >
+                    edytuj
+                  </button>
+                  <form
+                    action={(formData) => {
+                      formData.set("id", p.id);
+                      formData.set("is_ready", String(!p.is_ready));
+                      setReadyAction(formData);
+                    }}
+                  >
+                    <button
+                      type="submit"
+                      disabled={readyPending}
+                      className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-accent hover:bg-sage-150 disabled:opacity-50"
+                    >
+                      {p.is_ready ? "odznacz" : "oznacz gotowego"}
+                    </button>
+                  </form>
+                  <form
+                    action={(formData) => {
+                      removeUser(formData);
+                    }}
+                    onSubmit={(e) => {
+                      if (
+                        !window.confirm(`Usunąć ${p.full_name} z losowania?`)
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="id" value={p.id} />
+                    <button
+                      type="submit"
+                      className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-[#a3201a] hover:bg-[#f1d7d4]"
+                    >
+                      usuń
+                    </button>
+                  </form>
+                </div>
+              </div>
+              {editingNameId === p.id && (
+                <form
+                  action={(formData) => {
+                    formData.set("id", p.id);
+                    setNameAction(formData);
+                  }}
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
                 >
-                  {p.is_ready ? "gotowy" : "oczekuje"}
-                </span>
-              </span>
-              <form
-                action={(formData) => {
-                  removeUser(formData);
-                }}
-                onSubmit={(e) => {
-                  if (!window.confirm(`Usunąć ${p.full_name} z losowania?`)) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                <input type="hidden" name="id" value={p.id} />
-                <button
-                  type="submit"
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  usuń
-                </button>
-              </form>
+                  <input
+                    name="full_name"
+                    value={editNameValue}
+                    onChange={(e) => setEditNameValue(e.target.value)}
+                    required
+                    maxLength={100}
+                    className="flex-1 rounded-lg border border-input-line bg-white px-3 py-1.5 text-sm text-ink"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={namePending}
+                      className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+                    >
+                      {namePending ? "Zapisywanie…" : "Zapisz"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingNameId(null)}
+                      disabled={namePending}
+                      className="rounded-lg border border-input-line bg-white px-3 py-1.5 text-xs font-medium hover:bg-mist disabled:opacity-50"
+                    >
+                      Anuluj
+                    </button>
+                  </div>
+                </form>
+              )}
             </li>
           ))}
         </ul>
+        {nameState.error && (
+          <p className="mt-2 text-sm text-red-600">{nameState.error}</p>
+        )}
+        {readyState.error && (
+          <p className="mt-2 text-sm text-red-600">{readyState.error}</p>
+        )}
       </div>
 
       {lateJoiners.length > 0 && (

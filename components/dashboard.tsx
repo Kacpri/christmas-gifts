@@ -14,6 +14,7 @@ import {
 import {
   SortableContext,
   arrayMove,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -28,6 +29,7 @@ import {
 import type { ChatMessage } from "@/components/message-bubble";
 import { LogoutButton } from "@/components/logout-button";
 import { NameForm } from "@/components/name-form";
+import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
@@ -39,6 +41,7 @@ export type PanelId =
   | "chats"
   | "group-chat"
   | "wishes"
+  | "potrawy"
   | "ready"
   | "organizer";
 
@@ -48,13 +51,20 @@ const DEFAULT_ORDER: PanelId[] = [
   "chats",
   "group-chat",
   "wishes",
+  "potrawy",
   "ready",
   "organizer",
 ];
 
+const WIDE_PANELS = new Set<PanelId>(["chats", "group-chat", "organizer"]);
+
 const STORAGE_KEY = "dashboard-v1";
 
-type SavedLayout = { order: string[]; collapsed: Record<string, boolean> };
+type SavedLayout = {
+  order: string[];
+  collapsed: Record<string, boolean>;
+  view?: "1col" | "2col";
+};
 
 export type GiftsData =
   | {
@@ -113,6 +123,41 @@ function LayoutIcon() {
     >
       <rect x="2" y="2" width="12" height="5" rx="1" />
       <rect x="2" y="9" width="12" height="5" rx="1" />
+    </svg>
+  );
+}
+
+function TwoColIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <rect x="2" y="2" width="5" height="12" rx="1" />
+      <rect x="9" y="2" width="5" height="12" rx="1" />
+    </svg>
+  );
+}
+
+function OneColIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <rect x="2" y="2" width="12" height="12" rx="1" />
     </svg>
   );
 }
@@ -191,6 +236,7 @@ function PanelCard({
   onToggle,
   editMode,
   isHole,
+  wide,
   children,
 }: {
   id: PanelId;
@@ -205,6 +251,7 @@ function PanelCard({
   onToggle: () => void;
   editMode: boolean;
   isHole: boolean;
+  wide?: boolean;
   children: ReactNode;
 }) {
   const {
@@ -229,7 +276,7 @@ function PanelCard({
         isHole
           ? "border border-dashed border-amber-400 bg-amber-50/60 opacity-60"
           : `bg-white ${editMode ? "ring-2 ring-amber-300" : ""}`
-      }`}
+      } ${wide ? "md:col-span-2" : ""}`}
     >
       <div className="flex items-center gap-2">
         {editMode && !isHole && (
@@ -451,6 +498,7 @@ export function Dashboard({
   chats,
   groupChat,
   wishes,
+  dishes,
   ready,
   organizer,
 }: {
@@ -469,6 +517,7 @@ export function Dashboard({
     theme: string | null;
     themeLocked: boolean;
   };
+  dishes: Dish[];
   ready: {
     hasWish: boolean;
     hasTheme: boolean;
@@ -486,6 +535,7 @@ export function Dashboard({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     profile: true,
   });
+  const [view, setView] = useState<"1col" | "2col">("1col");
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -500,6 +550,7 @@ export function Dashboard({
     if (saved) {
       setOrder(normalizeOrder(saved.order));
       setCollapsed((prev) => ({ ...prev, ...(saved.collapsed ?? {}) }));
+      if (saved.view === "2col" || saved.view === "1col") setView(saved.view);
     }
     setHydrated(true);
   }, []);
@@ -509,12 +560,12 @@ export function Dashboard({
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ order, collapsed })
+        JSON.stringify({ order, collapsed, view })
       );
     } catch {
       // localStorage niedostępny — ignoruj
     }
-  }, [order, collapsed, hydrated]);
+  }, [order, collapsed, view, hydrated]);
 
   const handleUnreadChange = useCallback(
     (total: number) => setChatUnread(total),
@@ -556,6 +607,7 @@ export function Dashboard({
   function resetLayout() {
     setOrder(DEFAULT_ORDER);
     setCollapsed({ profile: true });
+    setView("1col");
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -568,6 +620,11 @@ export function Dashboard({
       (id !== "organizer" || organizer) &&
       (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner))
   );
+
+  const isTwoCol = view === "2col";
+  const panelsContainer = isTwoCol
+    ? "grid grid-cols-1 gap-5 md:grid-cols-2"
+    : "flex flex-col gap-5";
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
     profile: {
@@ -612,6 +669,10 @@ export function Dashboard({
           onCountChange={setWishCount}
         />
       ),
+    },
+    potrawy: {
+      title: "Potrawy",
+      body: <DishForm dishes={dishes} />,
     },
     ready: {
       title: "Gotowość",
@@ -664,6 +725,7 @@ export function Dashboard({
         }
         editMode={editMode}
         isHole={activeId === id}
+        wide={WIDE_PANELS.has(id)}
       >
         {isReadyPanel &&
         (ready.isReady || ready.lotteryDone || ready.lateJoiner)
@@ -674,7 +736,11 @@ export function Dashboard({
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-[680px] flex-1 flex-col gap-5 px-5 pb-16 pt-7">
+    <main
+      className={`mx-auto flex w-full flex-1 flex-col gap-5 px-5 pb-16 pt-7 ${
+        isTwoCol ? "max-w-[1120px]" : "max-w-[680px]"
+      }`}
+    >
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[38px] leading-tight text-cream">
           Świąteczne Losowanie
@@ -710,6 +776,19 @@ export function Dashboard({
             <>
               <button
                 type="button"
+                onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
+                aria-label={
+                  view === "1col"
+                    ? "Przełącz na 2 kolumny"
+                    : "Przełącz na 1 kolumnę"
+                }
+                className="hidden h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20 md:flex"
+              >
+                {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
+                {view === "1col" ? "2 kolumny" : "1 kolumna"}
+              </button>
+              <button
+                type="button"
                 onClick={() => setEditMode(true)}
                 className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
               >
@@ -732,9 +811,9 @@ export function Dashboard({
         >
           <SortableContext
             items={visible}
-            strategy={verticalListSortingStrategy}
+            strategy={isTwoCol ? rectSortingStrategy : verticalListSortingStrategy}
           >
-            <div className="flex flex-col gap-5">{cards}</div>
+            <div className={panelsContainer}>{cards}</div>
           </SortableContext>
           <DragOverlay>
             {activeId ? (
@@ -756,7 +835,7 @@ export function Dashboard({
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="flex flex-col gap-5">{cards}</div>
+        <div className={panelsContainer}>{cards}</div>
       )}
     </main>
   );
