@@ -39,13 +39,38 @@ export function ReadySection({
       <button
         type="submit"
         disabled={pending || !hasWish || !hasTheme}
-        className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+        className="w-fit inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
       >
-        {pending ? "Zapisywanie…" : "Wszystko gotowe"}
+        {pending ? (
+          <>
+            <SpinnerIcon />
+            Zapisywanie…
+          </>
+        ) : (
+          "Wszystko gotowe"
+        )}
       </button>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
       )}
     </form>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      className="animate-spin"
+      aria-hidden
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
   );
 }
