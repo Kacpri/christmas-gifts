@@ -163,9 +163,16 @@ export function WishForm({
                     <button
                       type="submit"
                       disabled={editingWish}
-                      className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+                      className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
                     >
-                      {editingWish ? "Zapisywanie…" : "Zapisz zmiany"}
+                      {editingWish ? (
+                        <>
+                          <SpinnerIcon />
+                          Zapisywanie…
+                        </>
+                      ) : (
+                        "Zapisz zmiany"
+                      )}
                     </button>
                     <button
                       type="button"
@@ -257,9 +264,16 @@ export function WishForm({
           <button
             type="submit"
             disabled={addingWish}
-            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+            className="inline-flex w-fit min-w-[144px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
           >
-            {addingWish ? "Dodawanie…" : "Dodaj życzenie"}
+            {addingWish ? (
+              <>
+                <SpinnerIcon />
+                Dodawanie…
+              </>
+            ) : (
+              "Dodaj życzenie"
+            )}
           </button>
           {!wishState.ok && wishState.error && (
             <p className="text-sm text-red-600">{wishState.error}</p>
@@ -310,7 +324,7 @@ export function WishForm({
               type="submit"
               disabled={savingTheme || justDrew || themeValue.trim() === (theme ?? "")}
               aria-live="polite"
-              className="w-fit inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+              className="w-fit inline-flex min-w-[136px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
             >
               {savingTheme ? (
                 <>
@@ -330,7 +344,7 @@ export function WishForm({
               type="button"
               onClick={drawTheme}
               disabled={savingTheme}
-              className="w-fit inline-flex items-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+              className="w-fit inline-flex min-w-[184px] items-center justify-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
             >
               <DiceIcon />
               Podpowiedz temat

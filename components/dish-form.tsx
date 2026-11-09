@@ -8,8 +8,11 @@ import {
   removeDish,
   type ActionResult,
 } from "@/app/actions";
+import { Select } from "@/components/select";
 import {
   DISH_CATEGORIES,
+  dishCategoryBadge,
+  dishCategoryLabel,
   type DishCategory,
 } from "@/lib/dishes";
 
@@ -24,9 +27,6 @@ export type Dish = {
 const empty: ActionResult = { ok: false };
 const PER_PAGE = 10;
 
-const categoryLabel = (value: DishCategory) =>
-  DISH_CATEGORIES.find((c) => c.value === value)?.label ?? value;
-
 const plural = (n: number, forms: [string, string, string]) => {
   if (n === 1) return forms[0];
   const d = n % 10;
@@ -35,12 +35,18 @@ const plural = (n: number, forms: [string, string, string]) => {
   return forms[2];
 };
 
+const CATEGORY_OPTIONS = DISH_CATEGORIES.map((c) => ({
+  value: c.value,
+  label: c.label,
+}));
+
 export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [addState, addAction, adding] = useActionState(addDish, empty);
   const [editState, editAction, editing] = useActionState(editDish, empty);
   const [query, setQuery] = useState("");
   const [personFilter, setPersonFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [addCategory, setAddCategory] = useState<DishCategory>("glowne");
   const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -53,6 +59,15 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       ),
     [dishes]
   );
+
+  const personOptions = [
+    { value: "all", label: "Wszyscy" },
+    ...authors.map((a) => ({ value: a, label: a })),
+  ];
+  const categoryFilterOptions = [
+    { value: "all", label: "Wszystkie kategorie" },
+    ...CATEGORY_OPTIONS,
+  ];
 
   const q = query.trim().toLowerCase();
   const filtered = dishes
@@ -90,7 +105,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
         <p className="text-sm text-stone-500">
           Wspólna lista potraw — każdy dodaje to, co przynosi.
         </p>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-2 flex flex-col gap-2">
           <input
             value={query}
             onChange={(e) => {
@@ -98,38 +113,28 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               setPage(1);
             }}
             placeholder="Szukaj potrawy…"
-            className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            className="w-full rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
-          <select
-            value={personFilter}
-            onChange={(e) => {
-              setPersonFilter(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-xl border border-input-line bg-white px-3 py-2.5 text-sm text-ink"
-          >
-            <option value="all">Wszyscy</option>
-            {authors.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-          <select
-            value={categoryFilter}
-            onChange={(e) => {
-              setCategoryFilter(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-xl border border-input-line bg-white px-3 py-2.5 text-sm text-ink"
-          >
-            <option value="all">Wszystkie kategorie</option>
-            {DISH_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <Select
+              value={personFilter}
+              onChange={(v) => {
+                setPersonFilter(v);
+                setPage(1);
+              }}
+              options={personOptions}
+              className="flex-1"
+            />
+            <Select
+              value={categoryFilter}
+              onChange={(v) => {
+                setCategoryFilter(v);
+                setPage(1);
+              }}
+              options={categoryFilterOptions}
+              className="flex-1"
+            />
+          </div>
         </div>
       </div>
 
@@ -164,28 +169,28 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         maxLength={120}
                         className="flex-1 rounded-xl border border-input-line bg-white px-3 py-2 text-sm text-ink"
                       />
-                      <select
+                      <Select
                         name="category"
                         value={editCategory}
-                        onChange={(e) =>
-                          setEditCategory(e.target.value as DishCategory)
-                        }
-                        className="rounded-xl border border-input-line bg-white px-3 py-2 text-sm text-ink"
-                      >
-                        {DISH_CATEGORIES.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => setEditCategory(v as DishCategory)}
+                        options={CATEGORY_OPTIONS}
+                        className="sm:w-[160px]"
+                      />
                     </div>
                     <div className="flex items-center gap-3">
                       <button
                         type="submit"
                         disabled={editing}
-                        className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+                        className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
                       >
-                        {editing ? "Zapisywanie…" : "Zapisz"}
+                        {editing ? (
+                          <>
+                            <SpinnerIcon />
+                            Zapisywanie…
+                          </>
+                        ) : (
+                          "Zapisz"
+                        )}
                       </button>
                       <button
                         type="button"
@@ -207,8 +212,10 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                   className="flex min-h-12 items-center justify-between gap-3 rounded-[10px] bg-mist px-3 py-2"
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="shrink-0 rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent">
-                      {categoryLabel(dish.category)}
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${dishCategoryBadge(dish.category)}`}
+                    >
+                      {dishCategoryLabel(dish.category)}
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-ink">
@@ -253,8 +260,8 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 ← Poprzednia
               </button>
               <span className="text-xs text-stone-500">
-                Strona {currentPage} z {totalPages} ·{" "}
-                {filtered.length} {plural(filtered.length, ["potrawa", "potrawy", "potraw"])}
+                Strona {currentPage} z {totalPages} · {filtered.length}{" "}
+                {plural(filtered.length, ["potrawa", "potrawy", "potraw"])}
               </span>
               <button
                 type="button"
@@ -280,29 +287,50 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             placeholder="Co przynosisz? (np. szarlotka)"
             className="flex-1 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
-          <select
+          <Select
             name="category"
-            defaultValue="glowne"
-            className="rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-sm text-ink"
-          >
-            {DISH_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            value={addCategory}
+            onChange={(v) => setAddCategory(v as DishCategory)}
+            options={CATEGORY_OPTIONS}
+            className="sm:w-[160px]"
+          />
         </div>
         <button
           type="submit"
           disabled={adding}
-          className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          className="inline-flex min-w-[144px] w-fit items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
         >
-          {adding ? "Dodawanie…" : "Dodaj potrawę"}
+          {adding ? (
+            <>
+              <SpinnerIcon />
+              Dodawanie…
+            </>
+          ) : (
+            "Dodaj potrawę"
+          )}
         </button>
         {!addState.ok && addState.error && (
           <p className="text-sm text-red-600">{addState.error}</p>
         )}
       </form>
     </div>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      className="animate-spin"
+      aria-hidden
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
   );
 }

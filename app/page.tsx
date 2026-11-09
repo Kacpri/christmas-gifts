@@ -85,6 +85,8 @@ export default async function Home() {
     id: string;
     full_name: string;
     is_ready: boolean;
+    has_theme: boolean;
+    wish_count: number;
   }[] = [];
   let lateJoiners: { id: string; full_name: string }[] = [];
   if (profile?.is_organizer) {
@@ -94,6 +96,8 @@ export default async function Home() {
       full_name: string;
       is_ready: boolean;
       in_lottery: boolean;
+      has_theme: boolean;
+      wish_count: number;
     }[];
     lotteryParticipants = status
       .filter((p) => p.in_lottery)
@@ -101,6 +105,8 @@ export default async function Home() {
         id: p.profile_id,
         full_name: p.full_name,
         is_ready: p.is_ready,
+        has_theme: p.has_theme,
+        wish_count: p.wish_count,
       }));
     lateJoiners = status
       .filter((p) => !p.in_lottery)

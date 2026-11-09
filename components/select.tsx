@@ -1,0 +1,100 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+export type SelectOption = { value: string; label: string };
+
+export function Select({
+  value,
+  onChange,
+  options,
+  name,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  name?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className={`relative ${className ?? ""}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-input-line bg-white px-3.5 py-2.5 text-left text-sm text-ink"
+      >
+        <span className="truncate">{selected?.label ?? ""}</span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`shrink-0 text-muted transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        >
+          <path d="M4 6l4 4 4-4" />
+        </svg>
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >
+          {options.map((o) => (
+            <li key={o.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={o.value === value}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={`block w-full px-3.5 py-2 text-left text-sm ${
+                  o.value === value
+                    ? "bg-sage-100 font-medium text-accent"
+                    : "text-ink hover:bg-mist"
+                }`}
+              >
+                {o.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {name && <input type="hidden" name={name} value={value} />}
+    </div>
+  );
+}

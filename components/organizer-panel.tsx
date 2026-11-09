@@ -27,7 +27,13 @@ export function OrganizerPanel({
   lateJoiners,
   lotteryDone,
 }: {
-  participants: { id: string; full_name: string; is_ready: boolean }[];
+  participants: {
+    id: string;
+    full_name: string;
+    is_ready: boolean;
+    has_theme: boolean;
+    wish_count: number;
+  }[];
   lateJoiners: { id: string; full_name: string }[];
   lotteryDone: boolean;
 }) {
@@ -91,7 +97,7 @@ export function OrganizerPanel({
         <button
           type="submit"
           disabled={pending || !allReady}
-          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          className="inline-flex min-w-[164px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
         >
           {pending ? (
             <>
@@ -129,9 +135,16 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={cancelPending}
-            className="rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
-            {cancelPending ? "Anulowanie…" : "Anuluj losowanie"}
+            {cancelPending ? (
+              <>
+                <SpinnerIcon />
+                Anulowanie…
+              </>
+            ) : (
+              "Anuluj losowanie"
+            )}
           </button>
         </form>
       )}
@@ -154,9 +167,16 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={emailPending}
-            className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
+            className="inline-flex min-w-[192px] items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
           >
-            {emailPending ? "Wysyłanie…" : "Wyślij wyniki mailem"}
+            {emailPending ? (
+              <>
+                <SpinnerIcon />
+                Wysyłanie…
+              </>
+            ) : (
+              "Wyślij wyniki mailem"
+            )}
           </button>
         </form>
       )}
@@ -204,11 +224,28 @@ export function OrganizerPanel({
                       formData.set("is_ready", String(!p.is_ready));
                       setReadyAction(formData);
                     }}
+                    onSubmit={(e) => {
+                      if (!p.is_ready) {
+                        const missing: string[] = [];
+                        if (!p.has_theme) missing.push("tematu");
+                        if (p.wish_count < 2) missing.push("min. 2 życzeń");
+                        if (
+                          missing.length > 0 &&
+                          !window.confirm(
+                            `${p.full_name} nie ma: ${missing.join(
+                              " i "
+                            )}. Oznaczyć jako gotowego mimo to?`
+                          )
+                        ) {
+                          e.preventDefault();
+                        }
+                      }
+                    }}
                   >
                     <button
                       type="submit"
                       disabled={readyPending}
-                      className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-accent hover:bg-sage-150 disabled:opacity-50"
+                      className="min-h-9 min-w-[136px] rounded-lg px-2.5 text-xs font-medium text-accent hover:bg-sage-150 disabled:opacity-50"
                     >
                       {p.is_ready ? "odznacz" : "oznacz gotowego"}
                     </button>

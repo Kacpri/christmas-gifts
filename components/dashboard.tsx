@@ -526,7 +526,13 @@ export function Dashboard({
     lateJoiner: boolean;
   };
   organizer: {
-    participants: { id: string; full_name: string; is_ready: boolean }[];
+    participants: {
+      id: string;
+      full_name: string;
+      is_ready: boolean;
+      has_theme: boolean;
+      wish_count: number;
+    }[];
     lateJoiners: { id: string; full_name: string }[];
     lotteryDone: boolean;
   } | null;
