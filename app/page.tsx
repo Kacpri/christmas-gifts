@@ -23,6 +23,7 @@ export default async function Home() {
     { data: myMessages },
     { data: myReads },
     { data: allDishes },
+    { data: allLikes },
     { data: partyRow },
   ] = await Promise.all([
     supabase
@@ -63,6 +64,7 @@ export default async function Home() {
       .from("dishes")
       .select("id, user_id, name, category, quantity")
       .order("created_at"),
+    supabase.from("dish_likes").select("dish_id, user_id"),
     supabase
       .from("party")
       .select("starts_at, location, notes")
@@ -75,6 +77,12 @@ export default async function Home() {
   const locked = lotteryDone || isReady;
 
   const nameById = new Map((participants ?? []).map((p) => [p.id, p.full_name]));
+  const likeCountByDish = new Map<number, number>();
+  const myLikedDishIds = new Set<number>();
+  for (const l of allLikes ?? []) {
+    likeCountByDish.set(l.dish_id, (likeCountByDish.get(l.dish_id) ?? 0) + 1);
+    if (l.user_id === user.id) myLikedDishIds.add(l.dish_id);
+  }
   const dishes = (allDishes ?? []).map((d) => ({
     id: d.id,
     name: d.name,
@@ -82,6 +90,8 @@ export default async function Home() {
     author: nameById.get(d.user_id) ?? "??",
     isMine: d.user_id === user.id,
     quantity: d.quantity,
+    likeCount: likeCountByDish.get(d.id) ?? 0,
+    likedByMe: myLikedDishIds.has(d.id),
   }));
 
   const { data: lotteryActiveData } = await supabase.rpc("lottery_active");

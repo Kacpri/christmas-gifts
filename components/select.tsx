@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+};
 
 export function Select({
   value,
@@ -101,13 +105,18 @@ export function Select({
                   onChange(o.value);
                   setOpen(false);
                 }}
-                className={`block w-full px-3.5 py-2 text-left text-sm ${
+                className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-sm ${
                   o.value === value
                     ? "bg-sage-100 font-medium text-accent"
                     : "text-ink hover:bg-mist"
                 }`}
               >
-                {o.label}
+                {o.icon && (
+                  <span className="shrink-0 text-muted" aria-hidden>
+                    {o.icon}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1 truncate">{o.label}</span>
               </button>
             </li>
           ))}

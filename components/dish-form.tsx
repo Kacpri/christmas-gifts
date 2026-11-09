@@ -12,6 +12,7 @@ import {
   addDish,
   editDish,
   removeDish,
+  toggleDishLike,
   type ActionResult,
 } from "@/app/actions";
 import { Select } from "@/components/select";
@@ -31,9 +32,11 @@ export type Dish = {
   author: string;
   isMine: boolean;
   quantity: string | null;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
-type SortField = "time" | "name" | "person" | "category";
+type SortField = "time" | "name" | "person" | "category" | "likes";
 type SortDir = "asc" | "desc";
 
 const empty: ActionResult = { ok: false };
@@ -42,13 +45,15 @@ const PER_PAGE = 10;
 const CATEGORY_OPTIONS = DISH_CATEGORIES.map((c) => ({
   value: c.value,
   label: c.label,
+  icon: <DishCategoryIcon category={c.value} />,
 }));
 
-const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: "time", label: "Czas dodania" },
-  { value: "name", label: "Nazwa" },
-  { value: "person", label: "Osoba" },
-  { value: "category", label: "Kategoria" },
+const SORT_OPTIONS: { value: SortField; label: string; icon: ReactNode }[] = [
+  { value: "time", label: "Czas dodania", icon: <ClockIcon /> },
+  { value: "name", label: "Nazwa", icon: <TypeIcon /> },
+  { value: "person", label: "Osoba", icon: <UserIcon /> },
+  { value: "category", label: "Kategoria", icon: <TagIcon /> },
+  { value: "likes", label: "Polubienia", icon: <HeartIcon /> },
 ];
 
 const DEFAULT_DIR: Record<SortField, SortDir> = {
@@ -56,6 +61,7 @@ const DEFAULT_DIR: Record<SortField, SortDir> = {
   name: "asc",
   person: "asc",
   category: "asc",
+  likes: "desc",
 };
 
 const CATEGORY_ORDER: Record<string, number> = Object.fromEntries(
@@ -72,6 +78,8 @@ function compareDishes(a: Dish, b: Dish, field: SortField): number {
       return a.author.localeCompare(b.author, "pl");
     case "category":
       return CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category];
+    case "likes":
+      return a.likeCount - b.likeCount;
   }
 }
 
@@ -106,7 +114,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
 
   const personOptions = [
     { value: "all", label: "Wszyscy" },
-    ...authors.map((a) => ({ value: a, label: a })),
+    ...authors.map((a) => ({ value: a, label: a, icon: <UserIcon /> })),
   ];
   const categoryFilterOptions = [
     { value: "all", label: "Wszystkie kategorie" },
@@ -298,7 +306,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         onChange={(v) => setEditCategory(v as DishCategory)}
                         options={CATEGORY_OPTIONS}
                         scrollable={false}
-                        className="sm:w-[150px]"
+                        className="sm:w-[180px]"
                       />
                     </div>
                     <div className="flex items-center gap-3">
@@ -354,7 +362,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                     {dish.quantity ?? ""}
                   </span>
                   <div className="flex w-[74px] shrink-0 items-center justify-end gap-0.5">
-                    {dish.isMine && (
+                    {dish.isMine ? (
                       <>
                         <button
                           type="button"
@@ -375,6 +383,25 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                           <TrashIcon />
                         </button>
                       </>
+                    ) : (
+                      <form action={toggleDishLike} className="flex w-full justify-end">
+                        <input type="hidden" name="id" value={dish.id} />
+                        <button
+                          type="submit"
+                          aria-label={dish.likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
+                          title={dish.likedByMe ? "Odpolub" : "Polub"}
+                          className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors ${
+                            dish.likedByMe
+                              ? "text-danger"
+                              : "text-muted hover:bg-icon-hover"
+                          }`}
+                        >
+                          <HeartIcon filled={dish.likedByMe} />
+                          <span className="tabular-nums text-xs">
+                            {dish.likeCount}
+                          </span>
+                        </button>
+                      </form>
                     )}
                   </div>
                 </li>
@@ -421,7 +448,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             direction="up"
             scrollable={false}
             leadingIcon={<TagIcon />}
-            className="sm:w-[150px]"
+            className="sm:w-[180px]"
           />
           <input
             name="name"
@@ -673,6 +700,24 @@ function PlusCircleIcon() {
       <circle cx="12" cy="12" r="10" />
       <path d="M8 12h8" />
       <path d="M12 8v8" />
+    </svg>
+  );
+}
+
+function HeartIcon({ filled = false }: { filled?: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
     </svg>
   );
 }

@@ -79,32 +79,13 @@ export function PartyPanel({
         <label htmlFor="party-starts" className="text-xs font-medium text-faint">
           Data i godzina
         </label>
-        <div className="relative">
-          <input
-            id="party-starts"
-            name="starts_at"
-            type="datetime-local"
-            defaultValue={toLocalInput(startsAt)}
-            className="w-full rounded-xl border border-input-line bg-input-bg py-2.5 pl-3.5 pr-10 text-sm text-ink"
-          />
-          <svg
-            className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-accent"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M8 2v4" />
-            <path d="M16 2v4" />
-            <rect width="18" height="18" x="3" y="4" rx="2" />
-            <path d="M3 10h18" />
-          </svg>
-        </div>
+        <input
+          id="party-starts"
+          name="starts_at"
+          type="datetime-local"
+          defaultValue={toLocalInput(startsAt)}
+          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="party-location" className="text-xs font-medium text-faint">

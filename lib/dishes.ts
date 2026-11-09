@@ -17,7 +17,7 @@ export const DISH_CATEGORIES = [
   {
     value: "dodatek",
     label: "Dodatki",
-    badge: "bg-[#e4edf1] text-[#4f6d7a] dark:bg-[#223038] dark:text-[#8ab0c0]",
+    badge: "bg-[#e3f0e6] text-[#3f7a52] dark:bg-[#1f3828] dark:text-[#82c39d]",
   },
   {
     value: "deser",

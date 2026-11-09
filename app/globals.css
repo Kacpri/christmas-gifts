@@ -92,7 +92,11 @@ html[data-theme="dark"] .app-shell {
 }
 
 input::-webkit-calendar-picker-indicator {
-  opacity: 0;
+  filter: sepia(1) saturate(6) hue-rotate(-20deg) brightness(0.85);
+}
+
+html[data-theme="dark"] input::-webkit-calendar-picker-indicator {
+  filter: sepia(1) saturate(6) hue-rotate(-20deg) brightness(1.35);
 }
 
 h1,
