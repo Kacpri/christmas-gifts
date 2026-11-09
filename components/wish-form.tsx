@@ -25,10 +25,12 @@ export function WishForm({
   wishes,
   theme,
   themeLocked,
+  onCountChange,
 }: {
   wishes: Wish[];
   theme: string | null;
   themeLocked: boolean;
+  onCountChange?: (count: number) => void;
 }) {
   const [wishState, addWishAction, addingWish] = useActionState(addWish, empty);
   const [themeState, saveThemeAction, savingTheme] = useActionState(
@@ -50,6 +52,10 @@ export function WishForm({
   useEffect(() => {
     setLocalWishes(wishes);
   }, [wishes]);
+
+  useEffect(() => {
+    onCountChange?.(localWishes.length);
+  }, [localWishes.length, onCountChange]);
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);

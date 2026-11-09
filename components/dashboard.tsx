@@ -493,6 +493,7 @@ export function Dashboard({
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
   );
   const [groupUnread, setGroupUnread] = useState(0);
+  const [wishCount, setWishCount] = useState(wishes.wishes.length);
 
   useEffect(() => {
     const saved = loadLayout();
@@ -604,6 +605,7 @@ export function Dashboard({
           wishes={wishes.wishes}
           theme={wishes.theme}
           themeLocked={wishes.themeLocked}
+          onCountChange={setWishCount}
         />
       ),
     },
@@ -637,7 +639,7 @@ export function Dashboard({
         titleBadge={
           id === "wishes" ? (
             <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent">
-              {wishes.wishes.length}/5
+              {wishCount}/5
             </span>
           ) : undefined
         }
