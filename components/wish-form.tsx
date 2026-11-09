@@ -171,7 +171,7 @@ export function WishForm({
                       type="button"
                       onClick={() => setEditingId(null)}
                       disabled={editingWish}
-                      className="rounded-xl px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+                      className="rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
                     >
                       Anuluj
                     </button>
@@ -330,7 +330,7 @@ export function WishForm({
               type="button"
               onClick={drawTheme}
               disabled={savingTheme}
-              className="w-fit inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+              className="w-fit inline-flex items-center gap-2 rounded-xl border border-input-line bg-white px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
             >
               <DiceIcon />
               Podpowiedz temat
