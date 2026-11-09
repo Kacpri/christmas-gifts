@@ -107,7 +107,7 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={cancelPending}
-            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
             {cancelPending ? "Anulowanie…" : "Anuluj losowanie"}
           </button>
@@ -132,7 +132,7 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={emailPending}
-            className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
+            className="rounded-xl px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
           >
             {emailPending ? "Wysyłanie…" : "Wyślij wyniki mailem"}
           </button>
