@@ -39,7 +39,7 @@ export function ReadySection({
       <button
         type="submit"
         disabled={pending || !hasWish || !hasTheme}
-        className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+        className="w-fit rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
       >
         {pending ? "Zapisywanie…" : "Wszystko gotowe"}
       </button>

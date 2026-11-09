@@ -553,7 +553,7 @@ export function ChatSection({
                     type="submit"
                     disabled={pending || !value.trim()}
                     aria-label="Wyślij"
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
                   >
                     <SendIcon />
                   </button>

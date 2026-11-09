@@ -151,7 +151,7 @@ export function WishForm({
                     <button
                       type="submit"
                       disabled={editingWish}
-                      className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                      className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
                     >
                       {editingWish ? "Zapisywanie…" : "Zapisz zmiany"}
                     </button>
@@ -245,7 +245,7 @@ export function WishForm({
           <button
             type="submit"
             disabled={addingWish}
-            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
           >
             {addingWish ? "Dodawanie…" : "Dodaj życzenie"}
           </button>
@@ -298,7 +298,7 @@ export function WishForm({
               type="submit"
               disabled={savingTheme || themeValue.trim() === (theme ?? "")}
               aria-live="polite"
-              className="w-fit inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+              className="w-fit inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
             >
               {savingTheme ? (
                 <>
