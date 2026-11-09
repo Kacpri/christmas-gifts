@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useActionState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useActionState,
+  type ReactNode,
+} from "react";
 
 import {
   addDish,
@@ -329,11 +335,12 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 key={dish.id}
                 className="flex min-h-12 items-center gap-3 rounded-[10px] bg-mist px-3 py-2 transition-colors hover:bg-sage-100"
               >
-                  <span
-                    className={`w-[110px] shrink-0 rounded-full px-2 py-1 text-center text-xs font-semibold ${dishCategoryBadge(dish.category)}`}
-                  >
-                    {dishCategoryLabel(dish.category)}
-                  </span>
+                <span
+                  title={dishCategoryLabel(dish.category)}
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${dishCategoryBadge(dish.category)}`}
+                >
+                  <DishCategoryIcon category={dish.category} />
+                </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-ink">
                       {dish.name}
@@ -674,4 +681,107 @@ function SortFieldIcon({ field }: { field: SortField }) {
   if (field === "name") return <TypeIcon />;
   if (field === "person") return <UserIcon />;
   return <TagIcon />;
+}
+
+function DishCategoryIcon({ category }: { category: DishCategory }) {
+  let paths: ReactNode;
+  switch (category) {
+    case "zupa":
+      paths = (
+        <>
+          <path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" />
+          <path d="M7 21h10" />
+          <path d="M19.5 12V2" />
+          <path d="M2 12h20" />
+          <path d="M8.5 2v2" />
+          <path d="M15.5 2v2" />
+          <path d="M12 2v4" />
+        </>
+      );
+      break;
+    case "przystawka":
+      paths = (
+        <>
+          <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
+          <path d="M8.5 8.5v.01" />
+          <path d="M16 15.5v.01" />
+          <path d="M12 12v.01" />
+          <path d="M11 17v.01" />
+          <path d="M7 14v.01" />
+        </>
+      );
+      break;
+    case "glowne":
+      paths = (
+        <>
+          <path d="M17.464 15.464A7 7 0 0 0 12 12h-1.24a2.5 2.5 0 0 0 0 5h1.244a7 7 0 0 0 5.418-1.536zM7.536 5.536A7 7 0 0 1 12 9h1.24a2.25 2.25 0 0 1 0 5" />
+          <path d="M14 12v-1.5a4.5 4.5 0 0 0-4.5-4.5H12" />
+          <path d="M5 2c1.5 0 2.5 1 2.5 2.5S6.5 7 5 7 2.5 6 2.5 4.5 3.5 2 5 2Z" />
+        </>
+      );
+      break;
+    case "dodatek":
+      paths = (
+        <>
+          <path d="M7 21h10" />
+          <path d="M12 12v9" />
+          <path d="M5.2 10 3 13a9 9 0 0 0 18 0l-2.2-3" />
+          <path d="M17 10a4 4 0 0 0-4-4" />
+          <path d="M9 10a4 4 0 0 1 4-4" />
+          <path d="M7.5 5.5 12 2l4.5 3.5" />
+        </>
+      );
+      break;
+    case "deser":
+      paths = (
+        <>
+          <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" />
+          <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1" />
+          <path d="M2 21h20" />
+          <path d="M7 8v3" />
+          <path d="M11 8v3" />
+          <path d="M15 8v3" />
+          <path d="M18 8v3" />
+          <path d="M7 4h.01" />
+          <path d="M11 4h.01" />
+          <path d="M15 4h.01" />
+          <path d="M18 4h.01" />
+        </>
+      );
+      break;
+    case "napoj":
+      paths = (
+        <>
+          <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+          <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+          <line x1="6" x2="6" y1="2" y2="4" />
+          <line x1="10" x2="10" y1="2" y2="4" />
+          <line x1="14" x2="14" y1="2" y2="4" />
+        </>
+      );
+      break;
+    default:
+      paths = (
+        <>
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="19" cy="12" r="1" />
+          <circle cx="5" cy="12" r="1" />
+        </>
+      );
+  }
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {paths}
+    </svg>
+  );
 }
