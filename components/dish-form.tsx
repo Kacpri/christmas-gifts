@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   useActionState,
   type ReactNode,
@@ -99,6 +100,28 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [editCategory, setEditCategory] = useState<DishCategory>("glowne");
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+
+  function startLongPress(dish: Dish) {
+    longPressFired.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      setMobileMenuDish(dish);
+      window.setTimeout(() => {
+        longPressFired.current = false;
+      }, 400);
+    }, 500);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
 
   useEffect(() => {
     if (editState.ok) setEditingId(null);
@@ -341,7 +364,11 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               ) : (
               <li
                 key={dish.id}
-                className="flex min-h-12 items-center gap-3 rounded-[10px] bg-mist px-3 py-2 transition-colors hover:bg-sage-100"
+                className="group flex min-h-12 items-center gap-3 rounded-[10px] bg-mist px-3 py-2 transition-colors hover:bg-sage-100"
+                onTouchStart={dish.isMine ? () => startLongPress(dish) : undefined}
+                onTouchEnd={dish.isMine ? cancelLongPress : undefined}
+                onTouchMove={dish.isMine ? cancelLongPress : undefined}
+                onTouchCancel={dish.isMine ? cancelLongPress : undefined}
               >
                 <span
                   title={dishCategoryLabel(dish.category)}
@@ -353,17 +380,50 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                     <p className="truncate text-sm font-medium text-ink">
                       {dish.name}
                     </p>
-                    <p className="truncate text-xs text-muted">
-                      {dish.author}
-                      {dish.isMine && " · Ty"}
+                    <p className="flex items-center gap-1.5 text-xs text-muted">
+                      <span className="truncate">{dish.author}</span>
+                      {dish.isMine && (
+                        <span className="shrink-0 rounded bg-sage-100 px-1.5 py-0.5 text-[10px] font-semibold text-accent dark:bg-sage-200 dark:text-list-ink">
+                          Ty
+                        </span>
+                      )}
                     </p>
                   </div>
                   <span className="w-[72px] shrink-0 text-right text-sm text-muted">
                     {dish.quantity ?? ""}
                   </span>
                   <div className="flex w-[74px] shrink-0 items-center justify-end gap-0.5">
-                    {dish.isMine ? (
-                      <>
+                    <form
+                      action={toggleDishLike}
+                      className={`flex w-full justify-end ${
+                        dish.isMine ? "group-hover:hidden" : ""
+                      }`}
+                    >
+                      <input type="hidden" name="id" value={dish.id} />
+                      <button
+                        type="submit"
+                        onClick={(e) => {
+                          if (longPressFired.current) {
+                            e.preventDefault();
+                            longPressFired.current = false;
+                          }
+                        }}
+                        aria-label={dish.likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
+                        title={dish.likedByMe ? "Odpolub" : "Polub"}
+                        className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors ${
+                          dish.likedByMe
+                            ? "text-danger"
+                            : "text-muted hover:bg-icon-hover"
+                        }`}
+                      >
+                        <HeartIcon filled={dish.likedByMe} />
+                        <span className="tabular-nums text-xs">
+                          {dish.likeCount}
+                        </span>
+                      </button>
+                    </form>
+                    {dish.isMine && (
+                      <div className="hidden items-center gap-0.5 group-hover:flex">
                         <button
                           type="button"
                           onClick={() => startEdit(dish)}
@@ -382,26 +442,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         >
                           <TrashIcon />
                         </button>
-                      </>
-                    ) : (
-                      <form action={toggleDishLike} className="flex w-full justify-end">
-                        <input type="hidden" name="id" value={dish.id} />
-                        <button
-                          type="submit"
-                          aria-label={dish.likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
-                          title={dish.likedByMe ? "Odpolub" : "Polub"}
-                          className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors ${
-                            dish.likedByMe
-                              ? "text-danger"
-                              : "text-muted hover:bg-icon-hover"
-                          }`}
-                        >
-                          <HeartIcon filled={dish.likedByMe} />
-                          <span className="tabular-nums text-xs">
-                            {dish.likeCount}
-                          </span>
-                        </button>
-                      </form>
+                      </div>
                     )}
                   </div>
                 </li>
@@ -487,6 +528,53 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       </form>
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
+
+      {mobileMenuDish && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
+          onClick={() => setMobileMenuDish(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 truncate text-sm font-semibold text-ink">
+              {mobileMenuDish.name}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  startEdit(mobileMenuDish);
+                  setMobileMenuDish(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+              >
+                <PencilIcon />
+                Edytuj
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleRemove(mobileMenuDish);
+                  setMobileMenuDish(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+              >
+                <TrashIcon />
+                Usuń
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuDish(null)}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

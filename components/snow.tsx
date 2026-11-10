@@ -10,7 +10,7 @@ const FLAKES = Array.from({ length: 70 }, (_, i) => ({
   size: 2 + rand(i, 2) * 3,
   duration: 9 + rand(i, 3) * 12,
   delay: -rand(i, 4) * 21,
-  opacity: 0.3 + rand(i, 5) * 0.4,
+   opacity: 0.16 + rand(i, 5) * 0.28,
   drift: -30 + rand(i, 6) * 60,
 }));
 

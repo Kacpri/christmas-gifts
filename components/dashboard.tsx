@@ -887,7 +887,7 @@ export function Dashboard({
         titleIcon={PANEL_ICONS[id]}
         titleBadge={
           id === "wishes" ? (
-            <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent">
+            <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent dark:bg-sage-200 dark:text-list-ink">
               {wishCount}/5
             </span>
           ) : undefined
@@ -950,14 +950,14 @@ export function Dashboard({
               <button
                 type="button"
                 onClick={resetLayout}
-                className="h-9 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                className="inline-flex h-9 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
               >
                 Resetuj układ
               </button>
               <button
                 type="button"
                 onClick={() => setEditMode(false)}
-                className="h-9 rounded-[10px] bg-accent px-3.5 text-sm font-semibold text-white hover:bg-accent/90"
+                className="inline-flex h-9 items-center rounded-[10px] bg-accent px-3.5 text-sm font-semibold text-white hover:bg-accent/90"
               >
                 Gotowe
               </button>
