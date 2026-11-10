@@ -4,6 +4,7 @@ import { Inter, Lobster } from "next/font/google";
 import { AuthCodeExchanger } from "@/components/auth-code-exchanger";
 import { PwaRegister } from "@/components/pwa-register";
 import { Snow } from "@/components/snow";
+import { ThemeSync } from "@/components/theme-sync";
 
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
         <Snow />
+        <ThemeSync />
         <AuthCodeExchanger />
         <PwaRegister />
         <div className="app-shell flex flex-1 flex-col">{children}</div>

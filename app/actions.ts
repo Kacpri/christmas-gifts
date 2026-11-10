@@ -183,10 +183,10 @@ export async function removeDish(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
-export async function toggleDishLike(formData: FormData): Promise<void> {
+export async function toggleDishLike(formData: FormData): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
   const id = Number(formData.get("id"));
-  if (!Number.isInteger(id)) return;
+  if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowe danie." };
   const { data: existing } = await supabase
     .from("dish_likes")
     .select("dish_id")
@@ -194,17 +194,20 @@ export async function toggleDishLike(formData: FormData): Promise<void> {
     .eq("user_id", user.id)
     .maybeSingle();
   if (existing) {
-    await supabase
+    const { error } = await supabase
       .from("dish_likes")
       .delete()
       .eq("dish_id", id)
       .eq("user_id", user.id);
+    if (error) return { ok: false, error: error.message };
   } else {
-    await supabase
+    const { error } = await supabase
       .from("dish_likes")
       .insert({ dish_id: id, user_id: user.id });
+    if (error) return { ok: false, error: error.message };
   }
   revalidatePath("/");
+  return { ok: true };
 }
 
 export async function saveName(
@@ -468,6 +471,92 @@ export async function markThreadRead(formData: FormData): Promise<void> {
   await touchThreadRead(supabase, user.id, lotteryType, drawerId, draweeId);
 }
 
+export async function sendDm(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const text = String(formData.get("text") ?? "").trim();
+  const recipientId = String(formData.get("recipient_id") ?? "");
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  if (!recipientId || recipientId === user.id) {
+    return { ok: false, error: "Wybierz osobę." };
+  }
+  const { error } = await supabase
+    .from("dm_messages")
+    .insert({ sender_id: user.id, recipient_id: recipientId, text });
+  if (error) return { ok: false, error: error.message };
+  await supabase
+    .from("dm_reads")
+    .upsert(
+      {
+        user_id: user.id,
+        peer_id: recipientId,
+        last_read_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,peer_id" }
+    );
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function editDm(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  const text = String(formData.get("text") ?? "").trim();
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  const { error } = await supabase
+    .from("dm_messages")
+    .update({ text, edited_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteDm(formData: FormData): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  const { error } = await supabase
+    .from("dm_messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function markDmRead(formData: FormData): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const peerId = String(formData.get("peer_id") ?? "");
+  if (!peerId) return;
+  await supabase
+    .from("dm_reads")
+    .upsert(
+      {
+        user_id: user.id,
+        peer_id: peerId,
+        last_read_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,peer_id" }
+    );
+}
+
 export async function cancelLottery(
   _prev: ActionResult,
   _formData: FormData
@@ -637,6 +726,7 @@ export async function saveParty(
   const startsRaw = String(formData.get("starts_at") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
+  const label = String(formData.get("label") ?? "").trim();
   let startsAt: string | null = null;
   if (startsRaw) {
     const d = new Date(startsRaw);
@@ -651,6 +741,9 @@ export async function saveParty(
   if (notes.length > 1000) {
     return { ok: false, error: "Notatki: maks. 1000 znaków." };
   }
+  if (label.length > 100) {
+    return { ok: false, error: "Etykieta: maks. 100 znaków." };
+  }
   const { error } = await supabase
     .from("party")
     .upsert(
@@ -659,6 +752,7 @@ export async function saveParty(
         starts_at: startsAt,
         location: location || null,
         notes: notes || null,
+        label: label || "imprezy",
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" }

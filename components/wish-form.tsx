@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useActionState } from "react";
+import { useEffect, useRef, useState, useActionState } from "react";
 
 import {
   addWish,
@@ -49,6 +49,9 @@ export function WishForm({
   const [undoWish, setUndoWish] = useState<Wish | null>(null);
   const [localWishes, setLocalWishes] = useState<Wish[]>(wishes);
   const [justDrew, setJustDrew] = useState(false);
+  const [mobileMenuWish, setMobileMenuWish] = useState<Wish | null>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
 
   useEffect(() => {
     setLocalWishes(wishes);
@@ -105,6 +108,25 @@ export function WishForm({
     fd.set("price", undoWish.price != null ? String(undoWish.price) : "");
     addWishAction(fd);
     setUndoWish(null);
+  }
+
+  function startLongPress(wish: Wish) {
+    longPressFired.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      setMobileMenuWish(wish);
+      window.setTimeout(() => {
+        longPressFired.current = false;
+      }, 400);
+    }, 500);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   }
 
   return (
@@ -191,7 +213,11 @@ export function WishForm({
             ) : (
               <li
                 key={wish.id}
-                className="flex min-h-16 items-center justify-between gap-3 rounded-[10px] bg-mist p-3"
+                className="group flex min-h-16 items-center justify-between gap-3 rounded-[10px] bg-mist p-3 transition-colors hover:bg-sage-100"
+                onTouchStart={() => startLongPress(wish)}
+                onTouchEnd={cancelLongPress}
+                onTouchMove={cancelLongPress}
+                onTouchCancel={cancelLongPress}
               >
                 <div className="text-sm">
                   <p>{wish.text}</p>
@@ -211,7 +237,7 @@ export function WishForm({
                     )}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
                   <button
                     type="button"
                     onClick={() => startEdit(wish)}
@@ -268,7 +294,7 @@ export function WishForm({
           <button
             type="submit"
             disabled={addingWish}
-            className="inline-flex w-fit min-w-[144px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
           >
             {addingWish ? (
               <>
@@ -380,6 +406,53 @@ export function WishForm({
           </div>
         )}
       </div>
+
+      {mobileMenuWish && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
+          onClick={() => setMobileMenuWish(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 truncate text-sm font-semibold text-ink">
+              {mobileMenuWish.text}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  startEdit(mobileMenuWish);
+                  setMobileMenuWish(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+              >
+                <PencilIcon />
+                Edytuj
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleRemove(mobileMenuWish);
+                  setMobileMenuWish(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+              >
+                <TrashIcon />
+                Usuń
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuWish(null)}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

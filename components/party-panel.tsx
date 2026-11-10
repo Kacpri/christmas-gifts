@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useActionState, useState } from "react";
+import {
+  useEffect,
+  useActionState,
+  useState,
+  type FormEvent,
+} from "react";
 
 import { saveParty, type ActionResult } from "@/app/actions";
 
@@ -22,23 +27,57 @@ function formatDateTime(iso: string): string {
   });
 }
 
+function LocalDateTime({ iso }: { iso: string }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    setText(formatDateTime(iso));
+  }, [iso]);
+  if (!text) return null;
+  return <>{text}</>;
+}
+
 export function PartyPanel({
   startsAt,
   location,
   notes,
+  label,
   isOrganizer,
 }: {
   startsAt: string | null;
   location: string | null;
   notes: string | null;
+  label: string;
   isOrganizer: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveParty, empty);
   const [saved, setSaved] = useState(false);
+  const [startsValue, setStartsValue] = useState(toLocalInput(startsAt));
 
   useEffect(() => {
     if (state.ok) setSaved(true);
   }, [state.ok]);
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    if (pending) {
+      e.preventDefault();
+      return;
+    }
+    const form = e.currentTarget;
+    const localInput = form.elements.namedItem(
+      "starts_at_local"
+    ) as HTMLInputElement | null;
+    const hidden = form.elements.namedItem(
+      "starts_at"
+    ) as HTMLInputElement | null;
+    if (localInput && hidden) {
+      if (localInput.value) {
+        const d = new Date(localInput.value);
+        hidden.value = Number.isNaN(d.getTime()) ? "" : d.toISOString();
+      } else {
+        hidden.value = "";
+      }
+    }
+  }
 
   if (!isOrganizer) {
     const hasDetails = startsAt || location || notes;
@@ -56,7 +95,7 @@ export function PartyPanel({
             <span aria-hidden className="shrink-0 text-accent dark:text-[#7cc99a]">
               <CalendarIcon />
             </span>
-            {formatDateTime(startsAt)}
+            <LocalDateTime iso={startsAt} />
           </p>
         )}
         {location && (
@@ -80,22 +119,44 @@ export function PartyPanel({
     <form
       action={formAction}
       className="flex flex-col gap-3"
-      onSubmit={(e) => {
-        if (pending) e.preventDefault();
-      }}
+      onSubmit={handleSubmit}
     >
+      <input type="hidden" name="starts_at" defaultValue={startsAt ?? ""} />
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="party-label" className="text-xs font-medium text-faint">
+          Do czego odliczamy?
+        </label>
+        <input
+          id="party-label"
+          name="label"
+          type="text"
+          defaultValue={label}
+          maxLength={100}
+          placeholder="np. sylwester, urodziny"
+          onChange={() => setSaved(false)}
+          className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
+        />
+      </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="party-starts" className="text-xs font-medium text-faint">
           Data i godzina
         </label>
         <input
           id="party-starts"
-          name="starts_at"
+          name="starts_at_local"
           type="datetime-local"
-          defaultValue={toLocalInput(startsAt)}
-          onChange={() => setSaved(false)}
+          value={startsValue}
+          onChange={(e) => {
+            setStartsValue(e.target.value);
+            setSaved(false);
+          }}
           className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
         />
+        {startsValue && (
+          <p className="text-xs text-faint">
+            <LocalDateTime iso={startsValue} />
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="party-location" className="text-xs font-medium text-faint">
@@ -130,7 +191,7 @@ export function PartyPanel({
       <button
         type="submit"
         disabled={pending || saved}
-        className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
       >
         {pending ? (
           <>

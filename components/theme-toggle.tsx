@@ -11,15 +11,15 @@ export function ThemeToggle() {
 
   function toggle() {
     const next = !dark;
-    document.documentElement.setAttribute(
-      "data-theme",
-      next ? "dark" : "light"
-    );
     try {
       localStorage.setItem("theme", next ? "dark" : "light");
     } catch {
       /* ignore */
     }
+    document.documentElement.setAttribute(
+      "data-theme",
+      next ? "dark" : "light"
+    );
     setDark(next);
   }
 

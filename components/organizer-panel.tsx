@@ -107,7 +107,7 @@ export function OrganizerPanel({
         <button
           type="submit"
           disabled={pending || !allReady}
-          className="inline-flex min-w-[164px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
         >
           {pending ? (
             <>
@@ -148,7 +148,7 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={remindPending}
-            className="inline-flex min-w-[192px] items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
           >
             {remindPending ? (
               <>
@@ -186,7 +186,7 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={cancelPending}
-            className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
             {cancelPending ? (
               <>
@@ -220,7 +220,7 @@ export function OrganizerPanel({
           <button
             type="submit"
             disabled={emailPending}
-            className="inline-flex min-w-[192px] items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
           >
             {emailPending ? (
               <>
@@ -267,9 +267,11 @@ export function OrganizerPanel({
                   <button
                     type="button"
                     onClick={() => startEditName(p)}
-                    className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-muted hover:bg-icon-hover"
+                    aria-label="Edytuj nazwę"
+                    title="Edytuj"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
                   >
-                    edytuj
+                    <PencilIcon />
                   </button>
                   <form
                     onSubmit={(e) => {
@@ -299,9 +301,11 @@ export function OrganizerPanel({
                     <button
                       type="submit"
                       disabled={readyPending}
-                      className="min-h-9 min-w-[136px] rounded-lg px-2.5 text-xs font-medium text-accent hover:bg-sage-150 disabled:opacity-50"
+                      aria-label={p.is_ready ? "Odznacz gotowego" : "Oznacz gotowego"}
+                      title={p.is_ready ? "Odznacz" : "Oznacz gotowego"}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-accent hover:bg-sage-150 disabled:opacity-50"
                     >
-                      {p.is_ready ? "odznacz" : "oznacz gotowego"}
+                      {p.is_ready ? <CheckSlashIcon /> : <CheckIcon />}
                     </button>
                   </form>
                   <form
@@ -319,9 +323,11 @@ export function OrganizerPanel({
                     <input type="hidden" name="id" value={p.id} />
                     <button
                       type="submit"
-                      className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-danger hover:bg-danger-soft"
+                      aria-label="Usuń z losowania"
+                      title="Usuń"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
                     >
-                      usuń
+                      <TrashIcon />
                     </button>
                   </form>
                 </div>
@@ -399,9 +405,11 @@ export function OrganizerPanel({
                   <input type="hidden" name="id" value={p.id} />
                   <button
                     type="submit"
-                    className="text-xs text-red-600 hover:underline"
+                    aria-label="Usuń"
+                    title="Usuń"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
                   >
-                    usuń
+                    <TrashIcon />
                   </button>
                 </form>
               </li>
@@ -429,6 +437,85 @@ function SpinnerIcon() {
       aria-hidden
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+function CheckSlashIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 11.5 11.5 14 16 9" />
+      <path d="M12 22a10 10 0 1 0-9.92-11" />
+      <path d="M2 2l20 20" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </svg>
   );
 }

@@ -59,9 +59,9 @@ export function Select({
         aria-expanded={open}
         className="flex w-full items-center gap-2 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-left text-sm text-ink"
       >
-        {leadingIcon && (
+        {(selected?.icon ?? leadingIcon) && (
           <span className="shrink-0 text-muted" aria-hidden>
-            {leadingIcon}
+            {selected?.icon ?? leadingIcon}
           </span>
         )}
         <span className="min-w-0 flex-1 truncate">{selected?.label ?? ""}</span>

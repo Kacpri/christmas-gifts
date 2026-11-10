@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Dashboard, type GiftsData } from "@/components/dashboard";
 import type { Thread } from "@/components/chat-section";
+import type { DmParticipant, DmThread } from "@/components/dm-section";
 import type { Wish } from "@/components/wish-form";
 import type { DishCategory } from "@/lib/dishes";
 import { createClient } from "@/lib/supabase/server";
@@ -25,6 +26,8 @@ export default async function Home() {
     { data: allDishes },
     { data: allLikes },
     { data: partyRow },
+    { data: myDmMessages },
+    { data: myDmReads },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -67,9 +70,20 @@ export default async function Home() {
     supabase.from("dish_likes").select("dish_id, user_id"),
     supabase
       .from("party")
-      .select("starts_at, location, notes")
+      .select("starts_at, location, notes, label")
       .eq("id", 1)
       .maybeSingle(),
+    supabase
+      .from("dm_messages")
+      .select(
+        "id, sender_id, recipient_id, text, created_at, edited_at, deleted_at"
+      )
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      .order("created_at"),
+    supabase
+      .from("dm_reads")
+      .select("peer_id, last_read_at")
+      .eq("user_id", user.id),
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
@@ -260,6 +274,52 @@ export default async function Home() {
     });
   }
 
+  const dmParticipants: DmParticipant[] = (participants ?? []).map((p) => ({
+    id: p.id,
+    fullName: p.full_name,
+  }));
+  const dmMsgs = (myDmMessages ?? []) as {
+    id: number;
+    sender_id: string;
+    recipient_id: string;
+    text: string;
+    created_at: string;
+    edited_at: string | null;
+    deleted_at: string | null;
+  }[];
+  const dmReads = (myDmReads ?? []) as {
+    peer_id: string;
+    last_read_at: string;
+  }[];
+  const dmPeerIds = new Set<string>();
+  for (const m of dmMsgs) {
+    dmPeerIds.add(m.sender_id === user.id ? m.recipient_id : m.sender_id);
+  }
+  const dmThreads: DmThread[] = [...dmPeerIds].map((peerId) => {
+    const peerMsgs = dmMsgs.filter(
+      (m) => (m.sender_id === user.id ? m.recipient_id : m.sender_id) === peerId
+    );
+    const read = dmReads.find((r) => r.peer_id === peerId);
+    return {
+      peerId,
+      label: nameById.get(peerId) ?? "??",
+      messages: peerMsgs.map((m) => ({
+        id: m.id,
+        senderId: m.sender_id,
+        text: m.text,
+        createdAt: m.created_at,
+        editedAt: m.edited_at,
+        deleted: m.deleted_at != null,
+      })),
+      unread: peerMsgs.filter(
+        (m) =>
+          m.deleted_at == null &&
+          m.sender_id !== user.id &&
+          (!read || m.created_at > read.last_read_at)
+      ).length,
+    };
+  });
+
   const gifts: GiftsData =
     lotteryDone && listGift && themeGift
       ? { kind: "done", listGift, themeGift }
@@ -277,6 +337,8 @@ export default async function Home() {
         threads,
         lotteryDone,
         lateJoiner: isLateJoiner,
+        participants: dmParticipants,
+        dmThreads,
       }}
       groupChat={{
         me: user.id,
@@ -299,6 +361,7 @@ export default async function Home() {
         startsAt: partyRow?.starts_at ?? null,
         location: partyRow?.location ?? null,
         notes: partyRow?.notes ?? null,
+        label: partyRow?.label ?? "imprezy",
         isOrganizer: Boolean(profile?.is_organizer),
       }}
       ready={{

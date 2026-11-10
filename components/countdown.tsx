@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 
 import { plural } from "@/lib/format";
 
-export function Countdown({ startsAt }: { startsAt: string | null }) {
+export function Countdown({
+  startsAt,
+  label,
+}: {
+  startsAt: string | null;
+  label: string;
+}) {
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -38,7 +44,7 @@ export function Countdown({ startsAt }: { startsAt: string | null }) {
 
   return (
     <p className="mt-1 text-sm text-cream/80">
-      Do imprezy:{" "}
+      Do {label}:{" "}
       <span suppressHydrationWarning className="font-semibold text-cream">
         {parts.join(" ")}
       </span>

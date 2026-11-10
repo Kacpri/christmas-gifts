@@ -103,6 +103,10 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
+  const [likeOverrides, setLikeOverrides] = useState<
+    Record<number, { likedByMe: boolean; likeCount: number }>
+  >({});
+  const likeInFlight = useRef<Set<number>>(new Set());
 
   function startLongPress(dish: Dish) {
     longPressFired.current = false;
@@ -121,6 +125,32 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+  }
+
+  useEffect(() => {
+    setLikeOverrides({});
+  }, [dishes]);
+
+  function handleLike(dish: Dish) {
+    if (likeInFlight.current.has(dish.id)) return;
+    const prev = likeOverrides[dish.id] ?? {
+      likedByMe: dish.likedByMe,
+      likeCount: dish.likeCount,
+    };
+    const next = {
+      likedByMe: !prev.likedByMe,
+      likeCount: prev.likeCount + (prev.likedByMe ? -1 : 1),
+    };
+    setLikeOverrides((o) => ({ ...o, [dish.id]: next }));
+    likeInFlight.current.add(dish.id);
+    const fd = new FormData();
+    fd.set("id", String(dish.id));
+    void toggleDishLike(fd).then((result) => {
+      likeInFlight.current.delete(dish.id);
+      if (!result.ok) {
+        setLikeOverrides((o) => ({ ...o, [dish.id]: prev }));
+      }
+    });
   }
 
   useEffect(() => {
@@ -293,8 +323,13 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       ) : (
         <>
           <ul className="flex flex-col gap-1.5">
-            {pageItems.map((dish) =>
-              editingId === dish.id ? (
+            {pageItems.map((dish) => {
+              const like =
+                likeOverrides[dish.id] ?? {
+                  likedByMe: dish.likedByMe,
+                  likeCount: dish.likeCount,
+                };
+              return editingId === dish.id ? (
                 <li
                   key={dish.id}
                   className="flex flex-col gap-2 rounded-[10px] bg-mist p-3"
@@ -387,41 +422,48 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                           Ty
                         </span>
                       )}
+                      {dish.quantity && (
+                        <span className="truncate sm:hidden">
+                          · {dish.quantity}
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <span className="w-[72px] shrink-0 text-right text-sm text-muted">
+                  <span className="hidden w-[72px] shrink-0 text-right text-sm text-muted sm:block">
                     {dish.quantity ?? ""}
                   </span>
                   <div className="flex w-[74px] shrink-0 items-center justify-end gap-0.5">
-                    <form
-                      action={toggleDishLike}
+                    <div
                       className={`flex w-full justify-end ${
                         dish.isMine ? "group-hover:hidden" : ""
                       }`}
                     >
-                      <input type="hidden" name="id" value={dish.id} />
                       <button
-                        type="submit"
+                        type="button"
                         onClick={(e) => {
                           if (longPressFired.current) {
                             e.preventDefault();
                             longPressFired.current = false;
+                            return;
                           }
+                          handleLike(dish);
                         }}
-                        aria-label={dish.likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
-                        title={dish.likedByMe ? "Odpolub" : "Polub"}
+                        aria-label={
+                          like.likedByMe ? "Odpolub potrawę" : "Polub potrawę"
+                        }
+                        title={like.likedByMe ? "Odpolub" : "Polub"}
                         className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors ${
-                          dish.likedByMe
+                          like.likedByMe
                             ? "text-danger"
                             : "text-muted hover:bg-icon-hover"
                         }`}
                       >
-                        <HeartIcon filled={dish.likedByMe} />
+                        <HeartIcon filled={like.likedByMe} />
                         <span className="tabular-nums text-xs">
-                          {dish.likeCount}
+                          {like.likeCount}
                         </span>
                       </button>
-                    </form>
+                    </div>
                     {dish.isMine && (
                       <div className="hidden items-center gap-0.5 group-hover:flex">
                         <button
@@ -446,8 +488,8 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                     )}
                   </div>
                 </li>
-              )
-            )}
+              );
+            })}
           </ul>
 
           {totalPages > 1 && (
@@ -480,6 +522,13 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       <hr className="border-line" />
 
       <form action={addAction} className="flex flex-col gap-3">
+        <input
+          name="name"
+          required
+          maxLength={120}
+          placeholder="Co przynosisz? (np. szarlotka)"
+          className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+        />
         <div className="flex flex-col gap-3 sm:flex-row">
           <Select
             name="category"
@@ -489,26 +538,19 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             direction="up"
             scrollable={false}
             leadingIcon={<TagIcon />}
-            className="sm:w-[180px]"
-          />
-          <input
-            name="name"
-            required
-            maxLength={120}
-            placeholder="Co przynosisz? (np. szarlotka)"
-            className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            className="flex-1"
           />
           <input
             name="quantity"
             maxLength={50}
             placeholder="Ilość (np. 2 kg)"
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:flex-1"
           />
         </div>
         <button
           type="submit"
           disabled={adding}
-          className="inline-flex min-w-[144px] w-fit items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
         >
           {adding ? (
             <>

@@ -22,7 +22,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
-import { ChatSection, type Thread } from "@/components/chat-section";
+import { type Thread } from "@/components/chat-section";
+import { ChatsPanel } from "@/components/chats-panel";
+import { type DmParticipant, type DmThread } from "@/components/dm-section";
 import { Countdown } from "@/components/countdown";
 import {
   GroupChatSection,
@@ -165,6 +167,43 @@ function OneColIcon() {
       aria-hidden
     >
       <rect x="2" y="2" width="12" height="12" rx="1" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M2 4h12" />
+      <path d="M2 8h12" />
+      <path d="M2 12h12" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M4 4l8 8" />
+      <path d="M12 4l-8 8" />
     </svg>
   );
 }
@@ -425,10 +464,7 @@ function PanelCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {titleIcon && (
-              <span
-                aria-hidden
-                className="shrink-0 text-accent dark:text-[#7cc99a]"
-              >
+              <span aria-hidden className="shrink-0 text-[#c0392b] dark:text-cream">
                 {titleIcon}
               </span>
             )}
@@ -652,6 +688,8 @@ export function Dashboard({
     threads: Thread[];
     lotteryDone: boolean;
     lateJoiner: boolean;
+    participants: DmParticipant[];
+    dmThreads: DmThread[];
   };
   groupChat: { me: string; messages: ChatMessage[] };
   wishes: {
@@ -664,6 +702,7 @@ export function Dashboard({
     startsAt: string | null;
     location: string | null;
     notes: string | null;
+    label: string;
     isOrganizer: boolean;
   };
   ready: {
@@ -693,6 +732,7 @@ export function Dashboard({
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(() =>
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
   );
@@ -812,12 +852,14 @@ export function Dashboard({
     chats: {
       title: "Czaty",
       body: (
-        <ChatSection
+        <ChatsPanel
           me={chats.me}
           threads={chats.threads}
           lotteryDone={chats.lotteryDone}
           lateJoiner={chats.lateJoiner}
           collapsed={!!collapsed["chats"]}
+          participants={chats.participants}
+          dmThreads={chats.dmThreads}
           onUnreadChange={handleUnreadChange}
         />
       ),
@@ -858,7 +900,7 @@ export function Dashboard({
       ),
     },
     impreza: {
-      title: "Impreza",
+      title: "Odliczanie",
       body: <PartyPanel {...party} />,
     },
     organizer: {
@@ -887,7 +929,7 @@ export function Dashboard({
         titleIcon={PANEL_ICONS[id]}
         titleBadge={
           id === "wishes" ? (
-            <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent dark:bg-sage-200 dark:text-list-ink">
+            <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent dark:bg-sage-300 dark:text-[#e6f6ec]">
               {wishCount}/5
             </span>
           ) : undefined
@@ -933,7 +975,7 @@ export function Dashboard({
           <h1 className="text-[38px] leading-tight text-cream">
             Świąteczne Losowanie
           </h1>
-          <Countdown startsAt={party.startsAt} />
+          <Countdown startsAt={party.startsAt} label={party.label} />
         </div>
         <div className="flex items-center gap-2 text-sm">
           <div className="mr-1.5 flex items-center gap-2">
@@ -964,34 +1006,92 @@ export function Dashboard({
             </div>
           ) : (
             <>
+              <div className="hidden items-center gap-2 md:flex">
+                <button
+                  type="button"
+                  onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
+                  aria-label={
+                    view === "1col"
+                      ? "Przełącz na 2 kolumny"
+                      : "Przełącz na 1 kolumnę"
+                  }
+                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                >
+                  {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
+                  {view === "1col" ? "2 kolumny" : "1 kolumna"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditMode(true)}
+                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                >
+                  <LayoutIcon />
+                  Układ
+                </button>
+                <NotificationToggle />
+                <ThemeToggle />
+                <LogoutButton />
+              </div>
               <button
                 type="button"
-                onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
-                aria-label={
-                  view === "1col"
-                    ? "Przełącz na 2 kolumny"
-                    : "Przełącz na 1 kolumnę"
-                }
-                className="hidden h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20 md:flex"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Otwórz menu"
+                className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20 md:hidden"
               >
-                {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
-                {view === "1col" ? "2 kolumny" : "1 kolumna"}
+                <MenuIcon />
               </button>
-              <button
-                type="button"
-                onClick={() => setEditMode(true)}
-                className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-              >
-                <LayoutIcon />
-                Układ
-              </button>
-              <NotificationToggle />
-              <ThemeToggle />
-              <LogoutButton />
             </>
           )}
         </div>
       </header>
+
+      {mobileMenuOpen && !editMode && (
+        <div
+          className="fixed inset-0 z-50 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <div
+            className="absolute right-4 top-4 w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-2 py-1.5">
+              <span className="text-sm font-semibold text-cream">Menu</span>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Zamknij menu"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-cream/70 hover:bg-white/10"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditMode(true);
+                setMobileMenuOpen(false);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
+            >
+              <LayoutIcon />
+              Układ
+            </button>
+            <button
+              type="button"
+              onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
+            >
+              {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
+              {view === "1col" ? "2 kolumny" : "1 kolumna"}
+            </button>
+            <div className="mt-1 flex items-center gap-2 border-t border-cream/20 px-1 pt-2">
+              <NotificationToggle />
+              <ThemeToggle />
+              <LogoutButton />
+            </div>
+          </div>
+        </div>
+      )}
 
       {editMode ? (
         <DndContext
