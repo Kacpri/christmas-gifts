@@ -90,10 +90,13 @@ export function PartyPanel({
     }
     return (
       <div className="flex flex-col gap-2.5">
+        <p className="text-[15px] font-bold text-accent dark:text-[#7cc99a]">
+          Do {label.trim() || "imprezy"}:
+        </p>
         {startsAt && (
           <p className="flex items-center gap-2 text-[15px] font-semibold text-ink">
             <span aria-hidden className="shrink-0 text-accent dark:text-[#7cc99a]">
-              <CalendarIcon />
+              <ClockIcon />
             </span>
             <LocalDateTime iso={startsAt} />
           </p>
@@ -214,7 +217,7 @@ export function PartyPanel({
   );
 }
 
-function CalendarIcon() {
+function ClockIcon() {
   return (
     <svg
       width="16"
@@ -227,10 +230,8 @@ function CalendarIcon() {
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M8 2v4" />
-      <path d="M16 2v4" />
-      <rect width="18" height="18" x="3" y="4" rx="2" />
-      <path d="M3 10h18" />
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
     </svg>
   );
 }

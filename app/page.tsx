@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 
+import {
+  type DmParticipant,
+  type DmThread,
+  type Thread,
+} from "@/components/chats-panel";
 import { Dashboard, type GiftsData } from "@/components/dashboard";
-import type { Thread } from "@/components/chat-section";
-import type { DmParticipant, DmThread } from "@/components/dm-section";
 import type { Wish } from "@/components/wish-form";
 import type { DishCategory } from "@/lib/dishes";
 import { createClient } from "@/lib/supabase/server";

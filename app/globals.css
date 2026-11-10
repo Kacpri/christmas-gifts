@@ -23,6 +23,8 @@
   --color-honey-50: #fbf5e6;
   --color-honey-200: #f8e6b8;
   --color-honey-800: #6b4200;
+  --color-sky-200: #dbe6f5;
+  --color-sky-800: #1d3a6b;
   --color-line: #e3ebe6;
   --color-input-line: #cfdcd3;
   --color-input-bg: #f9fbfa;
@@ -71,6 +73,8 @@ html[data-theme="dark"] {
   --color-honey-50: #241f14;
   --color-honey-200: #38301a;
   --color-honey-800: #d9b878;
+  --color-sky-200: #26374f;
+  --color-sky-800: #a9c2e8;
   --color-line: #2a302b;
   --color-input-line: #363e38;
   --color-input-bg: #171b18;

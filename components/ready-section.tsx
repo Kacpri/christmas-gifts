@@ -54,7 +54,7 @@ export function ReadySection({
           <button
             type="submit"
             disabled={pending || !hasWish || !hasTheme}
-            className="w-fit inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+            className="w-fit inline-flex items-center gap-2 rounded-xl border border-accent bg-surface px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:border-line disabled:text-faint disabled:hover:bg-surface"
           >
             {pending ? (
               <>

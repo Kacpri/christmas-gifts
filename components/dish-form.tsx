@@ -170,7 +170,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
     ...authors.map((a) => ({ value: a, label: a, icon: <UserIcon /> })),
   ];
   const categoryFilterOptions = [
-    { value: "all", label: "Wszystkie kategorie" },
+    { value: "all", label: "Wszystkie" },
     ...CATEGORY_OPTIONS,
   ];
 
@@ -269,7 +269,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             </button>
           </div>
           {filtersOpen && (
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Select
                 leadingIcon={<UserIcon />}
                 value={personFilter}
@@ -278,7 +278,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                   setPage(1);
                 }}
                 options={personOptions}
-                className="flex-1"
+                className="w-full sm:w-44"
               />
               <Select
                 leadingIcon={<TagIcon />}
@@ -289,9 +289,9 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 }}
                 options={categoryFilterOptions}
                 scrollable={false}
-                className="flex-1"
+                className="w-full sm:w-44"
               />
-              <div className="flex flex-1 items-center gap-1.5">
+              <div className="flex w-full items-center gap-1.5 sm:w-auto sm:min-w-[200px] sm:flex-1">
                 <Select
                   leadingIcon={<SortFieldIcon field={sortField} />}
                   value={sortField}

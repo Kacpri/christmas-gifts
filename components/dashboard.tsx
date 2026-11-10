@@ -22,9 +22,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
-import { type Thread } from "@/components/chat-section";
-import { ChatsPanel } from "@/components/chats-panel";
-import { type DmParticipant, type DmThread } from "@/components/dm-section";
+import {
+  ChatsPanel,
+  type DmParticipant,
+  type DmThread,
+  type Thread,
+} from "@/components/chats-panel";
 import { Countdown } from "@/components/countdown";
 import {
   GroupChatSection,
@@ -308,10 +311,8 @@ function ReadyIcon() {
 function PartyIcon() {
   return (
     <PanelIconSvg>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4" />
-      <path d="M8 2v4" />
-      <path d="M3 10h18" />
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
     </PanelIconSvg>
   );
 }
@@ -977,7 +978,7 @@ export function Dashboard({
           </h1>
           <Countdown startsAt={party.startsAt} label={party.label} />
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="ml-auto flex items-center gap-2 text-sm">
           <div className="mr-1.5 flex items-center gap-2">
             <span
               aria-hidden
