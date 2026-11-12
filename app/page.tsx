@@ -92,6 +92,11 @@ export default async function Home() {
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
   const isReady = profile?.is_ready ?? false;
   const themeLocked = lotteryDone || isReady;
+  const themeLockReason = lotteryDone
+    ? "losowanie się już odbyło"
+    : isReady
+      ? "oznaczyłeś się jako gotowy"
+      : null;
 
   const nameById = new Map((participants ?? []).map((p) => [p.id, p.full_name]));
   const likeCountByDish = new Map<number, number>();
@@ -358,6 +363,7 @@ export default async function Home() {
         wishes: myWishes ?? [],
         theme: myTheme?.theme ?? null,
         themeLocked: themeLocked,
+        themeLockReason: themeLockReason,
       }}
       dishes={dishes}
       party={{

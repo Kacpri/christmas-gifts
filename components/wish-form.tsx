@@ -45,6 +45,7 @@ export function WishForm({
   wishes,
   theme,
   themeLocked,
+  themeLockReason,
   listBudget,
   themeBudget,
   onCountChange,
@@ -52,6 +53,7 @@ export function WishForm({
   wishes: Wish[];
   theme: string | null;
   themeLocked: boolean;
+  themeLockReason: string | null;
   listBudget: number;
   themeBudget: number;
   onCountChange?: (count: number) => void;
@@ -74,10 +76,8 @@ export function WishForm({
   const [undoWish, setUndoWish] = useState<Wish | null>(null);
   const [localWishes, setLocalWishes] = useState<Wish[]>(wishes);
   const [justDrew, setJustDrew] = useState(false);
-  const [mobileMenuWish, setMobileMenuWish] = useState<Wish | null>(null);
+  const [menuWish, setMenuWish] = useState<Wish | null>(null);
   const [addPrice, setAddPrice] = useState("");
-  const longPressTimer = useRef<number | null>(null);
-  const longPressFired = useRef(false);
   const addPriceRef = useRef<HTMLInputElement>(null);
 
   const addParsed = parsePrice(addPrice);
@@ -150,23 +150,22 @@ export function WishForm({
     setUndoWish(null);
   }
 
-  function startLongPress(wish: Wish) {
-    longPressFired.current = false;
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    longPressTimer.current = window.setTimeout(() => {
-      longPressFired.current = true;
-      setMobileMenuWish(wish);
-      window.setTimeout(() => {
-        longPressFired.current = false;
-      }, 400);
-    }, 500);
-  }
-
-  function cancelLongPress() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+  function handleMove(wish: Wish, dir: -1 | 1) {
+    const index = localWishes.findIndex((w) => w.id === wish.id);
+    const target = index + dir;
+    if (index === -1 || target < 0 || target >= localWishes.length) return;
+    const prev = localWishes;
+    const next = arrayMove(localWishes, index, target);
+    setReorderError(null);
+    setLocalWishes(next);
+    createClient()
+      .rpc("reorder_wishes", { p_ids: next.map((w) => w.id) })
+      .then(({ error }) => {
+        if (error) {
+          setLocalWishes(prev);
+          setReorderError("Nie udało się zapisać kolejności życzeń.");
+        }
+      });
   }
 
   function handleDragEnd(e: DragEndEvent) {
@@ -189,12 +188,19 @@ export function WishForm({
       });
   }
 
+  const menuIndex = menuWish
+    ? localWishes.findIndex((w) => w.id === menuWish.id)
+    : -1;
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
+      <div className="flex flex-col gap-1">
         <p className="text-sm text-muted">
           Widzi je tylko osoba, która Cię wylosuje. Kolejność możesz zmieniać,
           przeciągając.
+        </p>
+        <p className="text-sm text-muted">
+          Pierwsze miejsce = najbardziej wymarzone.
         </p>
       </div>
 
@@ -223,14 +229,11 @@ export function WishForm({
                   setEditPrice={setEditPrice}
                   editWishAction={editWishAction}
                   editingWish={editingWish}
-                  editState={editState}
-                  cancelEdit={() => setEditingId(null)}
-                  startEdit={startEdit}
-                  handleRemove={handleRemove}
-                  startLongPress={startLongPress}
-                  cancelLongPress={cancelLongPress}
-                  listBudget={listBudget}
-                />
+                   editState={editState}
+                   cancelEdit={() => setEditingId(null)}
+                   onMenu={setMenuWish}
+                   listBudget={listBudget}
+                 />
               ))}
             </ul>
           </SortableContext>
@@ -287,7 +290,7 @@ export function WishForm({
             />
           </div>
           <p id="wish-budget-hint" className="text-[13px] text-muted">
-            Budżet: do {listBudget} zł
+            Budżet na prezent z listy: do {listBudget} zł
           </p>
           {addOverBudget && (
             <p
@@ -327,14 +330,9 @@ export function WishForm({
         <h3 className="text-base font-semibold">Temat Twojego prezentu</h3>
         <p className="mt-1 text-sm text-muted">
           {themeLocked
-            ? "Temat prezentu pozostaje zablokowany."
-            : "Osoba, która Cię wylosuje, kupi prezent w tym temacie."}
+            ? `Temat prezentu jest zablokowany: ${themeLockReason ?? "losowanie się już odbyło"}.`
+            : "Osoba, która Cię wylosuje, kupi prezent związany z tym tematem."}
         </p>
-        {!themeLocked && (
-          <p className="text-[13px] text-muted">
-            Budżet na prezent tematyczny: do {themeBudget} zł
-          </p>
-        )}
       </div>
 
       <form action={saveThemeAction} className="flex flex-col gap-3">
@@ -364,6 +362,9 @@ export function WishForm({
             </span>
           )}
         </div>
+        <p className="text-[13px] text-muted">
+          Budżet na prezent tematyczny: do {themeBudget} zł
+        </p>
         {!themeLocked && (
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -420,25 +421,52 @@ export function WishForm({
         )}
       </div>
 
-      {mobileMenuWish && (
+      {menuWish && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
-          onClick={() => setMobileMenuWish(null)}
+          onClick={() => setMenuWish(null)}
         >
           <div
             className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="mb-3 truncate text-sm font-semibold text-ink">
-              {mobileMenuWish.text}
+              {menuWish.text}
             </p>
             <div className="flex flex-col gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  startEdit(mobileMenuWish);
-                  setMobileMenuWish(null);
+                  handleMove(menuWish, -1);
+                  setMenuWish(null);
                 }}
+                disabled={menuIndex === 0}
+                aria-label={`Przenieś wyżej: ${menuWish.text}`}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+              >
+                <ArrowUpIcon />
+                Przenieś wyżej
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleMove(menuWish, 1);
+                  setMenuWish(null);
+                }}
+                disabled={menuIndex === localWishes.length - 1}
+                aria-label={`Przenieś niżej: ${menuWish.text}`}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+              >
+                <ArrowDownIcon />
+                Przenieś niżej
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  startEdit(menuWish);
+                  setMenuWish(null);
+                }}
+                aria-label={`Edytuj życzenie: ${menuWish.text}`}
                 className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
               >
                 <PencilIcon />
@@ -447,9 +475,10 @@ export function WishForm({
               <button
                 type="button"
                 onClick={() => {
-                  handleRemove(mobileMenuWish);
-                  setMobileMenuWish(null);
+                  handleRemove(menuWish);
+                  setMenuWish(null);
                 }}
+                aria-label={`Usuń życzenie: ${menuWish.text}`}
                 className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
               >
                 <TrashIcon />
@@ -457,7 +486,7 @@ export function WishForm({
               </button>
               <button
                 type="button"
-                onClick={() => setMobileMenuWish(null)}
+                onClick={() => setMenuWish(null)}
                 className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
               >
                 Anuluj
@@ -484,10 +513,7 @@ function SortableWishItem({
   editingWish,
   editState,
   cancelEdit,
-  startEdit,
-  handleRemove,
-  startLongPress,
-  cancelLongPress,
+  onMenu,
   listBudget,
 }: {
   wish: Wish;
@@ -503,10 +529,7 @@ function SortableWishItem({
   editingWish: boolean;
   editState: ActionResult;
   cancelEdit: () => void;
-  startEdit: (wish: Wish) => void;
-  handleRemove: (wish: Wish) => void;
-  startLongPress: (wish: Wish) => void;
-  cancelLongPress: () => void;
+  onMenu: (wish: Wish) => void;
   listBudget: number;
 }) {
   const {
@@ -635,69 +658,54 @@ function SortableWishItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`group flex min-h-16 items-center gap-2 rounded-[10px] bg-mist p-3 transition-colors hover:bg-sage-100 ${
+      className={`flex min-h-16 items-center gap-2 rounded-[10px] bg-mist p-3 transition-colors hover:bg-sage-100 ${
         isDragging ? "relative z-10 opacity-50" : ""
       }`}
-      onTouchStart={() => startLongPress(wish)}
-      onTouchEnd={cancelLongPress}
-      onTouchMove={cancelLongPress}
-      onTouchCancel={cancelLongPress}
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        aria-label="Przesuń życzenie"
+        aria-label={`Przesuń życzenie: ${wish.text}`}
         title="Przesuń"
-        className="flex h-9 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-faint hover:bg-icon-hover active:cursor-grabbing"
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchEnd={(e) => e.stopPropagation()}
-        onTouchMove={(e) => e.stopPropagation()}
-        onTouchCancel={(e) => e.stopPropagation()}
+        className="flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:bg-icon-hover active:cursor-grabbing"
       >
         <GripIcon />
       </button>
       <div className="min-w-0 flex-1 text-sm">
-        <p>
-          <span className="select-none text-muted">{index + 1}.</span>{" "}
+        <p className="font-semibold">
+          <span className="select-none font-normal text-muted">
+            {index + 1}.
+          </span>{" "}
           {wish.text}
         </p>
-        <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs">
           {wish.price != null && (
-            <span>{formatPrice(wish.price)}</span>
+            <span className="font-medium tabular-nums text-[#15251b] dark:text-ink">
+              {formatPrice(wish.price)}
+            </span>
           )}
           {wish.link && (
             <a
               href={wish.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent underline"
+              className="inline-flex items-center gap-1 font-semibold text-[#14532d] dark:text-list-ink"
             >
-              link
+              Zobacz
+              <ExternalLinkIcon />
             </a>
           )}
         </p>
       </div>
-      <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
-        <button
-          type="button"
-          onClick={() => startEdit(wish)}
-          aria-label="Edytuj życzenie"
-          title="Edytuj"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
-        >
-          <PencilIcon />
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRemove(wish)}
-          aria-label="Usuń życzenie"
-          title="Usuń"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
-        >
-          <TrashIcon />
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => onMenu(wish)}
+        aria-label={`Opcje życzenia: ${wish.text}`}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+      >
+        <MoreIcon />
+      </button>
     </li>
   );
 }
@@ -717,6 +725,73 @@ function GripIcon() {
       <circle cx="15" cy="6" r="1.5" fill="currentColor" />
       <circle cx="15" cy="12" r="1.5" fill="currentColor" />
       <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="5" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.6" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ArrowUpIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 19V5" />
+      <path d="M5 12l7-7 7 7" />
+    </svg>
+  );
+}
+
+function ArrowDownIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 5v14" />
+      <path d="M19 12l-7 7-7-7" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M7 17L17 7" />
+      <path d="M8 7h9v9" />
     </svg>
   );
 }

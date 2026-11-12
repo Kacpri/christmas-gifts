@@ -1007,7 +1007,7 @@ export function ChatsPanel({
               </form>
             </>
           ) : (
-            <div className="grid min-h-0 flex-1 place-items-center rounded-[14px] bg-mist">
+            <div className="my-4 grid min-h-0 flex-1 place-items-center rounded-[14px] bg-mist md:my-0">
               <div className="flex flex-col items-center gap-3 text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-full bg-sage-150 text-accent">
                   <ChatBubbleIcon />

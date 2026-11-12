@@ -824,6 +824,7 @@ export function Dashboard({
     wishes: Wish[];
     theme: string | null;
     themeLocked: boolean;
+    themeLockReason: string | null;
   };
   dishes: Dish[];
   party: {
@@ -1018,6 +1019,7 @@ export function Dashboard({
           wishes={wishes.wishes}
           theme={wishes.theme}
           themeLocked={wishes.themeLocked}
+          themeLockReason={wishes.themeLockReason}
           listBudget={effectiveListBudget(party.listBudget)}
           themeBudget={effectiveThemeBudget(party.themeBudget)}
           onCountChange={setWishCount}
