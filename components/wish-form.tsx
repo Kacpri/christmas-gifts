@@ -24,10 +24,10 @@ import {
   addWish,
   editWish,
   removeWish,
-  reorderWishes,
   saveTheme,
   type ActionResult,
 } from "@/app/actions";
+import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { THEME_IDEAS } from "@/lib/theme-ideas";
 
@@ -60,10 +60,7 @@ export function WishForm({
     editWish,
     empty
   );
-  const [reorderState, reorderWishAction] = useActionState(
-    reorderWishes,
-    empty
-  );
+  const [reorderError, setReorderError] = useState<string | null>(null);
   const [themeValue, setThemeValue] = useState(theme ?? "");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
@@ -163,11 +160,18 @@ export function WishForm({
     const oldIndex = localWishes.findIndex((w) => w.id === active.id);
     const newIndex = localWishes.findIndex((w) => w.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
+    const prev = localWishes;
     const next = arrayMove(localWishes, oldIndex, newIndex);
+    setReorderError(null);
     setLocalWishes(next);
-    const fd = new FormData();
-    next.forEach((w) => fd.append("ids", String(w.id)));
-    reorderWishAction(fd);
+    createClient()
+      .rpc("reorder_wishes", { p_ids: next.map((w) => w.id) })
+      .then(({ error }) => {
+        if (error) {
+          setLocalWishes(prev);
+          setReorderError("Nie udało się zapisać kolejności życzeń.");
+        }
+      });
   }
 
   return (
@@ -217,8 +221,8 @@ export function WishForm({
           </SortableContext>
         </DndContext>
       )}
-      {reorderState.error && (
-        <p className="text-sm text-red-600">{reorderState.error}</p>
+      {reorderError && (
+        <p className="text-sm text-red-600">{reorderError}</p>
       )}
 
       {localWishes.length >= 5 ? (

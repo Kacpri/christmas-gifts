@@ -130,27 +130,6 @@ export async function removeWish(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
-export async function reorderWishes(
-  _prev: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const { supabase, user } = await requireUser();
-  const ids = formData.getAll("ids").map((v) => Number(v));
-  if (ids.length === 0 || ids.some((id) => !Number.isInteger(id))) {
-    return { ok: false, error: "Nieprawidłowa kolejność życzeń." };
-  }
-  for (let i = 0; i < ids.length; i++) {
-    const { error } = await supabase
-      .from("wishes")
-      .update({ pos: i + 1 })
-      .eq("id", ids[i])
-      .eq("user_id", user.id);
-    if (error) return { ok: false, error: error.message };
-  }
-  revalidatePath("/");
-  return { ok: true };
-}
-
 export async function addDish(
   _prev: ActionResult,
   formData: FormData
