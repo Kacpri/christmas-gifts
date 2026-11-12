@@ -485,7 +485,7 @@ function PanelCard({
         ) : (
           <>
             {badge > 0 && (
-              <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-medium text-white">
+              <span className="rounded-full bg-danger px-2 py-0.5 text-xs font-medium text-white">
                 {badge}
               </span>
             )}
@@ -964,13 +964,51 @@ export function Dashboard({
 
   return (
     <main
-      className={`mx-auto flex w-full flex-1 flex-col gap-5 px-5 pb-16 pt-7 ${
+      className={`mx-auto flex w-full flex-1 flex-col gap-5 px-5 pb-16 pt-0 md:pt-7 ${
         isTwoCol ? "max-w-[1120px]" : "max-w-[680px]"
       }`}
     >
       {hydrated && gifts.kind === "done" && !revealed && (
         <LotteryReveal onDone={markRevealed} />
       )}
+      <div className="sticky top-0 z-30 -mx-5 flex items-center justify-between gap-2 bg-[#0d4024] px-5 py-2.5 dark:bg-[#061a13] md:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
+          >
+            {userName.trim().charAt(0).toUpperCase()}
+          </span>
+          <span className="truncate font-medium text-cream">{userName}</span>
+        </div>
+        {editMode ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={resetLayout}
+              className="inline-flex h-9 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3 text-sm font-semibold text-cream hover:bg-white/20"
+            >
+              Resetuj
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="inline-flex h-9 items-center rounded-[10px] bg-accent px-3 text-sm font-semibold text-white hover:bg-accent/90"
+            >
+              Gotowe
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Otwórz menu"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+          >
+            <MenuIcon />
+          </button>
+        )}
+      </div>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-[38px] leading-tight text-cream">
@@ -978,7 +1016,7 @@ export function Dashboard({
           </h1>
           <Countdown startsAt={party.startsAt} label={party.label} />
         </div>
-        <div className="ml-auto flex items-center gap-2 text-sm">
+        <div className="hidden items-center gap-2 text-sm md:flex">
           <div className="mr-1.5 flex items-center gap-2">
             <span
               aria-hidden
@@ -1006,42 +1044,32 @@ export function Dashboard({
               </button>
             </div>
           ) : (
-            <>
-              <div className="hidden items-center gap-2 md:flex">
-                <button
-                  type="button"
-                  onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
-                  aria-label={
-                    view === "1col"
-                      ? "Przełącz na 2 kolumny"
-                      : "Przełącz na 1 kolumnę"
-                  }
-                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-                >
-                  {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
-                  {view === "1col" ? "2 kolumny" : "1 kolumna"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditMode(true)}
-                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-                >
-                  <LayoutIcon />
-                  Układ
-                </button>
-                <NotificationToggle />
-                <ThemeToggle />
-                <LogoutButton />
-              </div>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                aria-label="Otwórz menu"
-                className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20 md:hidden"
+                onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
+                aria-label={
+                  view === "1col"
+                    ? "Przełącz na 2 kolumny"
+                    : "Przełącz na 1 kolumnę"
+                }
+                className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
               >
-                <MenuIcon />
+                {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
+                {view === "1col" ? "2 kolumny" : "1 kolumna"}
               </button>
-            </>
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+              >
+                <LayoutIcon />
+                Układ
+              </button>
+              <NotificationToggle />
+              <ThemeToggle />
+              <LogoutButton />
+            </div>
           )}
         </div>
       </header>
@@ -1052,7 +1080,7 @@ export function Dashboard({
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="absolute right-4 top-4 w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            className="absolute right-4 top-16 w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-2 py-1.5">

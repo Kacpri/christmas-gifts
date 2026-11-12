@@ -734,8 +734,8 @@ export function ChatsPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        <div className="flex flex-col gap-2 md:w-[250px]">
-          <div className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-0.5">
+        <div className="flex h-96 flex-col gap-2 md:w-[250px]">
+          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-0.5">
             {listItems.length === 0 && (
               <p className="text-sm text-faint">Brak czatów.</p>
             )}
@@ -770,7 +770,7 @@ export function ChatsPanel({
                       {item.tag}
                     </span>
                     {item.unread > 0 && (
-                      <span className="rounded-full bg-red-600 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                      <span className="rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
                         {item.unread}
                       </span>
                     )}
