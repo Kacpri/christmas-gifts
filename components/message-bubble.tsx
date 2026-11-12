@@ -104,7 +104,7 @@ export function MessageBubble({
   return (
     <>
       <div
-        className={`max-w-[80%] select-none px-3.5 py-2.5 ${
+        className={`flex max-w-[72%] select-none flex-col gap-0.5 px-3 py-2 ${
           editing ? "min-w-48" : ""
         } ${
           isOwn
@@ -170,13 +170,23 @@ export function MessageBubble({
         }
       >
         {message.deleted ? (
-          <p
-            className={`text-sm italic ${
-              isOwn ? "text-white/70" : "text-placeholder"
-            }`}
-          >
-            Wiadomość usunięta
-          </p>
+          <>
+            <p
+              className={`text-[15px] italic leading-5 ${
+                isOwn ? "text-white/70" : "text-placeholder"
+              }`}
+            >
+              Wiadomość usunięta
+            </p>
+            <p
+              suppressHydrationWarning
+              className={`text-right text-[11px] tabular-nums ${
+                isOwn ? "text-white/70" : "text-faint"
+              }`}
+            >
+              {timeOf(message.createdAt)}
+            </p>
+          </>
         ) : editing ? (
           <form action={editFormAction} className="flex flex-col gap-2">
             <input type="hidden" name="id" value={message.id} />
@@ -213,12 +223,12 @@ export function MessageBubble({
           </form>
         ) : (
           <>
-            <p className="whitespace-pre-wrap break-words text-sm">
+            <p className="whitespace-pre-wrap break-words text-[15px] leading-5">
               {renderMessageText(message.text)}
             </p>
             <p
               suppressHydrationWarning
-              className={`mt-0.5 text-right text-[11px] ${
+              className={`text-right text-[11px] tabular-nums ${
                 isOwn ? "text-white/70" : "text-faint"
               }`}
             >

@@ -16,6 +16,17 @@ export const timeOf = (iso: string) =>
     minute: "2-digit",
   });
 
+export const listTimeOf = (iso: string) => {
+  const d = new Date(iso);
+  const now = new Date();
+  const startOfDay = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+  if (diffDays <= 0) return timeOf(iso);
+  if (diffDays === 1) return "Wczoraj";
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
+};
+
 export const plural = (n: number, forms: [string, string, string]) => {
   if (n === 1) return forms[0];
   const d = n % 10;

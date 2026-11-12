@@ -25,7 +25,7 @@ import {
   MessageBubble,
   type ChatMessage,
 } from "@/components/message-bubble";
-import { timeOf } from "@/lib/format";
+import { listTimeOf, plural } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/client";
 
@@ -108,7 +108,7 @@ function TagPillIcon({ tag }: { tag: Tag }) {
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 2.2,
+    strokeWidth: 2.4,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
@@ -144,7 +144,7 @@ function TagPillIcon({ tag }: { tag: Tag }) {
 function TagPill({ tag }: { tag: Tag }) {
   return (
     <span
-      className={`inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-bold ${tagClass(tag)}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-bold leading-4 ${tagClass(tag)}`}
     >
       <TagPillIcon tag={tag} />
       {tag}
@@ -183,7 +183,7 @@ function DateSeparator({ createdAt }: { createdAt: string }) {
   if (!label) return null;
   return (
     <div className="flex justify-center py-1" aria-hidden>
-      <span className="rounded-full bg-sage-150 px-2.5 py-0.5 text-[11px] font-medium text-muted dark:bg-sage-200">
+      <span className="rounded-full bg-[#dcebe1] px-2.5 py-1 text-[11px] font-medium leading-4 text-[#4a5c50] dark:bg-sage-200 dark:text-muted">
         {label}
       </span>
     </div>
@@ -204,25 +204,6 @@ function ChatBubbleIcon() {
       aria-hidden
     >
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    </svg>
-  );
-}
-
-function ReplyIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M9 14L4 9l5-5" />
-      <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
     </svg>
   );
 }
@@ -386,10 +367,6 @@ export function ChatsPanel({
   useEffect(() => {
     updateListFade();
   }, [listItems, updateListFade]);
-
-  const allLastMine =
-    listItems.length > 1 &&
-    listItems.every((i) => !i.last || i.last.senderId === me);
 
   const selectedItem = useMemo(() => {
     if (!selectedKey) return null;
@@ -845,7 +822,7 @@ export function ChatsPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        <div className="flex h-96 flex-col gap-2 pb-3 md:w-[250px]">
+        <div className="flex h-96 flex-col gap-3 pb-3 md:w-80">
           <div className="relative min-h-0 flex-1">
             <div
               ref={listRef}
@@ -867,102 +844,109 @@ export function ChatsPanel({
                       )
                 }
                 aria-current={selectedKey === item.key}
-                className={`w-full shrink-0 rounded-xl border border-l-4 p-[11px_14px] text-left text-sm transition-colors ${
+                className={`w-full shrink-0 rounded-[14px] border p-3 px-3.5 text-left transition-colors ${
                   selectedKey === item.key
-                    ? "border-line border-l-accent bg-sage-100"
-                    : "border-line border-l-transparent hover:border-sage-300 hover:bg-sage-50"
+                    ? "border-[#b9d4c1] bg-[#e3efe7] shadow-[inset_3px_0_0_#14532d] dark:border-line dark:bg-sage-100 dark:shadow-[inset_3px_0_0_var(--color-accent)]"
+                    : "border-[#dfe9e2] bg-surface hover:bg-sage-50 dark:border-line"
                 }`}
               >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {item.unread > 0 ? (
-                      <span
-                        role="img"
-                        aria-label="Nieprzeczytane"
-                        className="h-2 w-2 shrink-0 rounded-full bg-accent"
-                      />
-                    ) : (
-                      <span
-                        aria-hidden
-                        className="h-2 w-2 shrink-0 rounded-full"
-                      />
-                    )}
-                    <span
-                      className={`truncate text-ink ${
-                        item.unread > 0 ? "font-bold" : "font-medium"
-                      }`}
-                    >
-                      {item.name}
-                    </span>
+                <span className="flex items-center justify-between gap-2 leading-5">
+                  <span
+                    className={`min-w-0 truncate text-base text-ink ${
+                      item.unread > 0
+                        ? "font-bold"
+                        : selectedKey === item.key
+                          ? "font-semibold"
+                          : "font-medium"
+                    }`}
+                  >
+                    {item.name}
                   </span>
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    <TagPill tag={item.tag} />
-                    {item.unread > 0 && (
-                      <span className="rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
-                        {item.unread}
-                      </span>
-                    )}
-                  </span>
-                </span>
-                {item.last && (
-                  <span className="mt-[5px] flex items-center justify-between gap-2.5">
-                    <span className="flex min-w-0 items-center gap-[5px] text-[13px] text-faint">
-                      {item.last.senderId === me &&
-                        !allLastMine &&
-                        !item.last.deleted && (
-                          <span className="shrink-0">
-                            <ReplyIcon />
-                          </span>
-                        )}
-                      <span className="truncate">
-                        {item.last.deleted
-                          ? "Wiadomość usunięta"
-                          : item.last.text}
-                      </span>
-                    </span>
+                  {item.last && (
                     <span
                       suppressHydrationWarning
-                      className="shrink-0 text-xs text-faint"
+                      className="shrink-0 text-xs tabular-nums text-[#4a5c50] dark:text-muted"
                     >
-                      {timeOf(item.last.createdAt)}
+                      {listTimeOf(item.last.createdAt)}
                     </span>
-                  </span>
-                )}
+                  )}
+                </span>
+                <span className="mt-1 flex min-h-6 items-center gap-2">
+                  <TagPill tag={item.tag} />
+                  {item.last ? (
+                    <span
+                      className={`min-w-0 flex-1 truncate text-sm ${
+                        item.last.deleted
+                          ? "italic text-faint"
+                          : "text-[#4a5c50] dark:text-muted"
+                      }`}
+                    >
+                      {item.last.deleted
+                        ? "Wiadomość usunięta"
+                        : `${item.last.senderId === me ? "Ty: " : ""}${item.last.text}`}
+                    </span>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate text-sm text-faint">
+                      Brak wiadomości
+                    </span>
+                  )}
+                  {item.unread > 0 && (
+                    <span
+                      aria-label={`${item.unread} ${plural(item.unread, [
+                        "nieprzeczytana wiadomość",
+                        "nieprzeczytane wiadomości",
+                        "nieprzeczytanych wiadomości",
+                      ])}`}
+                      className="inline-flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#14532d] px-1.5 text-xs font-bold text-white dark:bg-accent"
+                    >
+                      {item.unread}
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
             </div>
             {listFade && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface to-transparent"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface to-transparent"
               />
             )}
           </div>
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-accent px-3.5 text-sm font-medium text-accent hover:bg-mist"
+            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-[#14532d] bg-surface text-base font-semibold text-[#14532d] hover:bg-mist dark:border-accent dark:text-accent"
           >
             <PlusIcon />
             Nowy czat
           </button>
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="flex h-96 min-w-0 flex-1 flex-col gap-3 pb-3">
           {selectedItem ? (
-            <div className="flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
-              <div className="flex items-center gap-2.5 border-b border-line bg-surface px-4.5 py-3.5">
-                <span className="truncate text-[15px] font-bold text-accent">
-                  {selectedItem.name}
-                </span>
-                <TagPill tag={selectedItem.tag} />
+            <>
+              <div className="flex min-h-11 flex-col justify-center gap-0.5 px-1">
+                <div className="flex items-center gap-2.5">
+                  <span className="min-w-0 truncate text-xl font-bold text-[#0f3d24] dark:text-[#7cc99a]">
+                    {selectedItem.name}
+                  </span>
+                  <TagPill tag={selectedItem.tag} />
+                </div>
+                {selectedItem.kind === "lottery" &&
+                  selectedItem.name === "Tajemniczy Mikołaj" && (
+                    <p className="text-[13px] text-[#4a5c50] dark:text-muted">
+                      Ta osoba kupuje Ci prezent. Nie wiesz, kim jest.
+                    </p>
+                  )}
               </div>
-              <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
-                {selectedItem.messages.length === 0 && (
-                  <p className="text-sm text-faint">
-                    Brak wiadomości. Napisz pierwszą!
-                  </p>
-                )}
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] p-4 dark:bg-sage-100">
+                <div className="mt-auto flex flex-col gap-2">
+                  {selectedItem.messages.length === 0 && (
+                    <p className="text-sm text-faint">
+                      Brak wiadomości. Napisz pierwszą!
+                    </p>
+                  )}
                 {selectedItem.messages.map((m, i) => {
                   const prev = selectedItem.messages[i - 1];
                   return (
@@ -980,16 +964,17 @@ export function ChatsPanel({
                     </Fragment>
                   );
                 })}
-                <div ref={bottomRef} />
-              </div>
-              <form
-                action={isDm ? dmSend : lotterySend}
-                onSubmit={() => {
-                  lastSentRef.current = value;
-                  setValue("");
-                }}
-                className="flex items-center gap-2 border-t border-line bg-surface p-3"
-              >
+                    <div ref={bottomRef} />
+                  </div>
+                </div>
+                <form
+                  action={isDm ? dmSend : lotterySend}
+                  onSubmit={() => {
+                    lastSentRef.current = value;
+                    setValue("");
+                  }}
+                  className="flex gap-3"
+                >
                 {isDm ? (
                   <input
                     type="hidden"
@@ -1022,20 +1007,20 @@ export function ChatsPanel({
                   required
                   maxLength={500}
                   placeholder="Napisz wiadomość…"
-                  className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
+                  className="h-[54px] min-w-0 flex-1 rounded-[14px] border border-input-line bg-mist px-[18px] text-base text-ink placeholder:text-faint"
                 />
                 <button
                   type="submit"
                   disabled={pending || !value.trim()}
-                  aria-label="Wyślij"
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+                  aria-label="Wyślij wiadomość"
+                  className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-[14px] bg-[#14532d] text-white hover:bg-accent-deep disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150 dark:bg-accent dark:hover:bg-accent/90"
                 >
                   <SendIcon />
                 </button>
               </form>
-            </div>
+            </>
           ) : (
-            <div className="grid h-96 place-items-center rounded-[14px] bg-mist">
+            <div className="grid min-h-0 flex-1 place-items-center rounded-[14px] bg-mist">
               <div className="flex flex-col items-center gap-3 text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-full bg-sage-150 text-accent">
                   <ChatBubbleIcon />
