@@ -192,33 +192,6 @@ export async function removeDish(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
-export async function toggleDishLike(formData: FormData): Promise<ActionResult> {
-  const { supabase, user } = await requireUser();
-  const id = Number(formData.get("id"));
-  if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowe danie." };
-  const { data: existing } = await supabase
-    .from("dish_likes")
-    .select("dish_id")
-    .eq("dish_id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (existing) {
-    const { error } = await supabase
-      .from("dish_likes")
-      .delete()
-      .eq("dish_id", id)
-      .eq("user_id", user.id);
-    if (error) return { ok: false, error: error.message };
-  } else {
-    const { error } = await supabase
-      .from("dish_likes")
-      .insert({ dish_id: id, user_id: user.id });
-    if (error) return { ok: false, error: error.message };
-  }
-  revalidatePath("/");
-  return { ok: true };
-}
-
 export async function saveName(
   _prev: ActionResult,
   formData: FormData

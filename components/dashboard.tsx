@@ -543,29 +543,33 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         {gifts.listGift.wishes.length > 0 ? (
           <ul className="mt-1 flex flex-col gap-2">
             {gifts.listGift.wishes.map((wish, index) => (
-              <li key={wish.id} className="rounded-[10px] bg-surface px-3.5 py-3">
-                <p className="text-[15px] font-semibold text-ink">
+              <li
+                key={wish.id}
+                className="flex items-baseline justify-between gap-3 rounded-[10px] bg-surface px-3.5 py-3"
+              >
+                <p className="min-w-0 text-[15px] font-semibold text-ink">
                   <span className="select-none font-normal text-muted">
                     {index + 1}.
                   </span>{" "}
                   {wish.text}
-                </p>
-                {(wish.price != null || wish.link) && (
-                  <p className="mt-1 flex flex-wrap gap-x-3 text-[13px] italic text-faint">
-                    {wish.price != null && (
-                      <span>{formatPrice(wish.price)}</span>
-                    )}
-                    {wish.link && (
+                  {wish.link && (
+                    <>
+                      {" "}
                       <a
                         href={wish.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="underline"
+                        className="text-accent underline"
                       >
                         link
                       </a>
-                    )}
-                  </p>
+                    </>
+                  )}
+                </p>
+                {wish.price != null && (
+                  <span className="shrink-0 text-[13px] italic text-faint">
+                    {formatPrice(wish.price)}
+                  </span>
                 )}
               </li>
             ))}
@@ -1013,14 +1017,14 @@ export function Dashboard({
         )}
       </div>
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[38px] leading-tight text-cream">
-            Świąteczne Losowanie
-          </h1>
-          <Countdown startsAt={party.startsAt} label={party.label} />
-        </div>
-        <div className="hidden items-center gap-2 text-sm md:flex">
-          <div className="mr-1.5 flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div>
+            <h1 className="text-[38px] leading-tight text-cream">
+              Świąteczne Losowanie
+            </h1>
+            <Countdown startsAt={party.startsAt} label={party.label} />
+          </div>
+          <div className="flex items-center gap-2">
             <span
               aria-hidden
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
@@ -1029,6 +1033,8 @@ export function Dashboard({
             </span>
             <span className="font-medium text-cream">{userName}</span>
           </div>
+        </div>
+        <div className="hidden items-center gap-2 text-sm md:flex">
           {editMode ? (
             <div className="flex items-center gap-2">
               <button

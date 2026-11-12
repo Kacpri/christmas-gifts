@@ -281,8 +281,7 @@ export function WishForm({
       <div>
         <h3 className="text-base font-semibold">Temat Twojego prezentu</h3>
         <p className="mt-1 text-sm text-muted">
-          Osoba, która Cię wylosuje do prezentu tematycznego, kupi prezent
-          zgodnie z tym tematem.
+          Osoba, która Cię wylosuje, kupi prezent w tym temacie.
         </p>
       </div>
 
@@ -582,7 +581,7 @@ function SortableWishItem({
               href={wish.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline"
+              className="text-accent underline"
             >
               link
             </a>

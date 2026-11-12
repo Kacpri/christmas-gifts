@@ -13,9 +13,9 @@ import {
   addDish,
   editDish,
   removeDish,
-  toggleDishLike,
   type ActionResult,
 } from "@/app/actions";
+import { createClient } from "@/lib/supabase/client";
 import { Select } from "@/components/select";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import {
@@ -106,7 +106,6 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [likeOverrides, setLikeOverrides] = useState<
     Record<number, { likedByMe: boolean; likeCount: number }>
   >({});
-  const likeInFlight = useRef<Set<number>>(new Set());
 
   function startLongPress(dish: Dish) {
     longPressFired.current = false;
@@ -132,7 +131,6 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   }, [dishes]);
 
   function handleLike(dish: Dish) {
-    if (likeInFlight.current.has(dish.id)) return;
     const prev = likeOverrides[dish.id] ?? {
       likedByMe: dish.likedByMe,
       likeCount: dish.likeCount,
@@ -142,15 +140,13 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       likeCount: prev.likeCount + (prev.likedByMe ? -1 : 1),
     };
     setLikeOverrides((o) => ({ ...o, [dish.id]: next }));
-    likeInFlight.current.add(dish.id);
-    const fd = new FormData();
-    fd.set("id", String(dish.id));
-    void toggleDishLike(fd).then((result) => {
-      likeInFlight.current.delete(dish.id);
-      if (!result.ok) {
-        setLikeOverrides((o) => ({ ...o, [dish.id]: prev }));
-      }
-    });
+    createClient()
+      .rpc("toggle_dish_like", { p_dish_id: dish.id })
+      .then(({ error }) => {
+        if (error) {
+          setLikeOverrides((o) => ({ ...o, [dish.id]: prev }));
+        }
+      });
   }
 
   useEffect(() => {
