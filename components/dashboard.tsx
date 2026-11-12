@@ -275,8 +275,8 @@ function TagIcon() {
 function ExternalLinkIcon() {
   return (
     <svg
-      width="16"
-      height="16"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -287,6 +287,25 @@ function ExternalLinkIcon() {
     >
       <path d="M7 17L17 7" />
       <path d="M8 7h9v9" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   );
 }
@@ -513,8 +532,8 @@ function PanelCard({
                 type="button"
                 onClick={onToggle}
                 aria-expanded={!collapsed}
-                aria-label={collapsed ? `Rozwiń: ${title}` : `Zwiń: ${title}`}
-                className="rounded p-1 text-muted hover:bg-mist hover:text-ink"
+                aria-label={collapsed ? `Rozwiń sekcję ${title}` : `Zwiń sekcję ${title}`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-mist hover:text-ink"
               >
                 <ChevronIcon className={collapsed ? "" : "rotate-180"} />
               </button>
@@ -552,54 +571,35 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-sage-200 px-2.5 text-xs font-bold text-list-ink">
             <ListIcon />
-            Z listy
+            Z listy życzeń
           </span>
-          <span className="text-sm text-muted">Kupujesz prezent dla</span>
-          <span className="ml-auto text-sm font-medium text-ink">
-            Budżet: do 150 zł
+          <span className="ml-auto flex flex-col items-end">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#4a5c50] dark:text-muted">
+              Budżet
+            </span>
+            <span className="text-base font-bold tabular-nums text-[#15251b] dark:text-ink">
+              do 150 zł
+            </span>
           </span>
         </div>
-        <p className="text-[22px] font-bold leading-tight text-accent dark:text-[#7cc99a]">
+        <p className="text-sm text-[#4a5c50] dark:text-muted">
+          Kupujesz prezent dla
+        </p>
+        <p className="text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
           {gifts.listGift.person}
         </p>
+        <p className="text-sm text-[#4a5c50] dark:text-muted">
+          Ułożone według jego preferencji, od najbardziej wymarzonej.
+        </p>
         {gifts.listGift.wishes.length > 0 ? (
-          <ul className="mt-1 flex flex-col gap-2">
+          <ul className="flex flex-col gap-2">
             {gifts.listGift.wishes.map((wish, index) => (
-              <li
-                key={wish.id}
-                className="flex items-center justify-between gap-3 rounded-[10px] bg-surface px-3.5 py-3"
-              >
-                <p className="min-w-0 text-[15px] font-semibold text-ink">
-                  <span className="select-none font-normal text-muted">
-                    {index + 1}.
-                  </span>{" "}
-                  {wish.text}
-                </p>
-                <span className="flex shrink-0 items-center gap-1.5">
-                  {wish.link && (
-                    <a
-                      href={wish.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Otwórz link"
-                      title="Otwórz link"
-                      className="text-accent hover:opacity-75"
-                    >
-                      <ExternalLinkIcon />
-                    </a>
-                  )}
-                  {wish.price != null && (
-                    <span className="text-[13px] tabular-nums text-ink">
-                      {formatPrice(wish.price)}
-                    </span>
-                  )}
-                </span>
-              </li>
+              <GiftWishRow key={wish.id} wish={wish} index={index} />
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-sm text-faint">
-            Ta osoba jeszcze nie dodała życzeń.
+          <p className="text-sm text-[#4a5c50] dark:text-muted">
+            Ta osoba nie dodała jeszcze życzeń.
           </p>
         )}
       </article>
@@ -608,30 +608,100 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-honey-200 px-2.5 text-xs font-bold text-honey-800">
             <TagIcon />
-            Tematyczny
+            Prezent tematyczny
           </span>
-          <span className="text-sm text-muted">Kupujesz prezent dla</span>
-          <span className="ml-auto text-sm font-medium text-ink">
-            Budżet: do 100 zł
+          <span className="ml-auto flex flex-col items-end">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#5b5240] dark:text-honey-800">
+              Budżet
+            </span>
+            <span className="text-base font-bold tabular-nums text-[#15251b] dark:text-ink">
+              do 100 zł
+            </span>
           </span>
         </div>
-        <p className="text-[22px] font-bold leading-tight text-accent dark:text-[#7cc99a]">
+        <p className="text-sm text-[#4a5c50] dark:text-muted">
+          Kupujesz prezent dla
+        </p>
+        <p className="text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
           {gifts.themeGift.person}
         </p>
-        <div className="mt-1 rounded-[10px] bg-surface px-4 py-3.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <div className="rounded-[10px] bg-surface px-4 py-3.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#5b5240] dark:text-honey-800">
             Temat
           </p>
-          <p className="mt-1.5 text-xl font-semibold italic leading-snug text-ink">
-            {gifts.themeGift.theme}
+          <p className="mt-1.5 text-[26px] font-bold leading-snug text-[#0f3d24] dark:text-[#7cc99a]">
+            {capitalizeFirst(gifts.themeGift.theme)}
           </p>
-          <p className="mt-2 text-sm text-muted">
-            Wybierz prezent związany z tym tematem.
+          <p className="mt-2 text-sm text-[#4a5c50] dark:text-muted">
+            Wybierz prezent związany z tym tematem. Pomysł zostawiamy Tobie.
           </p>
         </div>
       </article>
+
+      <p className="flex items-center gap-2 text-[13px] text-[#4a5c50] dark:text-muted">
+        <LockIcon />
+        Tylko Ty widzisz, komu kupujesz prezent.
+      </p>
     </div>
   );
+}
+
+function GiftWishRow({ wish, index }: { wish: Wish; index: number }) {
+  const rowClass =
+    "flex min-h-[60px] items-center justify-between gap-3 rounded-[10px] bg-surface px-3.5 py-3";
+  const name = (
+    <>
+      <span className="block text-[15px] leading-snug">
+        <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
+          {index + 1}.
+        </span>{" "}
+        <span className="font-semibold text-ink">{wish.text}</span>
+      </span>
+      {wish.link && (
+        <span className="mt-1 flex items-center gap-1 text-[13px] font-semibold text-[#14532d] dark:text-list-ink">
+          Zobacz w sklepie
+          <ExternalLinkIcon />
+        </span>
+      )}
+    </>
+  );
+  const price =
+    wish.price != null ? (
+      <span className="shrink-0 whitespace-nowrap text-base font-semibold tabular-nums text-[#15251b] dark:text-ink">
+        {formatPrice(wish.price)}
+      </span>
+    ) : (
+      <span className="shrink-0 whitespace-nowrap text-[13px] text-[#4a5c50] dark:text-muted">
+        Brak ceny
+      </span>
+    );
+  if (wish.link) {
+    return (
+      <li>
+        <a
+          href={wish.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${rowClass} transition-colors hover:bg-[#f3f8f4] dark:hover:bg-sage-150 focus-visible:outline-3 focus-visible:outline-solid focus-visible:outline-[#1d6b3d] focus-visible:outline-offset-2`}
+        >
+          <span className="min-w-0">{name}</span>
+          {price}
+        </a>
+      </li>
+    );
+  }
+  return (
+    <li>
+      <div className={rowClass}>
+        <span className="min-w-0">{name}</span>
+        {price}
+      </div>
+    </li>
+  );
+}
+
+function capitalizeFirst(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function ReadyDoneBadge() {
