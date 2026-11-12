@@ -20,7 +20,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import {
   ChatsPanel,
@@ -73,13 +79,6 @@ const DEFAULT_ORDER: PanelId[] = [
 ];
 
 const WIDE_PANELS = new Set<PanelId>(["chats", "group-chat", "organizer"]);
-
-const JUMP_SECTIONS: { id: PanelId; label: string }[] = [
-  { id: "gifts", label: "Prezenty" },
-  { id: "chats", label: "Czaty" },
-  { id: "wishes", label: "Życzenia" },
-  { id: "potrawy", label: "Potrawy" },
-];
 
 const STORAGE_KEY = "dashboard-v1";
 
@@ -491,7 +490,7 @@ function PanelCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`scroll-mt-[120px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
+      className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
@@ -879,6 +878,10 @@ export function Dashboard({
   const [groupUnread, setGroupUnread] = useState(0);
   const [wishCount, setWishCount] = useState(wishes.wishes.length);
   const [revealed, setRevealed] = useState(false);
+  const [topBarHidden, setTopBarHidden] = useState(false);
+  const [activePanel, setActivePanel] = useState<PanelId | null>(null);
+  const lastScrollY = useRef(0);
+  const visibleIdsRef = useRef<PanelId[]>([]);
 
   useEffect(() => {
     try {
@@ -974,6 +977,29 @@ export function Dashboard({
       (id !== "gifts" || gifts.kind !== "waiting") &&
       (id !== "chats" || chats.lotteryDone)
   );
+
+  visibleIdsRef.current = visible;
+
+  useEffect(() => {
+    function onScroll() {
+      const y = window.scrollY;
+      if (y < 8 || y < lastScrollY.current - 4) {
+        setTopBarHidden(false);
+      } else if (y > lastScrollY.current + 4) {
+        setTopBarHidden(true);
+      }
+      lastScrollY.current = y;
+      let current: PanelId | null = null;
+      for (const id of visibleIdsRef.current) {
+        const el = document.getElementById(`panel-${id}`);
+        if (el && el.getBoundingClientRect().top <= 120) current = id;
+      }
+      setActivePanel((prev) => (prev === current ? prev : current));
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const isTwoCol = view === "2col";
   const panelsContainer = isTwoCol
@@ -1123,18 +1149,13 @@ export function Dashboard({
       {hydrated && gifts.kind === "done" && !revealed && (
         <LotteryReveal onDone={markRevealed} />
       )}
-      <div className="sticky top-0 z-30 -mx-5 flex h-16 items-center justify-between gap-2 bg-[#0d4024] px-5 dark:bg-[#061a13] md:hidden">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            aria-hidden
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
-          >
-            {userName.trim().charAt(0).toUpperCase()}
-          </span>
-          <span className="truncate font-medium text-cream">{userName}</span>
-        </div>
+      <div
+        className={`sticky top-0 z-30 -mx-5 flex h-[52px] items-center gap-1.5 bg-[#0d4024] px-3 transition-transform duration-200 dark:bg-[#061a13] md:hidden ${
+          topBarHidden ? "-translate-y-full" : ""
+        }`}
+      >
         {editMode ? (
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full items-center justify-end gap-2">
             <button
               type="button"
               onClick={resetLayout}
@@ -1151,31 +1172,38 @@ export function Dashboard({
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Otwórz menu"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-          >
-            <MenuIcon />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Otwórz menu"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+            >
+              <MenuIcon />
+            </button>
+            <nav
+              aria-label="Przejdź do sekcji"
+              className="flex flex-1 gap-2 overflow-x-auto px-1"
+            >
+              {visible.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => goToPanel(id)}
+                  aria-current={activePanel === id ? "true" : undefined}
+                  className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
+                    activePanel === id
+                      ? "border-cream bg-cream text-[#0d4024]"
+                      : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+                  }`}
+                >
+                  {panels[id].title}
+                </button>
+              ))}
+            </nav>
+          </>
         )}
       </div>
-      <nav
-        aria-label="Przejdź do sekcji"
-        className="sticky top-16 z-20 -mx-5 flex gap-2 overflow-x-auto bg-[#0d4024] px-5 py-2 dark:bg-[#061a13] md:hidden"
-      >
-        {JUMP_SECTIONS.filter((s) => visible.includes(s.id)).map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => goToPanel(s.id)}
-            className="shrink-0 rounded-full border border-cream/55 bg-white/10 px-3.5 py-1.5 text-sm font-semibold text-cream hover:bg-white/20"
-          >
-            {s.label}
-          </button>
-        ))}
-      </nav>
       <header className="flex flex-col gap-2">
         <h1 className="text-[38px] leading-tight text-cream">
           Świąteczne Losowanie
@@ -1249,7 +1277,7 @@ export function Dashboard({
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="absolute right-4 top-16 w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            className="absolute right-4 top-[52px] w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-2 py-1.5">

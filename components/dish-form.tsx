@@ -338,13 +338,14 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               </div>
             </div>
           )}
-          {filterActive && dishes.length > 0 && (
-            <p className="text-xs text-muted">
-              Pokazano {filtered.length} z {dishes.length}
-            </p>
-          )}
         </div>
       </div>
+
+      {filterActive && dishes.length > 0 && (
+        <p className="text-xs text-muted">
+          Pokazano {filtered.length} z {dishes.length}
+        </p>
+      )}
 
       {pageItems.length === 0 ? (
         <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
@@ -633,7 +634,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
           type="button"
           onClick={() => setAddOpen(true)}
           aria-expanded={false}
-          className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
+          className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-medium text-white hover:bg-accent/90"
         >
           <PlusCircleIcon />
           Dodaj potrawę
