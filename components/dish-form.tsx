@@ -24,7 +24,7 @@ import {
   dishCategoryLabel,
   type DishCategory,
 } from "@/lib/dishes";
-import { plural } from "@/lib/format";
+import { capitalizeFirst, plural } from "@/lib/format";
 
 export type Dish = {
   id: number;
@@ -100,6 +100,8 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
   const [editCategory, setEditCategory] = useState<DishCategory>("glowne");
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const addFormRef = useRef<HTMLFormElement>(null);
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
@@ -153,6 +155,19 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
     if (editState.ok) setEditingId(null);
   }, [editState]);
 
+  useEffect(() => {
+    if (addState.ok) {
+      setAddCategory("glowne");
+      addFormRef.current?.reset();
+    }
+  }, [addState]);
+
+  useEffect(() => {
+    if (addOpen) {
+      addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [addOpen]);
+
   const authors = useMemo(
     () =>
       Array.from(new Set(dishes.map((d) => d.author))).sort((a, b) =>
@@ -200,7 +215,9 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
 
   function handleRemove(dish: Dish) {
     setConfirm({
-      message: `Usunąć potrawę „${dish.name}"? Tej operacji nie można cofnąć.`,
+      message: `Usunąć potrawę „${capitalizeFirst(
+        dish.name
+      )}"? Tej operacji nie można cofnąć.`,
       confirmLabel: "Usuń",
       tone: "danger",
       onConfirm: () => {
@@ -307,6 +324,15 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               </div>
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => setAddOpen((o) => !o)}
+            aria-expanded={addOpen}
+            className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
+          >
+            <PlusCircleIcon />
+            {addOpen ? "Zwiń formularz" : "Dodaj potrawę"}
+          </button>
         </div>
       </div>
 
@@ -409,14 +435,15 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-ink">
-                      {dish.name}
+                      {capitalizeFirst(dish.name)}
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-muted">
-                      <span className="truncate">{dish.author}</span>
-                      {dish.isMine && (
+                      {dish.isMine ? (
                         <span className="shrink-0 rounded bg-sage-100 px-1.5 py-0.5 text-[10px] font-semibold text-accent dark:bg-sage-200 dark:text-list-ink">
                           Ty
                         </span>
+                      ) : (
+                        <span className="truncate">{dish.author}</span>
                       )}
                       {dish.quantity && (
                         <span className="truncate sm:hidden">
@@ -455,9 +482,11 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         }`}
                       >
                         <HeartIcon filled={like.likedByMe} />
-                        <span className="tabular-nums text-xs">
-                          {like.likeCount}
-                        </span>
+                        {like.likeCount > 0 && (
+                          <span className="tabular-nums text-xs">
+                            {like.likeCount}
+                          </span>
+                        )}
                       </button>
                     </div>
                     {dish.isMine && (
@@ -515,55 +544,63 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
         </>
       )}
 
-      <hr className="border-line" />
+      {addOpen && (
+        <>
+          <hr className="border-line" />
 
-      <form action={addAction} className="flex flex-col gap-3">
-        <input
-          name="name"
-          required
-          maxLength={120}
-          placeholder="Co przynosisz? (np. szarlotka)"
-          className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-        />
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Select
-            name="category"
-            value={addCategory}
-            onChange={(v) => setAddCategory(v as DishCategory)}
-            options={CATEGORY_OPTIONS}
-            direction="up"
-            scrollable={false}
-            leadingIcon={<TagIcon />}
-            className="flex-1"
-          />
-          <input
-            name="quantity"
-            maxLength={50}
-            placeholder="Ilość (np. 2 kg)"
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:flex-1"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={adding}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-        >
-          {adding ? (
-            <>
-              <SpinnerIcon />
-              Dodawanie…
-            </>
-          ) : (
-            <>
-              <PlusCircleIcon />
-              Dodaj potrawę
-            </>
-          )}
-        </button>
-        {!addState.ok && addState.error && (
-          <p className="text-sm text-red-600">{addState.error}</p>
-        )}
-      </form>
+          <form
+            ref={addFormRef}
+            action={addAction}
+            className="flex flex-col gap-3"
+          >
+            <input
+              name="name"
+              required
+              maxLength={120}
+              placeholder="Co przynosisz? (np. szarlotka)"
+              className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Select
+                name="category"
+                value={addCategory}
+                onChange={(v) => setAddCategory(v as DishCategory)}
+                options={CATEGORY_OPTIONS}
+                direction="up"
+                scrollable={false}
+                leadingIcon={<TagIcon />}
+                className="flex-1"
+              />
+              <input
+                name="quantity"
+                maxLength={50}
+                placeholder="Ilość (np. 2 kg)"
+                className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:flex-1"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={adding}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+            >
+              {adding ? (
+                <>
+                  <SpinnerIcon />
+                  Dodawanie…
+                </>
+              ) : (
+                <>
+                  <PlusCircleIcon />
+                  Dodaj potrawę
+                </>
+              )}
+            </button>
+            {!addState.ok && addState.error && (
+              <p className="text-sm text-red-600">{addState.error}</p>
+            )}
+          </form>
+        </>
+      )}
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
 
@@ -577,7 +614,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="mb-3 truncate text-sm font-semibold text-ink">
-              {mobileMenuDish.name}
+              {capitalizeFirst(mobileMenuDish.name)}
             </p>
             <div className="flex flex-col gap-2">
               <button

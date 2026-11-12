@@ -35,6 +35,9 @@ export const plural = (n: number, forms: [string, string, string]) => {
   return forms[2];
 };
 
+export const capitalizeFirst = (s: string) =>
+  s.charAt(0).toUpperCase() + s.slice(1);
+
 export const participationVerb = (n: number) => {
   const d = n % 10;
   const h = n % 100;

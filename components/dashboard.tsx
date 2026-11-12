@@ -527,7 +527,14 @@ function PanelCard({
         ) : (
           <>
             {badge > 0 && (
-              <span className="rounded-full bg-danger px-2 py-0.5 text-xs font-medium text-white">
+              <span
+                aria-label={`${badge} ${plural(badge, [
+                  "nieprzeczytana wiadomość",
+                  "nieprzeczytane wiadomości",
+                  "nieprzeczytanych wiadomości",
+                ])}`}
+                className="inline-flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#14532d] px-1.5 text-xs font-bold text-white dark:bg-accent"
+              >
                 {badge}
               </span>
             )}
@@ -1139,14 +1146,62 @@ export function Dashboard({
           </button>
         )}
       </div>
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <div>
-            <h1 className="text-[38px] leading-tight text-cream">
-              Świąteczne Losowanie
-            </h1>
-            <Countdown startsAt={party.startsAt} label={party.label} />
+      <header className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-[38px] leading-tight text-cream">
+            Świąteczne Losowanie
+          </h1>
+          <div className="hidden items-center gap-2 text-sm md:flex">
+            {editMode ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={resetLayout}
+                  className="inline-flex h-9 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                >
+                  Resetuj układ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditMode(false)}
+                  className="inline-flex h-9 items-center rounded-[10px] bg-accent px-3.5 text-sm font-semibold text-white hover:bg-accent/90"
+                >
+                  Gotowe
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setView((v) => (v === "1col" ? "2col" : "1col"))
+                  }
+                  aria-label={
+                    view === "1col"
+                      ? "Przełącz na 2 kolumny"
+                      : "Przełącz na 1 kolumnę"
+                  }
+                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                >
+                  {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
+                  {view === "1col" ? "2 kolumny" : "1 kolumna"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditMode(true)}
+                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                >
+                  <LayoutIcon />
+                  Układ
+                </button>
+                <NotificationToggle />
+                <ThemeToggle />
+                <LogoutButton />
+              </div>
+            )}
           </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
           <div className="flex items-center gap-2">
             <span
               aria-hidden
@@ -1156,53 +1211,7 @@ export function Dashboard({
             </span>
             <span className="font-medium text-cream">{userName}</span>
           </div>
-        </div>
-        <div className="hidden items-center gap-2 text-sm md:flex">
-          {editMode ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={resetLayout}
-                className="inline-flex h-9 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-              >
-                Resetuj układ
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditMode(false)}
-                className="inline-flex h-9 items-center rounded-[10px] bg-accent px-3.5 text-sm font-semibold text-white hover:bg-accent/90"
-              >
-                Gotowe
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
-                aria-label={
-                  view === "1col"
-                    ? "Przełącz na 2 kolumny"
-                    : "Przełącz na 1 kolumnę"
-                }
-                className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-              >
-                {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
-                {view === "1col" ? "2 kolumny" : "1 kolumna"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditMode(true)}
-                className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-              >
-                <LayoutIcon />
-                Układ
-              </button>
-              <NotificationToggle />
-              <ThemeToggle />
-              <LogoutButton />
-            </div>
-          )}
+          <Countdown startsAt={party.startsAt} label={party.label} />
         </div>
       </header>
 

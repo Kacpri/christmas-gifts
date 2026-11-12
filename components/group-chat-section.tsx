@@ -32,7 +32,9 @@ export function GroupChatSection({
   const [unread, setUnread] = useState(0);
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendGroupMessage, empty);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const firstRunRef = useRef(true);
+  const prevCollapsedRef = useRef(collapsed);
   const lastSentRef = useRef("");
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
@@ -181,8 +183,23 @@ export function GroupChatSection({
   }, [me]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "nearest" });
-  }, [local.length]);
+    const el = boxRef.current;
+    if (!el) return;
+    const justExpanded = prevCollapsedRef.current && !collapsed;
+    prevCollapsedRef.current = collapsed;
+    if (collapsed) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 8;
+    const last = localRef.current[localRef.current.length - 1];
+    if (
+      firstRunRef.current ||
+      justExpanded ||
+      atBottom ||
+      last?.senderId === me
+    ) {
+      el.scrollTop = el.scrollHeight;
+    }
+    firstRunRef.current = false;
+  }, [local.length, collapsed, me]);
 
   return (
     <>
@@ -190,7 +207,10 @@ export function GroupChatSection({
         Anonimowy — nikt nie wie, kto co napisał.
       </p>
       <div className="mt-3 flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
-        <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
+        <div
+          ref={boxRef}
+          className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4"
+        >
           {local.length === 0 && (
             <p className="text-sm text-faint">
               Brak wiadomości. Napisz pierwszą!
@@ -205,7 +225,6 @@ export function GroupChatSection({
               deleteAction={deleteGroupMessage}
             />
           ))}
-          <div ref={bottomRef} />
         </div>
         <form
           action={sendAction}

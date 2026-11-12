@@ -286,7 +286,7 @@ export function ChatsPanel({
   const [dmState, dmSend, dmPending] = useActionState(sendDm, empty);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [listFade, setListFade] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef("");
   const selectedRef = useRef(selectedKey);
@@ -768,9 +768,28 @@ export function ChatsPanel({
     }
   }, [collapsed]);
 
+  const prevKeyRef = useRef(selectedKey);
+  const prevLenRef = useRef(selectedItem?.messages.length ?? 0);
+  const prevCollapsedRef = useRef(collapsed);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "nearest" });
-  }, [selectedKey, selectedItem?.messages.length]);
+    const el = boxRef.current;
+    if (!el || !selectedItem) return;
+    const justExpanded = prevCollapsedRef.current && !collapsed;
+    prevCollapsedRef.current = collapsed;
+    if (collapsed) return;
+    const len = selectedItem.messages.length;
+    const keyChanged = prevKeyRef.current !== selectedKey;
+    const lenChanged = prevLenRef.current !== len;
+    prevKeyRef.current = selectedKey;
+    prevLenRef.current = len;
+    if (!keyChanged && !lenChanged && !justExpanded) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 8;
+    const last = selectedItem.messages[len - 1];
+    if (keyChanged || justExpanded || atBottom || last?.senderId === me) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [selectedKey, selectedItem?.messages.length, selectedItem, me, collapsed]);
 
   useEffect(() => {
     const total =
@@ -878,7 +897,9 @@ export function ChatsPanel({
                       className={`min-w-0 flex-1 truncate text-sm ${
                         item.last.deleted
                           ? "italic text-faint"
-                          : "text-[#4a5c50] dark:text-muted"
+                          : item.unread > 0
+                            ? "font-semibold text-[#4a5c50] dark:text-muted"
+                            : "text-[#4a5c50] dark:text-muted"
                       }`}
                     >
                       {item.last.deleted
@@ -940,7 +961,10 @@ export function ChatsPanel({
                     </p>
                   )}
               </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] p-4 dark:bg-sage-100">
+              <div
+                ref={boxRef}
+                className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] p-4 dark:bg-sage-100"
+              >
                 <div className="mt-auto flex flex-col gap-2">
                   {selectedItem.messages.length === 0 && (
                     <p className="text-sm text-faint">
@@ -964,7 +988,6 @@ export function ChatsPanel({
                     </Fragment>
                   );
                 })}
-                    <div ref={bottomRef} />
                   </div>
                 </div>
                 <form

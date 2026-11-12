@@ -109,6 +109,12 @@ html[data-theme="dark"] * {
   height: 8px;
 }
 
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 *::-webkit-scrollbar-track {
   background: transparent;
 }
