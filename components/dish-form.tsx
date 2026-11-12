@@ -625,7 +625,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
             aria-expanded={true}
             className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
           >
-            <ChevronDownIcon />
+            <ChevronDownIcon className="rotate-180" />
             Zwiń
           </button>
         </>
@@ -886,7 +886,7 @@ function FunnelIcon() {
   );
 }
 
-function ChevronDownIcon() {
+function ChevronDownIcon({ className }: { className?: string }) {
   return (
     <svg
       width="16"
@@ -898,6 +898,7 @@ function ChevronDownIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
+      className={className}
     >
       <path d="m6 9 6 6 6-6" />
     </svg>
