@@ -829,7 +829,7 @@ export function ChatsPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        {(!isDesktop || !selectedItem) && (
+        {(isDesktop || !selectedItem) && (
         <div className="flex flex-col gap-3 md:h-96 md:w-64 md:pb-3">
           <div className="relative min-h-0 flex-1">
             <div
