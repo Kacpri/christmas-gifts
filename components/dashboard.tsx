@@ -1114,14 +1114,6 @@ export function Dashboard({
               <LayoutIcon />
               Układ
             </button>
-            <button
-              type="button"
-              onClick={() => setView((v) => (v === "1col" ? "2col" : "1col"))}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
-            >
-              {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
-              {view === "1col" ? "2 kolumny" : "1 kolumna"}
-            </button>
             <div className="mt-1 flex items-center gap-2 border-t border-cream/20 px-1 pt-2">
               <NotificationToggle />
               <ThemeToggle />
@@ -1131,23 +1123,22 @@ export function Dashboard({
         </div>
       )}
 
-      {editMode ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragCancel={onDragCancel}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={onDragCancel}
+      >
+        <SortableContext
+          items={visible}
+          strategy={isTwoCol ? rectSortingStrategy : verticalListSortingStrategy}
         >
-          <SortableContext
-            items={visible}
-            strategy={isTwoCol ? rectSortingStrategy : verticalListSortingStrategy}
-          >
-            <div className={panelsContainer}>{cards}</div>
-          </SortableContext>
-          <DragOverlay>
-            {activeId ? (
-              <section className="rounded-2xl bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
+          <div className={panelsContainer}>{cards}</div>
+        </SortableContext>
+        <DragOverlay>
+          {activeId ? (
+            <section className="rounded-2xl bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
               <div className="flex items-center gap-2">
                 <GripIcon />
                 <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
@@ -1160,13 +1151,10 @@ export function Dashboard({
               {(activeId === "ready" || !collapsed[activeId]) && (
                 <div className="mt-3">{panels[activeId].body}</div>
               )}
-              </section>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      ) : (
-        <div className={panelsContainer}>{cards}</div>
-      )}
+            </section>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </main>
   );
 }
