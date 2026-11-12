@@ -22,7 +22,9 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import {
+  DateSeparator,
   MessageBubble,
+  dayKey,
   type ChatMessage,
 } from "@/components/message-bubble";
 import { listTimeOf, plural } from "@/lib/format";
@@ -149,44 +151,6 @@ function TagPill({ tag }: { tag: Tag }) {
       <TagPillIcon tag={tag} />
       {tag}
     </span>
-  );
-}
-
-const dayKey = (iso: string) => {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-};
-
-function DateSeparator({ createdAt }: { createdAt: string }) {
-  const [label, setLabel] = useState<string | null>(null);
-  useEffect(() => {
-    const d = new Date(createdAt);
-    const now = new Date();
-    const startOfDay = (x: Date) =>
-      new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
-    let text: string;
-    if (diffDays <= 0) {
-      text = "Dziś";
-    } else if (diffDays === 1) {
-      text = "Wczoraj";
-    } else {
-      const opts: Intl.DateTimeFormatOptions = {
-        day: "numeric",
-        month: "long",
-      };
-      if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
-      text = d.toLocaleDateString("pl-PL", opts);
-    }
-    setLabel(text);
-  }, [createdAt]);
-  if (!label) return null;
-  return (
-    <div className="flex justify-center py-1" aria-hidden>
-      <span className="rounded-full bg-[#dcebe1] px-2.5 py-1 text-[11px] font-medium leading-4 text-[#4a5c50] dark:bg-sage-200 dark:text-muted">
-        {label}
-      </span>
-    </div>
   );
 }
 
@@ -841,7 +805,7 @@ export function ChatsPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        <div className="flex h-96 flex-col gap-3 pb-3 md:w-80">
+        <div className="flex h-96 flex-col gap-3 pb-3 md:w-64">
           <div className="relative min-h-0 flex-1">
             <div
               ref={listRef}
@@ -944,7 +908,7 @@ export function ChatsPanel({
           </button>
         </div>
 
-        <div className="flex h-96 min-w-0 flex-1 flex-col gap-3 pb-3">
+        <div className="flex h-[440px] min-w-0 flex-1 flex-col gap-3 pb-3 md:h-96">
           {selectedItem ? (
             <>
               <div className="flex min-h-11 flex-col justify-center gap-0.5 px-1">

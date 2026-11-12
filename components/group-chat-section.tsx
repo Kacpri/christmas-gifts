@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useActionState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useActionState,
+} from "react";
 
 import {
   deleteGroupMessage,
@@ -9,7 +15,9 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import {
+  DateSeparator,
   MessageBubble,
+  dayKey,
   type ChatMessage,
 } from "@/components/message-bubble";
 import { notify } from "@/lib/notify";
@@ -203,7 +211,7 @@ export function GroupChatSection({
 
   return (
     <>
-      <p className="text-xs text-faint">
+      <p className="text-sm text-faint">
         Anonimowy — nikt nie wie, kto co napisał.
       </p>
       <div className="mt-3 flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
@@ -216,15 +224,23 @@ export function GroupChatSection({
               Brak wiadomości. Napisz pierwszą!
             </p>
           )}
-          {local.map((m) => (
-            <MessageBubble
-              key={m.id}
-              message={m}
-              isOwn={m.senderId === me}
-              editAction={editGroupMessage}
-              deleteAction={deleteGroupMessage}
-            />
-          ))}
+          {local.map((m, i) => {
+            const prev = local[i - 1];
+            return (
+              <Fragment key={m.id}>
+                {(!prev ||
+                  dayKey(prev.createdAt) !== dayKey(m.createdAt)) && (
+                  <DateSeparator createdAt={m.createdAt} />
+                )}
+                <MessageBubble
+                  message={m}
+                  isOwn={m.senderId === me}
+                  editAction={editGroupMessage}
+                  deleteAction={deleteGroupMessage}
+                />
+              </Fragment>
+            );
+          })}
         </div>
         <form
           action={sendAction}

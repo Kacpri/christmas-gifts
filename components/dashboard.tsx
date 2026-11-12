@@ -499,7 +499,7 @@ function PanelCard({
             {...attributes}
             {...listeners}
             aria-label={`Przeciągnij: ${title}`}
-            className="cursor-grab touch-none rounded p-1 text-muted hover:bg-mist hover:text-ink active:cursor-grabbing"
+            className="cursor-grab touch-none rounded p-1 text-muted active:cursor-grabbing"
           >
             <GripIcon />
           </button>
@@ -608,7 +608,7 @@ function GiftsBody({
           {gifts.listGift.person}
         </p>
         <p className="text-sm text-[#4a5c50] dark:text-muted">
-          Ułożone według jego preferencji, od najbardziej wymarzonej.
+          Ułożone według jego preferencji, od najbardziej wymarzonego.
         </p>
         {gifts.listGift.wishes.length > 0 ? (
           <ul className="flex flex-col gap-2">
@@ -1147,10 +1147,20 @@ export function Dashboard({
         )}
       </div>
       <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-[38px] leading-tight text-cream">
-            Świąteczne Losowanie
-          </h1>
+        <h1 className="text-[38px] leading-tight text-cream">
+          Świąteczne Losowanie
+        </h1>
+        <Countdown startsAt={party.startsAt} label={party.label} />
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+          <div className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
+            >
+              {userName.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="font-medium text-cream">{userName}</span>
+          </div>
           <div className="hidden items-center gap-2 text-sm md:flex">
             {editMode ? (
               <div className="flex items-center gap-2">
@@ -1200,18 +1210,6 @@ export function Dashboard({
               </div>
             )}
           </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
-            >
-              {userName.trim().charAt(0).toUpperCase()}
-            </span>
-            <span className="font-medium text-cream">{userName}</span>
-          </div>
-          <Countdown startsAt={party.startsAt} label={party.label} />
         </div>
       </header>
 

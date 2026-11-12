@@ -23,6 +23,44 @@ export type ChatMessage = {
   deleted: boolean;
 };
 
+export const dayKey = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+
+export function DateSeparator({ createdAt }: { createdAt: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const d = new Date(createdAt);
+    const now = new Date();
+    const startOfDay = (x: Date) =>
+      new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+    let text: string;
+    if (diffDays <= 0) {
+      text = "Dziś";
+    } else if (diffDays === 1) {
+      text = "Wczoraj";
+    } else {
+      const opts: Intl.DateTimeFormatOptions = {
+        day: "numeric",
+        month: "long",
+      };
+      if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+      text = d.toLocaleDateString("pl-PL", opts);
+    }
+    setLabel(text);
+  }, [createdAt]);
+  if (!label) return null;
+  return (
+    <div className="flex justify-center py-1" aria-hidden>
+      <span className="rounded-full bg-[#dcebe1] px-2.5 py-1 text-[11px] font-medium leading-4 text-[#4a5c50] dark:bg-sage-200 dark:text-muted">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 const URL_RE = /(https?:\/\/[^\s]+)/g;
 
 function renderMessageText(text: string) {

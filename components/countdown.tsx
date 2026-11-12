@@ -24,7 +24,7 @@ export function Countdown({
   const diff = new Date(startsAt).getTime() - now;
   if (diff <= 0) {
     return (
-      <p className="mt-1 text-sm text-cream/80">
+      <p className="text-sm text-cream/80">
         Impreza trwa lub się już odbyła 🎄
       </p>
     );
@@ -43,7 +43,7 @@ export function Countdown({
   parts.push(`${secs} sek.`);
 
   return (
-    <p className="mt-1 text-sm text-cream/80">
+    <p className="text-sm text-cream/80">
       Do {label}:{" "}
       <span suppressHydrationWarning className="font-semibold text-cream">
         {parts.join(" ")}
