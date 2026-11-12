@@ -95,6 +95,33 @@ html[data-theme="dark"] .app-shell {
   background: linear-gradient(180deg, #061a13 0%, #0d3524 100%);
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #bcd9c6 transparent;
+}
+
+html[data-theme="dark"] * {
+  scrollbar-color: #46584c transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: #bcd9c6;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: #46584c;
+}
+
 input::-webkit-calendar-picker-indicator {
   filter: sepia(1) saturate(6) hue-rotate(-20deg) brightness(0.85);
 }

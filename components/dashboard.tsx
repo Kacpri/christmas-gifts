@@ -43,6 +43,10 @@ import { OrganizerPanel } from "@/components/organizer-panel";
 import { PartyPanel } from "@/components/party-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
+import {
+  effectiveListBudget,
+  effectiveThemeBudget,
+} from "@/lib/budget";
 import { formatPrice, participationVerb, plural } from "@/lib/format";
 
 export type PanelId =
@@ -548,7 +552,15 @@ function PanelCard({
   );
 }
 
-function GiftsBody({ gifts }: { gifts: GiftsData }) {
+function GiftsBody({
+  gifts,
+  listBudget,
+  themeBudget,
+}: {
+  gifts: GiftsData;
+  listBudget: number;
+  themeBudget: number;
+}) {
   if (gifts.kind === "late") {
     return (
       <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
@@ -578,7 +590,7 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
               Budżet
             </span>
             <span className="text-base font-bold tabular-nums text-[#15251b] dark:text-ink">
-              do 150 zł
+              do {listBudget} zł
             </span>
           </span>
         </div>
@@ -615,7 +627,7 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
               Budżet
             </span>
             <span className="text-base font-bold tabular-nums text-[#15251b] dark:text-ink">
-              do 100 zł
+              do {themeBudget} zł
             </span>
           </span>
         </div>
@@ -813,6 +825,8 @@ export function Dashboard({
     notes: string | null;
     label: string;
     isOrganizer: boolean;
+    listBudget: number | null;
+    themeBudget: number | null;
   };
   ready: {
     hasWish: boolean;
@@ -956,7 +970,13 @@ export function Dashboard({
     },
     gifts: {
       title: "Prezenty",
-      body: <GiftsBody gifts={gifts} />,
+      body: (
+        <GiftsBody
+          gifts={gifts}
+          listBudget={effectiveListBudget(party.listBudget)}
+          themeBudget={effectiveThemeBudget(party.themeBudget)}
+        />
+      ),
     },
     chats: {
       title: "Czaty",
@@ -991,6 +1011,8 @@ export function Dashboard({
           wishes={wishes.wishes}
           theme={wishes.theme}
           themeLocked={wishes.themeLocked}
+          listBudget={effectiveListBudget(party.listBudget)}
+          themeBudget={effectiveThemeBudget(party.themeBudget)}
           onCountChange={setWishCount}
         />
       ),

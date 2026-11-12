@@ -27,6 +27,7 @@ import {
   saveTheme,
   type ActionResult,
 } from "@/app/actions";
+import { budgetError, parsePrice } from "@/lib/budget";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { THEME_IDEAS } from "@/lib/theme-ideas";
@@ -44,11 +45,15 @@ export function WishForm({
   wishes,
   theme,
   themeLocked,
+  listBudget,
+  themeBudget,
   onCountChange,
 }: {
   wishes: Wish[];
   theme: string | null;
   themeLocked: boolean;
+  listBudget: number;
+  themeBudget: number;
   onCountChange?: (count: number) => void;
 }) {
   const [wishState, addWishAction, addingWish] = useActionState(addWish, empty);
@@ -70,8 +75,14 @@ export function WishForm({
   const [localWishes, setLocalWishes] = useState<Wish[]>(wishes);
   const [justDrew, setJustDrew] = useState(false);
   const [mobileMenuWish, setMobileMenuWish] = useState<Wish | null>(null);
+  const [addPrice, setAddPrice] = useState("");
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
+  const addPriceRef = useRef<HTMLInputElement>(null);
+
+  const addParsed = parsePrice(addPrice);
+  const addOverBudget =
+    addParsed.kind === "value" && addParsed.grosze > listBudget * 100;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -89,6 +100,10 @@ export function WishForm({
   useEffect(() => {
     if (editState.ok) setEditingId(null);
   }, [editState]);
+
+  useEffect(() => {
+    if (wishState.ok) setAddPrice("");
+  }, [wishState]);
 
   useEffect(() => {
     if (!undoWish) return;
@@ -214,6 +229,7 @@ export function WishForm({
                   handleRemove={handleRemove}
                   startLongPress={startLongPress}
                   cancelLongPress={cancelLongPress}
+                  listBudget={listBudget}
                 />
               ))}
             </ul>
@@ -229,7 +245,16 @@ export function WishForm({
           Osiągnięto limit — usuń któreś życzenie, aby dodać nowe
         </p>
       ) : (
-        <form action={addWishAction} className="flex flex-col gap-3">
+        <form
+          action={addWishAction}
+          onSubmit={(e) => {
+            if (addOverBudget) {
+              e.preventDefault();
+              addPriceRef.current?.focus();
+            }
+          }}
+          className="flex flex-col gap-3"
+        >
           <input
             name="text"
             required
@@ -245,13 +270,34 @@ export function WishForm({
               className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
             />
             <input
+              ref={addPriceRef}
               name="price"
               type="text"
               inputMode="decimal"
+              value={addPrice}
+              onChange={(e) => setAddPrice(e.target.value)}
               placeholder="Cena (zł)"
+              aria-invalid={addOverBudget || undefined}
+              aria-describedby={
+                addOverBudget
+                  ? "wish-price-error wish-budget-hint"
+                  : "wish-budget-hint"
+              }
               className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
             />
           </div>
+          <p id="wish-budget-hint" className="text-[13px] text-muted">
+            Budżet: do {listBudget} zł
+          </p>
+          {addOverBudget && (
+            <p
+              id="wish-price-error"
+              role="alert"
+              className="text-[13px] font-medium text-danger"
+            >
+              {budgetError(listBudget)}
+            </p>
+          )}
           <button
             type="submit"
             disabled={addingWish}
@@ -284,6 +330,11 @@ export function WishForm({
             ? "Temat prezentu pozostaje zablokowany."
             : "Osoba, która Cię wylosuje, kupi prezent w tym temacie."}
         </p>
+        {!themeLocked && (
+          <p className="text-[13px] text-muted">
+            Budżet na prezent tematyczny: do {themeBudget} zł
+          </p>
+        )}
       </div>
 
       <form action={saveThemeAction} className="flex flex-col gap-3">
@@ -437,6 +488,7 @@ function SortableWishItem({
   handleRemove,
   startLongPress,
   cancelLongPress,
+  listBudget,
 }: {
   wish: Wish;
   index: number;
@@ -455,6 +507,7 @@ function SortableWishItem({
   handleRemove: (wish: Wish) => void;
   startLongPress: (wish: Wish) => void;
   cancelLongPress: () => void;
+  listBudget: number;
 }) {
   const {
     attributes,
@@ -468,6 +521,14 @@ function SortableWishItem({
     transform: CSS.Transform.toString(transform),
     transition,
   };
+  const editPriceRef = useRef<HTMLInputElement>(null);
+  const editParsed = parsePrice(editPrice);
+  const oldGrosze = wish.price != null ? Math.round(wish.price * 100) : null;
+  const editOverBudget =
+    isEditing &&
+    editParsed.kind === "value" &&
+    editParsed.grosze !== oldGrosze &&
+    editParsed.grosze > listBudget * 100;
 
   if (isEditing) {
     return (
@@ -480,6 +541,12 @@ function SortableWishItem({
           action={(formData) => {
             formData.set("id", String(wish.id));
             editWishAction(formData);
+          }}
+          onSubmit={(e) => {
+            if (editOverBudget) {
+              e.preventDefault();
+              editPriceRef.current?.focus();
+            }
           }}
           className="flex flex-col gap-3"
         >
@@ -501,15 +568,37 @@ function SortableWishItem({
               className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
             />
             <input
+              ref={editPriceRef}
               name="price"
               type="text"
               inputMode="decimal"
               value={editPrice}
               onChange={(e) => setEditPrice(e.target.value)}
               placeholder="Cena (zł)"
+              aria-invalid={editOverBudget || undefined}
+              aria-describedby={
+                editOverBudget
+                  ? `wish-price-error-${wish.id} wish-budget-hint-${wish.id}`
+                  : `wish-budget-hint-${wish.id}`
+              }
               className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
             />
           </div>
+          <p
+            id={`wish-budget-hint-${wish.id}`}
+            className="text-[13px] text-muted"
+          >
+            Budżet: do {listBudget} zł
+          </p>
+          {editOverBudget && (
+            <p
+              id={`wish-price-error-${wish.id}`}
+              role="alert"
+              className="text-[13px] font-medium text-danger"
+            >
+              {budgetError(listBudget)}
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <button
               type="submit"

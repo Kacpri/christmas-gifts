@@ -73,7 +73,7 @@ export default async function Home() {
     supabase.from("dish_likes").select("dish_id, user_id"),
     supabase
       .from("party")
-      .select("starts_at, location, notes, label")
+      .select("starts_at, location, notes, label, list_budget, theme_budget")
       .eq("id", 1)
       .maybeSingle(),
     supabase
@@ -220,7 +220,7 @@ export default async function Home() {
     const threadKeyOf = (
       a: { lottery_type: number; drawer_id: string; drawee_id: string }
     ) => `${a.lottery_type}-${a.drawer_id}-${a.drawee_id}`;
-    const typeLabel = (t: number) => (t === 1 ? "lista" : "temat");
+    const typeLabel = (t: number) => (t === 1 ? "z listy" : "tematyczny");
     const buildThread = (
       a: { lottery_type: number; drawer_id: string; drawee_id: string },
       label: string
@@ -267,7 +267,7 @@ export default async function Home() {
       ...(myAsDrawee ?? []).map((a) =>
         buildThread(
           { lottery_type: a.lottery_type, drawer_id: a.drawer_id, drawee_id: user.id },
-          `Anonimowy Mikołaj — ${typeLabel(a.lottery_type)}`
+          `Tajemniczy Mikołaj — ${typeLabel(a.lottery_type)}`
         )
       ),
     ].sort((x, y) => {
@@ -366,6 +366,8 @@ export default async function Home() {
         notes: partyRow?.notes ?? null,
         label: partyRow?.label ?? "imprezy",
         isOrganizer: Boolean(profile?.is_organizer),
+        listBudget: partyRow?.list_budget ?? null,
+        themeBudget: partyRow?.theme_budget ?? null,
       }}
       ready={{
         hasWish: (myWishes ?? []).length >= 2,

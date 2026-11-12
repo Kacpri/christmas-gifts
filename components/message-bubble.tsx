@@ -172,7 +172,7 @@ export function MessageBubble({
         {message.deleted ? (
           <p
             className={`text-sm italic ${
-              isOwn ? "text-white/70" : "text-faint"
+              isOwn ? "text-white/70" : "text-placeholder"
             }`}
           >
             Wiadomość usunięta
@@ -218,7 +218,7 @@ export function MessageBubble({
             </p>
             <p
               suppressHydrationWarning
-              className={`mt-0.5 text-right text-[10px] ${
+              className={`mt-0.5 text-right text-[11px] ${
                 isOwn ? "text-white/70" : "text-faint"
               }`}
             >

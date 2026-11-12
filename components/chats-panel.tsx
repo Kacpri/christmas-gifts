@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useActionState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useActionState,
+} from "react";
 
 import {
   deleteDm,
@@ -72,7 +80,7 @@ type DbRead = {
   last_read_at: string;
 };
 
-type Tag = "lista" | "temat" | "osobiste";
+type Tag = "z listy" | "tematyczny" | "prywatny";
 
 type ListItem = {
   key: string;
@@ -88,9 +96,98 @@ type ListItem = {
 };
 
 function tagClass(tag: Tag) {
-  if (tag === "lista") return "bg-sage-200 text-list-ink";
-  if (tag === "temat") return "bg-honey-200 text-honey-800";
+  if (tag === "z listy") return "bg-sage-200 text-list-ink";
+  if (tag === "tematyczny") return "bg-honey-200 text-honey-800";
   return "bg-sky-200 text-sky-800";
+}
+
+function TagPillIcon({ tag }: { tag: Tag }) {
+  const common = {
+    width: 12,
+    height: 12,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  if (tag === "z listy") {
+    return (
+      <svg {...common}>
+        <line x1="8" x2="21" y1="6" y2="6" />
+        <line x1="8" x2="21" y1="12" y2="12" />
+        <line x1="8" x2="21" y1="18" y2="18" />
+        <line x1="3" x2="3.01" y1="6" y2="6" />
+        <line x1="3" x2="3.01" y1="12" y2="12" />
+        <line x1="3" x2="3.01" y1="18" y2="18" />
+      </svg>
+    );
+  }
+  if (tag === "tematyczny") {
+    return (
+      <svg {...common}>
+        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function TagPill({ tag }: { tag: Tag }) {
+  return (
+    <span
+      className={`inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-[11px] font-bold ${tagClass(tag)}`}
+    >
+      <TagPillIcon tag={tag} />
+      {tag}
+    </span>
+  );
+}
+
+const dayKey = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+
+function DateSeparator({ createdAt }: { createdAt: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const d = new Date(createdAt);
+    const now = new Date();
+    const startOfDay = (x: Date) =>
+      new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+    let text: string;
+    if (diffDays <= 0) {
+      text = "Dziś";
+    } else if (diffDays === 1) {
+      text = "Wczoraj";
+    } else {
+      const opts: Intl.DateTimeFormatOptions = {
+        day: "numeric",
+        month: "long",
+      };
+      if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+      text = d.toLocaleDateString("pl-PL", opts);
+    }
+    setLabel(text);
+  }, [createdAt]);
+  if (!label) return null;
+  return (
+    <div className="flex justify-center py-1" aria-hidden>
+      <span className="rounded-full bg-sage-150 px-2.5 py-0.5 text-[11px] font-medium text-muted dark:bg-sage-200">
+        {label}
+      </span>
+    </div>
+  );
 }
 
 function ChatBubbleIcon() {
@@ -207,7 +304,9 @@ export function ChatsPanel({
   );
   const [dmState, dmSend, dmPending] = useActionState(sendDm, empty);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [listFade, setListFade] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef("");
   const selectedRef = useRef(selectedKey);
   selectedRef.current = selectedKey;
@@ -232,8 +331,8 @@ export function ChatsPanel({
         const last = msgs.length ? msgs[msgs.length - 1] : null;
         items.push({
           key,
-          name: t.label.replace(/ — (lista|temat)$/, ""),
-          tag: t.lotteryType === 1 ? "lista" : "temat",
+          name: t.label.replace(/ — (z listy|tematyczny)$/, ""),
+          tag: t.lotteryType === 1 ? "z listy" : "tematyczny",
           last,
           unread: lotteryUnread[key] ?? 0,
           kind: "lottery",
@@ -251,7 +350,7 @@ export function ChatsPanel({
       items.push({
         key: dmKey(peerId),
         name: nameById.get(peerId) ?? peerId,
-        tag: "osobiste",
+        tag: "prywatny",
         last,
         unread: dmUnread[peerId] ?? 0,
         kind: "dm",
@@ -276,6 +375,18 @@ export function ChatsPanel({
     nameById,
   ]);
 
+  const updateListFade = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const canScroll = el.scrollHeight > el.clientHeight;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 4;
+    setListFade(canScroll && !atBottom);
+  }, []);
+
+  useEffect(() => {
+    updateListFade();
+  }, [listItems, updateListFade]);
+
   const allLastMine =
     listItems.length > 1 &&
     listItems.every((i) => !i.last || i.last.senderId === me);
@@ -288,7 +399,7 @@ export function ChatsPanel({
         kind: "dm" as const,
         key: selectedKey,
         name: nameById.get(peerId) ?? peerId,
-        tag: "osobiste" as Tag,
+        tag: "prywatny" as Tag,
         peerId,
         messages: dmMsgs[peerId] ?? [],
       };
@@ -298,8 +409,8 @@ export function ChatsPanel({
     return {
       kind: "lottery" as const,
       key: selectedKey,
-      name: t.label.replace(/ — (lista|temat)$/, ""),
-      tag: (t.lotteryType === 1 ? "lista" : "temat") as Tag,
+      name: t.label.replace(/ — (z listy|tematyczny)$/, ""),
+      tag: (t.lotteryType === 1 ? "z listy" : "tematyczny") as Tag,
       lotteryType: t.lotteryType,
       drawerId: t.drawerId,
       draweeId: t.draweeId,
@@ -372,7 +483,7 @@ export function ChatsPanel({
               }));
               const t = threadsRef.current.find((x) => ltKey(x) === key);
               const who = t
-                ? t.label.replace(/ — (lista|temat)$/, "")
+                ? t.label.replace(/ — (z listy|tematyczny)$/, "")
                 : "Nowa wiadomość";
               notify("Nowa wiadomość", who);
             }
@@ -734,8 +845,13 @@ export function ChatsPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        <div className="flex h-96 flex-col gap-2 md:w-[250px]">
-          <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-0.5">
+        <div className="flex h-96 flex-col gap-2 pb-3 md:w-[250px]">
+          <div className="relative min-h-0 flex-1">
+            <div
+              ref={listRef}
+              onScroll={updateListFade}
+              className="flex h-full flex-col gap-2 overflow-y-auto pr-0.5"
+            >
             {listItems.length === 0 && (
               <p className="text-sm text-faint">Brak czatów.</p>
             )}
@@ -758,17 +874,29 @@ export function ChatsPanel({
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="truncate font-semibold text-ink">
-                    {item.name}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {item.unread > 0 ? (
+                      <span
+                        role="img"
+                        aria-label="Nieprzeczytane"
+                        className="h-2 w-2 shrink-0 rounded-full bg-accent"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 shrink-0 rounded-full"
+                      />
+                    )}
+                    <span
+                      className={`truncate text-ink ${
+                        item.unread > 0 ? "font-bold" : "font-medium"
+                      }`}
+                    >
+                      {item.name}
+                    </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1.5">
-                    <span
-                      className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-bold ${tagClass(
-                        item.tag
-                      )}`}
-                    >
-                      {item.tag}
-                    </span>
+                    <TagPill tag={item.tag} />
                     {item.unread > 0 && (
                       <span className="rounded-full bg-danger px-1.5 py-0.5 text-[11px] font-bold text-white">
                         {item.unread}
@@ -802,11 +930,18 @@ export function ChatsPanel({
                 )}
               </button>
             ))}
+            </div>
+            {listFade && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface to-transparent"
+              />
+            )}
           </div>
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-accent px-3.5 py-2.5 text-sm font-medium text-accent hover:bg-mist"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-accent px-3.5 text-sm font-medium text-accent hover:bg-mist"
           >
             <PlusIcon />
             Nowy czat
@@ -820,13 +955,7 @@ export function ChatsPanel({
                 <span className="truncate text-[15px] font-bold text-accent">
                   {selectedItem.name}
                 </span>
-                <span
-                  className={`inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[11px] font-bold ${tagClass(
-                    selectedItem.tag
-                  )}`}
-                >
-                  {selectedItem.tag}
-                </span>
+                <TagPill tag={selectedItem.tag} />
               </div>
               <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
                 {selectedItem.messages.length === 0 && (
@@ -834,15 +963,23 @@ export function ChatsPanel({
                     Brak wiadomości. Napisz pierwszą!
                   </p>
                 )}
-                {selectedItem.messages.map((m) => (
-                  <MessageBubble
-                    key={m.id}
-                    message={m}
-                    isOwn={m.senderId === me}
-                    editAction={isDm ? editDm : editMessage}
-                    deleteAction={isDm ? deleteDm : deleteMessage}
-                  />
-                ))}
+                {selectedItem.messages.map((m, i) => {
+                  const prev = selectedItem.messages[i - 1];
+                  return (
+                    <Fragment key={m.id}>
+                      {(!prev ||
+                        dayKey(prev.createdAt) !== dayKey(m.createdAt)) && (
+                        <DateSeparator createdAt={m.createdAt} />
+                      )}
+                      <MessageBubble
+                        message={m}
+                        isOwn={m.senderId === me}
+                        editAction={isDm ? editDm : editMessage}
+                        deleteAction={isDm ? deleteDm : deleteMessage}
+                      />
+                    </Fragment>
+                  );
+                })}
                 <div ref={bottomRef} />
               </div>
               <form

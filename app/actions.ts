@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  BUDGET_MAX,
+  BUDGET_MIN,
+  budgetError,
+  effectiveListBudget,
+  parsePrice,
+} from "@/lib/budget";
 import { createClient } from "@/lib/supabase/server";
 import { DISH_CATEGORY_VALUES } from "@/lib/dishes";
 
@@ -15,6 +22,17 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return { supabase, user };
+}
+
+async function getListBudget(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<number> {
+  const { data } = await supabase
+    .from("party")
+    .select("list_budget")
+    .eq("id", 1)
+    .maybeSingle();
+  return effectiveListBudget(data?.list_budget ?? null);
 }
 
 export async function signOut() {
@@ -36,13 +54,18 @@ export async function addWish(
   if (link && !/^https?:\/\/\S+$/i.test(link)) {
     return { ok: false, error: "Link musi zaczynać się od http:// lub https://" };
   }
-  let price: number | null = null;
-  if (priceRaw) {
-    price = Number(priceRaw.replace(",", "."));
-    if (Number.isNaN(price) || price < 0) {
-      return { ok: false, error: "Cena musi być dodatnią liczbą." };
-    }
+  const parsedPrice = parsePrice(priceRaw);
+  if (parsedPrice.kind === "invalid") {
+    return { ok: false, error: "Cena musi być dodatnią liczbą." };
   }
+  const listBudget = await getListBudget(supabase);
+  if (
+    parsedPrice.kind === "value" &&
+    parsedPrice.grosze > listBudget * 100
+  ) {
+    return { ok: false, error: budgetError(listBudget) };
+  }
+  const price = parsedPrice.kind === "value" ? parsedPrice.grosze / 100 : null;
 
   const { count, error: countError } = await supabase
     .from("wishes")
@@ -87,13 +110,27 @@ export async function editWish(
   if (link && !/^https?:\/\/\S+$/i.test(link)) {
     return { ok: false, error: "Link musi zaczynać się od http:// lub https://" };
   }
-  let price: number | null = null;
-  if (priceRaw) {
-    price = Number(priceRaw.replace(",", "."));
-    if (Number.isNaN(price) || price < 0) {
-      return { ok: false, error: "Cena musi być dodatnią liczbą." };
+  const parsedPrice = parsePrice(priceRaw);
+  if (parsedPrice.kind === "invalid") {
+    return { ok: false, error: "Cena musi być dodatnią liczbą." };
+  }
+  const { data: current } = await supabase
+    .from("wishes")
+    .select("price")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (parsedPrice.kind === "value") {
+    const oldGrosze =
+      current?.price != null ? Math.round(current.price * 100) : null;
+    if (parsedPrice.grosze !== oldGrosze) {
+      const listBudget = await getListBudget(supabase);
+      if (parsedPrice.grosze > listBudget * 100) {
+        return { ok: false, error: budgetError(listBudget) };
+      }
     }
   }
+  const price = parsedPrice.kind === "value" ? parsedPrice.grosze / 100 : null;
   const { error } = await supabase
     .from("wishes")
     .update({ text, link: link || null, price })
@@ -709,6 +746,24 @@ export async function saveParty(
   const location = String(formData.get("location") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
+  const listBudgetRaw = String(formData.get("list_budget") ?? "").trim();
+  const themeBudgetRaw = String(formData.get("theme_budget") ?? "").trim();
+  const parseBudget = (raw: string): number | null | "invalid" => {
+    if (!raw) return null;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < BUDGET_MIN || n > BUDGET_MAX) {
+      return "invalid";
+    }
+    return n;
+  };
+  const listBudget = parseBudget(listBudgetRaw);
+  const themeBudget = parseBudget(themeBudgetRaw);
+  if (listBudget === "invalid" || themeBudget === "invalid") {
+    return {
+      ok: false,
+      error: `Budżet: podaj liczbę od ${BUDGET_MIN} do ${BUDGET_MAX.toLocaleString("pl-PL")}.`,
+    };
+  }
   let startsAt: string | null = null;
   if (startsRaw) {
     const d = new Date(startsRaw);
@@ -735,6 +790,8 @@ export async function saveParty(
         location: location || null,
         notes: notes || null,
         label: label || "imprezy",
+        list_budget: listBudget,
+        theme_budget: themeBudget,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" }
