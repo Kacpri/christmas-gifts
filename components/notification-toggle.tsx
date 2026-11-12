@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ToggleSwitch } from "@/components/toggle-switch";
 import {
   isNotifyMuted,
   notifyPermission,
@@ -11,7 +12,11 @@ import {
 
 type Perm = NotificationPermission | "unsupported";
 
-export function NotificationToggle() {
+export function NotificationToggle({
+  variant = "icon",
+}: {
+  variant?: "icon" | "row";
+}) {
   const [perm, setPerm] = useState<Perm>("default");
   const [muted, setMuted] = useState(false);
 
@@ -39,6 +44,7 @@ export function NotificationToggle() {
   if (perm === "unsupported") return null;
 
   const active = perm === "granted" && !muted;
+  const denied = perm === "denied";
   const label =
     perm === "denied"
       ? "Powiadomienia zablokowane w przeglądarce"
@@ -47,6 +53,32 @@ export function NotificationToggle() {
         : muted
           ? "Włącz powiadomienia o nowych wiadomościach"
           : "Wyłącz powiadomienia o nowych wiadomościach";
+
+  if (variant === "row") {
+    return (
+      <button
+        type="button"
+        onClick={denied ? undefined : onClick}
+        disabled={denied}
+        aria-pressed={active}
+        aria-label={label}
+        className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left ${
+          denied ? "text-cream/50" : "text-cream hover:bg-white/10"
+        }`}
+      >
+        <BellIcon muted={muted || denied} />
+        <span className="flex-1">
+          <span className="block text-sm font-medium">Powiadomienia</span>
+          {denied && (
+            <span className="block text-xs text-cream/50">
+              zablokowane w przeglądarce
+            </span>
+          )}
+        </span>
+        <ToggleSwitch on={active} disabled={denied} />
+      </button>
+    );
+  }
 
   return (
     <button

@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-export function ThemeToggle() {
+import { ToggleSwitch } from "@/components/toggle-switch";
+
+export function ThemeToggle({
+  variant = "icon",
+}: {
+  variant?: "icon" | "row";
+}) {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -21,6 +27,21 @@ export function ThemeToggle() {
       next ? "dark" : "light"
     );
     setDark(next);
+  }
+
+  if (variant === "row") {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        aria-pressed={dark}
+        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-cream hover:bg-white/10"
+      >
+        {dark ? <SunIcon /> : <MoonIcon />}
+        <span className="flex-1 text-sm font-medium">Tryb ciemny</span>
+        <ToggleSwitch on={dark} />
+      </button>
+    );
   }
 
   return (

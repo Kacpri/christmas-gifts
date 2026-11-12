@@ -131,7 +131,7 @@ function GripIcon() {
   );
 }
 
-function LayoutIcon() {
+function SlidersIcon() {
   return (
     <svg
       width="14"
@@ -143,8 +143,12 @@ function LayoutIcon() {
       strokeLinecap="round"
       aria-hidden
     >
-      <rect x="2" y="2" width="12" height="5" rx="1" />
-      <rect x="2" y="9" width="12" height="5" rx="1" />
+      <path d="M2 4.5h6.5" />
+      <path d="M12.5 4.5H14" />
+      <path d="M2 11.5h1.5" />
+      <path d="M7.5 11.5H14" />
+      <circle cx="10.5" cy="4.5" r="2" />
+      <circle cx="5.5" cy="11.5" r="2" />
     </svg>
   );
 }
@@ -882,6 +886,8 @@ export function Dashboard({
   const [activePanel, setActivePanel] = useState<PanelId | null>(null);
   const lastScrollY = useRef(0);
   const visibleIdsRef = useRef<PanelId[]>([]);
+  const chipNavRef = useRef<HTMLElement>(null);
+  const [chipFades, setChipFades] = useState({ left: false, right: false });
 
   useEffect(() => {
     try {
@@ -1000,6 +1006,24 @@ export function Dashboard({
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const updateChipFades = useCallback(() => {
+    const el = chipNavRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setChipFades((prev) =>
+      prev.left === left && prev.right === right ? prev : { left, right }
+    );
+  }, []);
+
+  const visibleKey = visible.join(",");
+
+  useEffect(() => {
+    updateChipFades();
+    window.addEventListener("resize", updateChipFades);
+    return () => window.removeEventListener("resize", updateChipFades);
+  }, [updateChipFades, visibleKey]);
 
   const isTwoCol = view === "2col";
   const panelsContainer = isTwoCol
@@ -1181,26 +1205,66 @@ export function Dashboard({
             >
               <MenuIcon />
             </button>
-            <nav
-              aria-label="Przejdź do sekcji"
-              className="flex flex-1 gap-2 overflow-x-auto px-1"
-            >
-              {visible.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => goToPanel(id)}
-                  aria-current={activePanel === id ? "true" : undefined}
-                  className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
-                    activePanel === id
-                      ? "border-cream bg-cream text-[#0d4024]"
-                      : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-                  }`}
-                >
-                  {panels[id].title}
-                </button>
-              ))}
-            </nav>
+            <div className="relative min-w-0 flex-1">
+              <nav
+                ref={chipNavRef}
+                aria-label="Przejdź do sekcji"
+                onScroll={updateChipFades}
+                className="no-scrollbar flex gap-2 overflow-x-auto px-1"
+              >
+                {visible.map((id) => {
+                  const unread =
+                    id === "chats"
+                      ? chatUnread
+                      : id === "group-chat"
+                        ? groupUnread
+                        : 0;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => goToPanel(id)}
+                      aria-current={activePanel === id ? "true" : undefined}
+                      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
+                        activePanel === id
+                          ? "border-cream bg-cream text-[#0d4024]"
+                          : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+                      }`}
+                    >
+                      {panels[id].title}
+                      {unread > 0 && (
+                        <span
+                          aria-label={`${unread} ${plural(unread, [
+                            "nieprzeczytana wiadomość",
+                            "nieprzeczytane wiadomości",
+                            "nieprzeczytanych wiadomości",
+                          ])}`}
+                          className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                            activePanel === id
+                              ? "bg-[#0d4024] text-cream"
+                              : "bg-cream text-[#0d4024]"
+                          }`}
+                        >
+                          {unread}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+              {chipFades.left && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-[#0d4024] to-transparent dark:from-[#061a13]"
+                />
+              )}
+              {chipFades.right && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[#0d4024] to-transparent dark:from-[#061a13]"
+                />
+              )}
+            </div>
           </>
         )}
       </div>
@@ -1259,8 +1323,8 @@ export function Dashboard({
                   onClick={() => setEditMode(true)}
                   className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
                 >
-                  <LayoutIcon />
-                  Układ
+                  <SlidersIcon />
+                  Dostosuj układ
                 </button>
                 <NotificationToggle />
                 <ThemeToggle />
@@ -1277,7 +1341,7 @@ export function Dashboard({
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="absolute right-4 top-[52px] w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            className="absolute left-4 top-[52px] w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-2 py-1.5">
@@ -1299,13 +1363,15 @@ export function Dashboard({
               }}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
             >
-              <LayoutIcon />
-              Układ
+              <SlidersIcon />
+              Dostosuj układ
             </button>
-            <div className="mt-1 flex items-center gap-2 border-t border-cream/20 px-1 pt-2">
-              <NotificationToggle />
-              <ThemeToggle />
-              <LogoutButton />
+            <div className="mt-1 flex flex-col">
+              <NotificationToggle variant="row" />
+              <ThemeToggle variant="row" />
+            </div>
+            <div className="mt-1 border-t border-cream/20 pt-1">
+              <LogoutButton variant="row" />
             </div>
           </div>
         </div>

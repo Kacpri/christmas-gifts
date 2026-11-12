@@ -119,6 +119,15 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb {
   background: #46584c;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 input::-webkit-calendar-picker-indicator {
   filter: sepia(1) saturate(6) hue-rotate(-20deg) brightness(0.85);
 }
