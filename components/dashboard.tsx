@@ -1194,15 +1194,6 @@ export function Dashboard({
           </div>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              aria-label={mobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
-              aria-expanded={mobileMenuOpen}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-            >
-              <MenuIcon open={mobileMenuOpen} />
-            </button>
             <div className="relative min-w-0 flex-1">
               <nav
                 ref={chipNavRef}
@@ -1263,6 +1254,15 @@ export function Dashboard({
                 />
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={mobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+              aria-expanded={mobileMenuOpen}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+            >
+              <MenuIcon open={mobileMenuOpen} />
+            </button>
           </>
         )}
       </div>
