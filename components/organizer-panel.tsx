@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useEffect, useActionState, useState } from "react";
 
 import {
   cancelLottery,
   removeUser,
   runLottery,
+  savePartyBudgets,
   sendLotteryEmails,
   sendReadyReminders,
   setNameForUser,
@@ -28,6 +29,8 @@ export function OrganizerPanel({
   participants,
   lateJoiners,
   lotteryDone,
+  listBudget,
+  themeBudget,
 }: {
   participants: {
     id: string;
@@ -38,6 +41,8 @@ export function OrganizerPanel({
   }[];
   lateJoiners: { id: string; full_name: string }[];
   lotteryDone: boolean;
+  listBudget: number | null;
+  themeBudget: number | null;
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
   const [cancelState, cancelAction, cancelPending] = useActionState(
@@ -60,12 +65,21 @@ export function OrganizerPanel({
     setReadyForUser,
     empty
   );
+  const [budgetState, budgetAction, budgetPending] = useActionState(
+    savePartyBudgets,
+    empty
+  );
+  const [budgetSaved, setBudgetSaved] = useState(false);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [menuParticipant, setMenuParticipant] = useState<
     (typeof participants)[number] | null
   >(null);
+
+  useEffect(() => {
+    if (budgetState.ok) setBudgetSaved(true);
+  }, [budgetState]);
 
   function startEditName(p: { id: string; full_name: string }) {
     setEditingNameId(p.id);
@@ -269,6 +283,79 @@ export function OrganizerPanel({
       {!emailState.ok && emailState.error && (
         <p className="text-sm text-red-600">{emailState.error}</p>
       )}
+
+      <div>
+        <h3 className="text-sm font-medium text-muted">Budżety</h3>
+        <form
+          action={(formData) => budgetAction(formData)}
+          className="mt-2 flex flex-col gap-2"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="org-list-budget"
+                className="text-[13px] font-medium text-faint"
+              >
+                Budżet – lista (zł)
+              </label>
+              <input
+                id="org-list-budget"
+                name="list_budget"
+                type="number"
+                min={1}
+                max={10000}
+                step={1}
+                defaultValue={listBudget ?? ""}
+                placeholder="np. 150"
+                onChange={() => setBudgetSaved(false)}
+                className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="org-theme-budget"
+                className="text-[13px] font-medium text-faint"
+              >
+                Budżet – temat (zł)
+              </label>
+              <input
+                id="org-theme-budget"
+                name="theme_budget"
+                type="number"
+                min={1}
+                max={10000}
+                step={1}
+                defaultValue={themeBudget ?? ""}
+                placeholder="np. 100"
+                onChange={() => setBudgetSaved(false)}
+                className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={budgetPending || budgetSaved}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          >
+            {budgetPending ? (
+              <>
+                <SpinnerIcon />
+                Zapisywanie…
+              </>
+            ) : budgetSaved ? (
+              <>
+                <CheckIcon />
+                Zapisano
+              </>
+            ) : (
+              "Zapisz budżety"
+            )}
+          </button>
+          {!budgetState.ok && budgetState.error && (
+            <p className="text-sm text-red-600">{budgetState.error}</p>
+          )}
+        </form>
+      </div>
 
       <div>
         <h3 className="text-sm font-medium text-muted">Uczestnicy</h3>

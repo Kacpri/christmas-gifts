@@ -733,6 +733,15 @@ export async function sendLotteryEmails(
   return { ok: true };
 }
 
+function parseBudgetInput(raw: string): number | null | "invalid" {
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < BUDGET_MIN || n > BUDGET_MAX) {
+    return "invalid";
+  }
+  return n;
+}
+
 export async function saveParty(
   _prev: ActionResult,
   formData: FormData
@@ -746,24 +755,6 @@ export async function saveParty(
   const location = String(formData.get("location") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
-  const listBudgetRaw = String(formData.get("list_budget") ?? "").trim();
-  const themeBudgetRaw = String(formData.get("theme_budget") ?? "").trim();
-  const parseBudget = (raw: string): number | null | "invalid" => {
-    if (!raw) return null;
-    const n = Number(raw);
-    if (!Number.isInteger(n) || n < BUDGET_MIN || n > BUDGET_MAX) {
-      return "invalid";
-    }
-    return n;
-  };
-  const listBudget = parseBudget(listBudgetRaw);
-  const themeBudget = parseBudget(themeBudgetRaw);
-  if (listBudget === "invalid" || themeBudget === "invalid") {
-    return {
-      ok: false,
-      error: `Budżet: podaj liczbę od ${BUDGET_MIN} do ${BUDGET_MAX.toLocaleString("pl-PL")}.`,
-    };
-  }
   let startsAt: string | null = null;
   if (startsRaw) {
     const d = new Date(startsRaw);
@@ -790,6 +781,41 @@ export async function saveParty(
         location: location || null,
         notes: notes || null,
         label: label || "imprezy",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function savePartyBudgets(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może edytować budżety." };
+  }
+  const { supabase } = org;
+  const listBudget = parseBudgetInput(
+    String(formData.get("list_budget") ?? "").trim()
+  );
+  const themeBudget = parseBudgetInput(
+    String(formData.get("theme_budget") ?? "").trim()
+  );
+  if (listBudget === "invalid" || themeBudget === "invalid") {
+    return {
+      ok: false,
+      error: `Budżet: podaj liczbę od ${BUDGET_MIN} do ${BUDGET_MAX.toLocaleString("pl-PL")}.`,
+    };
+  }
+  const { error } = await supabase
+    .from("party")
+    .upsert(
+      {
+        id: 1,
         list_budget: listBudget,
         theme_budget: themeBudget,
         updated_at: new Date().toISOString(),

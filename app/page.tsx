@@ -388,6 +388,8 @@ export default async function Home() {
               participants: lotteryParticipants,
               lateJoiners,
               lotteryDone,
+              listBudget: partyRow?.list_budget ?? null,
+              themeBudget: partyRow?.theme_budget ?? null,
             }
           : null
       }

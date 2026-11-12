@@ -860,6 +860,8 @@ export function Dashboard({
     }[];
     lateJoiners: { id: string; full_name: string }[];
     lotteryDone: boolean;
+    listBudget: number | null;
+    themeBudget: number | null;
   } | null;
 }) {
   const [order, setOrder] = useState<PanelId[]>(DEFAULT_ORDER);

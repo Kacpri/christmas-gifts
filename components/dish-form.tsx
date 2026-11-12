@@ -199,6 +199,16 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
       return sortDir === "asc" ? base : -base;
     });
 
+  const filterActive =
+    q !== "" || personFilter !== "all" || categoryFilter !== "all";
+
+  function clearFilters() {
+    setQuery("");
+    setPersonFilter("all");
+    setCategoryFilter("all");
+    setPage(1);
+  }
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice(
@@ -270,7 +280,11 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               onClick={() => setFiltersOpen((o) => !o)}
               aria-expanded={filtersOpen}
               aria-label={filtersOpen ? "Ukryj filtry" : "Pokaż filtry"}
-              className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
+              className={`relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border ${
+                filtersOpen
+                  ? "border-accent bg-mist text-ink"
+                  : "border-input-line bg-surface text-muted hover:bg-mist"
+              }`}
             >
               <FunnelIcon />
               {(personFilter !== "all" || categoryFilter !== "all") && (
@@ -324,23 +338,30 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               </div>
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setAddOpen((o) => !o)}
-            aria-expanded={addOpen}
-            className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
-          >
-            <PlusCircleIcon />
-            {addOpen ? "Zwiń formularz" : "Dodaj potrawę"}
-          </button>
+          {filterActive && dishes.length > 0 && (
+            <p className="text-xs text-muted">
+              Pokazano {filtered.length} z {dishes.length}
+            </p>
+          )}
         </div>
       </div>
 
       {pageItems.length === 0 ? (
         <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
-          {dishes.length === 0
-            ? "Nikt jeszcze nie dodał potraw."
-            : "Brak potraw pasujących do filtrów."}
+          {dishes.length === 0 ? (
+            <p>Nikt jeszcze nie dodał potraw.</p>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <p>Nic nie znaleziono.</p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
+              >
+                Wyczyść filtry
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -439,7 +460,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-muted">
                       {dish.isMine ? (
-                        <span className="shrink-0 rounded bg-sage-100 px-1.5 py-0.5 text-[10px] font-semibold text-accent dark:bg-sage-200 dark:text-list-ink">
+                        <span className="shrink-0 rounded bg-sage-100 px-1.5 py-0.5 text-[10px] font-semibold text-accent-deep dark:bg-sage-200 dark:text-list-ink">
                           Ty
                         </span>
                       ) : (
@@ -482,11 +503,9 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         }`}
                       >
                         <HeartIcon filled={like.likedByMe} />
-                        {like.likeCount > 0 && (
-                          <span className="tabular-nums text-xs">
-                            {like.likeCount}
-                          </span>
-                        )}
+                        <span className="w-4 text-right tabular-nums text-xs">
+                          {like.likeCount > 0 ? like.likeCount : ""}
+                        </span>
                       </button>
                     </div>
                     {dish.isMine && (
@@ -544,7 +563,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
         </>
       )}
 
-      {addOpen && (
+      {addOpen ? (
         <>
           <hr className="border-line" />
 
@@ -599,7 +618,26 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               <p className="text-sm text-red-600">{addState.error}</p>
             )}
           </form>
+          <button
+            type="button"
+            onClick={() => setAddOpen(false)}
+            aria-expanded={true}
+            className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
+          >
+            <ChevronDownIcon />
+            Zwiń
+          </button>
         </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          aria-expanded={false}
+          className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
+        >
+          <PlusCircleIcon />
+          Dodaj potrawę
+        </button>
       )}
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
@@ -843,6 +881,24 @@ function FunnelIcon() {
       aria-hidden
     >
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }

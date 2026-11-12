@@ -42,16 +42,12 @@ export function PartyPanel({
   notes,
   label,
   isOrganizer,
-  listBudget,
-  themeBudget,
 }: {
   startsAt: string | null;
   location: string | null;
   notes: string | null;
   label: string;
   isOrganizer: boolean;
-  listBudget: number | null;
-  themeBudget: number | null;
 }) {
   const [state, formAction, pending] = useActionState(saveParty, empty);
   const [saved, setSaved] = useState(false);
@@ -179,48 +175,6 @@ export function PartyPanel({
           onChange={() => setSaved(false)}
           className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
         />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="party-list-budget"
-            className="text-[13px] font-medium text-faint"
-          >
-            Budżet – lista (zł)
-          </label>
-          <input
-            id="party-list-budget"
-            name="list_budget"
-            type="number"
-            min={1}
-            max={10000}
-            step={1}
-            defaultValue={listBudget ?? ""}
-            placeholder="np. 150"
-            onChange={() => setSaved(false)}
-            className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="party-theme-budget"
-            className="text-[13px] font-medium text-faint"
-          >
-            Budżet – temat (zł)
-          </label>
-          <input
-            id="party-theme-budget"
-            name="theme_budget"
-            type="number"
-            min={1}
-            max={10000}
-            step={1}
-            defaultValue={themeBudget ?? ""}
-            placeholder="np. 100"
-            onChange={() => setSaved(false)}
-            className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
-          />
-        </div>
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="party-notes" className="text-[13px] font-medium text-faint">
