@@ -542,9 +542,12 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
         </p>
         {gifts.listGift.wishes.length > 0 ? (
           <ul className="mt-1 flex flex-col gap-2">
-            {gifts.listGift.wishes.map((wish) => (
+            {gifts.listGift.wishes.map((wish, index) => (
               <li key={wish.id} className="rounded-[10px] bg-surface px-3.5 py-3">
                 <p className="text-[15px] font-semibold text-ink">
+                  <span className="select-none font-normal text-muted">
+                    {index + 1}.
+                  </span>{" "}
                   {wish.text}
                 </p>
                 {(wish.price != null || wish.link) && (

@@ -53,11 +53,20 @@ export async function addWish(
     return { ok: false, error: "Maksymalnie 5 życzeń." };
   }
 
+  const { data: top } = await supabase
+    .from("wishes")
+    .select("pos")
+    .eq("user_id", user.id)
+    .order("pos", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { error } = await supabase.from("wishes").insert({
     user_id: user.id,
     text,
     link: link || null,
     price,
+    pos: (top?.pos ?? 0) + 1,
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
@@ -116,6 +125,27 @@ export async function removeWish(formData: FormData): Promise<ActionResult> {
           ? "Po losowaniu nie można usuwać życzeń."
           : error.message,
     };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function reorderWishes(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const ids = formData.getAll("ids").map((v) => Number(v));
+  if (ids.length === 0 || ids.some((id) => !Number.isInteger(id))) {
+    return { ok: false, error: "Nieprawidłowa kolejność życzeń." };
+  }
+  for (let i = 0; i < ids.length; i++) {
+    const { error } = await supabase
+      .from("wishes")
+      .update({ pos: i + 1 })
+      .eq("id", ids[i])
+      .eq("user_id", user.id);
+    if (error) return { ok: false, error: error.message };
   }
   revalidatePath("/");
   return { ok: true };

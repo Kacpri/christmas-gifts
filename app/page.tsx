@@ -45,7 +45,7 @@ export default async function Home() {
       .from("wishes")
       .select("id, text, link, price")
       .eq("user_id", user.id)
-      .order("created_at"),
+      .order("pos"),
     supabase.from("themes").select("theme").eq("user_id", user.id).maybeSingle(),
     supabase
       .from("assignments")
@@ -198,7 +198,7 @@ export default async function Home() {
         .from("wishes")
         .select("id, user_id, text, link, price")
         .in("user_id", draweeIds)
-        .order("created_at"),
+        .order("pos"),
       supabase.from("themes").select("user_id, theme").in("user_id", draweeIds),
     ]);
 

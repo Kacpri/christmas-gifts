@@ -3,9 +3,28 @@
 import { useEffect, useRef, useState, useActionState } from "react";
 
 import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+import {
   addWish,
   editWish,
   removeWish,
+  reorderWishes,
   saveTheme,
   type ActionResult,
 } from "@/app/actions";
@@ -41,6 +60,10 @@ export function WishForm({
     editWish,
     empty
   );
+  const [reorderState, reorderWishAction] = useActionState(
+    reorderWishes,
+    empty
+  );
   const [themeValue, setThemeValue] = useState(theme ?? "");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
@@ -52,6 +75,11 @@ export function WishForm({
   const [mobileMenuWish, setMobileMenuWish] = useState<Wish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     setLocalWishes(wishes);
@@ -129,6 +157,19 @@ export function WishForm({
     }
   }
 
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = localWishes.findIndex((w) => w.id === active.id);
+    const newIndex = localWishes.findIndex((w) => w.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const next = arrayMove(localWishes, oldIndex, newIndex);
+    setLocalWishes(next);
+    const fd = new FormData();
+    next.forEach((w) => fd.append("ids", String(w.id)));
+    reorderWishAction(fd);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -140,127 +181,44 @@ export function WishForm({
       </div>
 
       {localWishes.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {localWishes.map((wish) =>
-            editingId === wish.id ? (
-              <li
-                key={wish.id}
-                className="flex flex-col gap-3 rounded-[10px] bg-mist p-3"
-              >
-                <form
-                  action={(formData) => {
-                    formData.set("id", String(wish.id));
-                    editWishAction(formData);
-                  }}
-                  className="flex flex-col gap-3"
-                >
-                  <input
-                    name="text"
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    required
-                    maxLength={500}
-                    className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-                  />
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                      name="link"
-                      type="url"
-                      value={editLink}
-                      onChange={(e) => setEditLink(e.target.value)}
-                      placeholder="Link (opcjonalnie)"
-                      className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-                    />
-                    <input
-                      name="price"
-                      type="text"
-                      inputMode="decimal"
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(e.target.value)}
-                    placeholder="Cena (zł)"
-                    className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="submit"
-                      disabled={editingWish}
-                      className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-                    >
-                      {editingWish ? (
-                        <>
-                          <SpinnerIcon />
-                          Zapisywanie…
-                        </>
-                      ) : (
-                        "Zapisz zmiany"
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(null)}
-                      disabled={editingWish}
-                      className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
-                    >
-                      Anuluj
-                    </button>
-                  </div>
-                  {!editState.ok && editState.error && (
-                    <p className="text-sm text-red-600">{editState.error}</p>
-                  )}
-                </form>
-              </li>
-            ) : (
-              <li
-                key={wish.id}
-                className="group flex min-h-16 items-center justify-between gap-3 rounded-[10px] bg-mist p-3 transition-colors hover:bg-sage-100"
-                onTouchStart={() => startLongPress(wish)}
-                onTouchEnd={cancelLongPress}
-                onTouchMove={cancelLongPress}
-                onTouchCancel={cancelLongPress}
-              >
-                <div className="text-sm">
-                  <p>{wish.text}</p>
-                  <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
-                    {wish.price != null && (
-                      <span>{formatPrice(wish.price)}</span>
-                    )}
-                    {wish.link && (
-                      <a
-                        href={wish.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline"
-                      >
-                        link
-                      </a>
-                    )}
-                  </p>
-                </div>
-                <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(wish)}
-                    aria-label="Edytuj życzenie"
-                    title="Edytuj"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
-                  >
-                    <PencilIcon />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(wish)}
-                    aria-label="Usuń życzenie"
-                    title="Usuń"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
-                  >
-                    <TrashIcon />
-                  </button>
-                </div>
-              </li>
-            )
-          )}
-        </ul>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={localWishes.map((w) => w.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="flex flex-col gap-2">
+              {localWishes.map((wish, index) => (
+                <SortableWishItem
+                  key={wish.id}
+                  wish={wish}
+                  index={index}
+                  isEditing={editingId === wish.id}
+                  editText={editText}
+                  editLink={editLink}
+                  editPrice={editPrice}
+                  setEditText={setEditText}
+                  setEditLink={setEditLink}
+                  setEditPrice={setEditPrice}
+                  editWishAction={editWishAction}
+                  editingWish={editingWish}
+                  editState={editState}
+                  cancelEdit={() => setEditingId(null)}
+                  startEdit={startEdit}
+                  handleRemove={handleRemove}
+                  startLongPress={startLongPress}
+                  cancelLongPress={cancelLongPress}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      )}
+      {reorderState.error && (
+        <p className="text-sm text-red-600">{reorderState.error}</p>
       )}
 
       {localWishes.length >= 5 ? (
@@ -454,6 +412,219 @@ export function WishForm({
         </div>
       )}
     </div>
+  );
+}
+
+function SortableWishItem({
+  wish,
+  index,
+  isEditing,
+  editText,
+  editLink,
+  editPrice,
+  setEditText,
+  setEditLink,
+  setEditPrice,
+  editWishAction,
+  editingWish,
+  editState,
+  cancelEdit,
+  startEdit,
+  handleRemove,
+  startLongPress,
+  cancelLongPress,
+}: {
+  wish: Wish;
+  index: number;
+  isEditing: boolean;
+  editText: string;
+  editLink: string;
+  editPrice: string;
+  setEditText: (v: string) => void;
+  setEditLink: (v: string) => void;
+  setEditPrice: (v: string) => void;
+  editWishAction: (formData: FormData) => void;
+  editingWish: boolean;
+  editState: ActionResult;
+  cancelEdit: () => void;
+  startEdit: (wish: Wish) => void;
+  handleRemove: (wish: Wish) => void;
+  startLongPress: (wish: Wish) => void;
+  cancelLongPress: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: wish.id, disabled: isEditing });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  if (isEditing) {
+    return (
+      <li
+        ref={setNodeRef}
+        style={style}
+        className="flex flex-col gap-3 rounded-[10px] bg-mist p-3"
+      >
+        <form
+          action={(formData) => {
+            formData.set("id", String(wish.id));
+            editWishAction(formData);
+          }}
+          className="flex flex-col gap-3"
+        >
+          <input
+            name="text"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            required
+            maxLength={500}
+            className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+          />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              name="link"
+              type="url"
+              value={editLink}
+              onChange={(e) => setEditLink(e.target.value)}
+              placeholder="Link (opcjonalnie)"
+              className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            />
+            <input
+              name="price"
+              type="text"
+              inputMode="decimal"
+              value={editPrice}
+              onChange={(e) => setEditPrice(e.target.value)}
+              placeholder="Cena (zł)"
+              className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={editingWish}
+              className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+            >
+              {editingWish ? (
+                <>
+                  <SpinnerIcon />
+                  Zapisywanie…
+                </>
+              ) : (
+                "Zapisz zmiany"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              disabled={editingWish}
+              className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+            >
+              Anuluj
+            </button>
+          </div>
+          {!editState.ok && editState.error && (
+            <p className="text-sm text-red-600">{editState.error}</p>
+          )}
+        </form>
+      </li>
+    );
+  }
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`group flex min-h-16 items-center gap-2 rounded-[10px] bg-mist p-3 transition-colors hover:bg-sage-100 ${
+        isDragging ? "relative z-10 opacity-50" : ""
+      }`}
+      onTouchStart={() => startLongPress(wish)}
+      onTouchEnd={cancelLongPress}
+      onTouchMove={cancelLongPress}
+      onTouchCancel={cancelLongPress}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Przesuń życzenie"
+        title="Przesuń"
+        className="flex h-9 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-faint hover:bg-icon-hover active:cursor-grabbing"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchCancel={(e) => e.stopPropagation()}
+      >
+        <GripIcon />
+      </button>
+      <div className="min-w-0 flex-1 text-sm">
+        <p>
+          <span className="select-none text-muted">{index + 1}.</span>{" "}
+          {wish.text}
+        </p>
+        <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted">
+          {wish.price != null && (
+            <span>{formatPrice(wish.price)}</span>
+          )}
+          {wish.link && (
+            <a
+              href={wish.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              link
+            </a>
+          )}
+        </p>
+      </div>
+      <div className="hidden shrink-0 items-center gap-1 group-hover:flex">
+        <button
+          type="button"
+          onClick={() => startEdit(wish)}
+          aria-label="Edytuj życzenie"
+          title="Edytuj"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+        >
+          <PencilIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => handleRemove(wish)}
+          aria-label="Usuń życzenie"
+          title="Usuń"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
+        >
+          <TrashIcon />
+        </button>
+      </div>
+    </li>
+  );
+}
+
+function GripIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <circle cx="9" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="18" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+    </svg>
   );
 }
 
