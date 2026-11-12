@@ -14,6 +14,7 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
+import { Presence } from "@/components/presence";
 
 const empty: ActionResult = { ok: false };
 
@@ -475,15 +476,16 @@ export function OrganizerPanel({
         </div>
       )}
 
-      {menuParticipant && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
-          onClick={() => setMenuParticipant(null)}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Presence
+        open={!!menuParticipant}
+        className="fixed inset-0 z-50 flex items-end justify-center p-4"
+        onClick={() => setMenuParticipant(null)}
+        backdrop
+        sheetClassName="relative w-full max-w-xs"
+        sheetOnClick={(e) => e.stopPropagation()}
+      >
+        {menuParticipant && (
+          <div className="rounded-2xl bg-surface p-4 shadow-lg">
             <p className="mb-3 truncate text-sm font-semibold text-ink">
               {menuParticipant.full_name}
             </p>
@@ -543,8 +545,8 @@ export function OrganizerPanel({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Presence>
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </div>

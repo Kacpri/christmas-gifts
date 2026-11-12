@@ -17,6 +17,7 @@ import {
 } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { Select } from "@/components/select";
+import { Presence } from "@/components/presence";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import {
   DISH_CATEGORIES,
@@ -643,15 +644,16 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
 
-      {mobileMenuDish && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
-          onClick={() => setMobileMenuDish(null)}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Presence
+        open={!!mobileMenuDish}
+        className="fixed inset-0 z-50 flex items-end justify-center p-4"
+        onClick={() => setMobileMenuDish(null)}
+        backdrop
+        sheetClassName="relative w-full max-w-xs"
+        sheetOnClick={(e) => e.stopPropagation()}
+      >
+        {mobileMenuDish && (
+          <div className="rounded-2xl bg-surface p-4 shadow-lg">
             <p className="mb-3 truncate text-sm font-semibold text-ink">
               {capitalizeFirst(mobileMenuDish.name)}
             </p>
@@ -687,8 +689,8 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Presence>
     </div>
   );
 }

@@ -31,6 +31,7 @@ import { budgetError, parsePrice } from "@/lib/budget";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { THEME_IDEAS } from "@/lib/theme-ideas";
+import { Presence } from "@/components/presence";
 
 export type Wish = {
   id: number;
@@ -422,15 +423,16 @@ export function WishForm({
         )}
       </div>
 
-      {menuWish && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
-          onClick={() => setMenuWish(null)}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <Presence
+        open={!!menuWish}
+        className="fixed inset-0 z-50 flex items-end justify-center p-4"
+        onClick={() => setMenuWish(null)}
+        backdrop
+        sheetClassName="relative w-full max-w-xs"
+        sheetOnClick={(e) => e.stopPropagation()}
+      >
+        {menuWish && (
+          <div className="rounded-2xl bg-surface p-4 shadow-lg">
             <p className="mb-3 truncate text-sm font-semibold text-ink">
               {menuWish.text}
             </p>
@@ -494,8 +496,8 @@ export function WishForm({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Presence>
     </div>
   );
 }

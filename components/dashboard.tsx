@@ -47,6 +47,7 @@ import { NotificationToggle } from "@/components/notification-toggle";
 import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
 import { PartyPanel } from "@/components/party-panel";
+import { Presence } from "@/components/presence";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
 import {
@@ -457,6 +458,7 @@ function PanelCard({
   editMode,
   isHole,
   wide,
+  enterDelay,
   children,
 }: {
   id: PanelId;
@@ -473,6 +475,7 @@ function PanelCard({
   editMode: boolean;
   isHole: boolean;
   wide?: boolean;
+  enterDelay?: number;
   children: ReactNode;
 }) {
   const {
@@ -490,6 +493,7 @@ function PanelCard({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
+        ...(enterDelay != null ? { animationDelay: `${enterDelay}ms` } : {}),
       }}
       className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
         compact ? "px-5 py-3.5" : "p-5"
@@ -497,7 +501,7 @@ function PanelCard({
         isHole
           ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
           : `border-line bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
-      } ${wide ? "md:col-span-2" : ""}`}
+      } ${wide ? "md:col-span-2" : ""} ${enterDelay != null ? "panel-enter" : ""}`}
     >
       <div className="flex items-center gap-2">
         {editMode && !isHole && (
@@ -535,12 +539,13 @@ function PanelCard({
           <>
             {badge > 0 && (
               <span
+                key={badge}
                 aria-label={`${badge} ${plural(badge, [
                   "nieprzeczytana wiadomość",
                   "nieprzeczytane wiadomości",
                   "nieprzeczytanych wiadomości",
                 ])}`}
-                className="inline-flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#14532d] px-1.5 text-xs font-bold text-white dark:bg-accent"
+                className="badge-pop inline-flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#14532d] px-1.5 text-xs font-bold text-white dark:bg-accent"
               >
                 {badge}
               </span>
@@ -553,14 +558,27 @@ function PanelCard({
                 aria-label={collapsed ? `Rozwiń sekcję ${title}` : `Zwiń sekcję ${title}`}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-mist hover:text-ink"
               >
-                <ChevronIcon className={collapsed ? "" : "rotate-180"} />
+                <ChevronIcon
+                  className={`${collapsed ? "rotate-0" : "rotate-180"} transition-transform duration-200 ease-out motion-reduce:transition-none`}
+                />
               </button>
             )}
           </>
         )}
       </div>
       {children ? (
-        <div className={collapsed ? "hidden" : "mt-3"}>{children}</div>
+        <div
+          className="grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none"
+          style={{ gridTemplateRows: collapsed ? "0fr" : "1fr" }}
+        >
+          <div
+            className={`overflow-hidden transition-[visibility] duration-200 ${
+              collapsed ? "invisible" : "visible"
+            }`}
+          >
+            <div className="mt-3">{children}</div>
+          </div>
+        </div>
       ) : null}
     </section>
   );
@@ -885,6 +903,8 @@ export function Dashboard({
   const visibleIdsRef = useRef<PanelId[]>([]);
   const chipNavRef = useRef<HTMLElement>(null);
   const [chipFades, setChipFades] = useState({ left: false, right: false });
+  const [entering, setEntering] = useState(false);
+  const lastActivePanel = useRef<PanelId | null>(null);
 
   useEffect(() => {
     try {
@@ -912,6 +932,13 @@ export function Dashboard({
     }
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    setEntering(true);
+    const t = window.setTimeout(() => setEntering(false), 1500);
+    return () => window.clearTimeout(t);
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -996,6 +1023,24 @@ export function Dashboard({
       for (const id of visibleIdsRef.current) {
         const el = document.getElementById(`panel-${id}`);
         if (el && el.getBoundingClientRect().top <= 120) current = id;
+      }
+      if (current !== lastActivePanel.current) {
+        if (lastActivePanel.current !== null && current !== null) {
+          const nav = chipNavRef.current;
+          const chip = nav?.querySelector<HTMLElement>(
+            `[data-chip="${current}"]`
+          );
+          if (nav && chip) {
+            const reduced = window.matchMedia(
+              "(prefers-reduced-motion: reduce)"
+            ).matches;
+            nav.scrollTo({
+              left: chip.offsetLeft - (nav.clientWidth - chip.offsetWidth) / 2,
+              behavior: reduced ? "auto" : "smooth",
+            });
+          }
+        }
+        lastActivePanel.current = current;
       }
       setActivePanel((prev) => (prev === current ? prev : current));
     }
@@ -1116,7 +1161,7 @@ export function Dashboard({
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const cards = visible.map((id) => {
+  const cards = visible.map((id, index) => {
     const isReadyPanel = id === "ready";
     const readyInfo = isReadyPanel
       ? readyHeader(ready, goToWishes)
@@ -1152,6 +1197,7 @@ export function Dashboard({
         editMode={editMode}
         isHole={activeId === id}
         wide={WIDE_PANELS.has(id)}
+        enterDelay={entering ? index * 50 : undefined}
       >
         {isReadyPanel &&
         (ready.lotteryDone || ready.lateJoiner)
@@ -1212,6 +1258,7 @@ export function Dashboard({
                     <button
                       key={id}
                       type="button"
+                      data-chip={id}
                       onClick={() => goToPanel(id)}
                       aria-current={activePanel === id ? "true" : undefined}
                       className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
@@ -1223,12 +1270,13 @@ export function Dashboard({
                       {panels[id].title}
                       {unread > 0 && (
                         <span
+                          key={unread}
                           aria-label={`${unread} ${plural(unread, [
                             "nieprzeczytana wiadomość",
                             "nieprzeczytane wiadomości",
                             "nieprzeczytanych wiadomości",
                           ])}`}
-                          className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
                             activePanel === id
                               ? "bg-[#0d4024] text-cream"
                               : "bg-cream text-[#0d4024]"
@@ -1333,46 +1381,46 @@ export function Dashboard({
         </div>
       </header>
 
-      {mobileMenuOpen && !editMode && (
-        <div
-          className="fixed inset-0 z-50 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <div
-            className="absolute right-4 top-[52px] w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2.5 px-2 py-1.5">
-              <span
-                aria-hidden
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
-              >
-                {userName.trim().charAt(0).toUpperCase()}
-              </span>
-              <span className="truncate font-medium text-cream">{userName}</span>
-            </div>
-            <div className="mx-1 border-t border-cream/20" />
-            <button
-              type="button"
-              onClick={() => {
-                setEditMode(true);
-                setMobileMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
+      <Presence
+        open={mobileMenuOpen && !editMode}
+        className="fixed inset-0 z-50 md:hidden"
+        onClick={() => setMobileMenuOpen(false)}
+        sheetClassName="absolute right-4 top-[52px] w-60"
+        sheetFrom="-translate-y-2 opacity-0"
+        sheetTo="translate-y-0 opacity-100"
+        sheetOnClick={(e) => e.stopPropagation()}
+      >
+        <div className="rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+          <div className="flex items-center gap-2.5 px-2 py-1.5">
+            <span
+              aria-hidden
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
             >
-              <SlidersIcon />
-              Dostosuj układ
-            </button>
-            <div className="mt-1 flex flex-col">
-              <NotificationToggle variant="row" />
-              <ThemeToggle variant="row" />
-            </div>
-            <div className="mt-1 border-t border-cream/20 pt-1">
-              <LogoutButton variant="row" />
-            </div>
+              {userName.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="truncate font-medium text-cream">{userName}</span>
+          </div>
+          <div className="mx-1 border-t border-cream/20" />
+          <button
+            type="button"
+            onClick={() => {
+              setEditMode(true);
+              setMobileMenuOpen(false);
+            }}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
+          >
+            <SlidersIcon />
+            Dostosuj układ
+          </button>
+          <div className="mt-1 flex flex-col">
+            <NotificationToggle variant="row" />
+            <ThemeToggle variant="row" />
+          </div>
+          <div className="mt-1 border-t border-cream/20 pt-1">
+            <LogoutButton variant="row" />
           </div>
         </div>
-      )}
+      </Presence>
 
       <DndContext
         sensors={sensors}
@@ -1395,7 +1443,7 @@ export function Dashboard({
                 <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
                 {activeId !== "ready" && (
                   <ChevronIcon
-                    className={collapsed[activeId] ? "" : "rotate-180"}
+                    className={`${collapsed[activeId] ? "rotate-0" : "rotate-180"} transition-transform duration-200 ease-out motion-reduce:transition-none`}
                   />
                 )}
               </div>

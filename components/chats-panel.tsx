@@ -27,6 +27,7 @@ import {
   dayKey,
   type ChatMessage,
 } from "@/components/message-bubble";
+import { Presence } from "@/components/presence";
 import { listTimeOf, plural } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/client";
@@ -1078,51 +1079,50 @@ export function ChatsPanel({
         </p>
       ) : null}
 
-      {pickerOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
-          onClick={() => setPickerOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-t-2xl bg-surface p-3 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="mb-2 px-1 text-sm font-semibold text-ink">
-              Nowy czat
-            </p>
-            <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
-              {others.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    openDm(p.id);
-                    setPickerOpen(false);
-                  }}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sage-150 text-accent">
-                    {p.fullName.trim().charAt(0).toUpperCase()}
-                  </span>
-                  <span className="truncate">{p.fullName}</span>
-                </button>
-              ))}
-              {others.length === 0 && (
-                <p className="px-3 py-2 text-sm text-faint">
-                  Brak innych uczestników.
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(false)}
-              className="mt-2 w-full rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
-            >
-              Anuluj
-            </button>
+      <Presence
+        open={pickerOpen}
+        className="fixed inset-0 z-50 flex items-end justify-center"
+        onClick={() => setPickerOpen(false)}
+        backdrop
+        sheetClassName="relative w-full max-w-md"
+        sheetOnClick={(e) => e.stopPropagation()}
+      >
+        <div className="rounded-t-2xl bg-surface p-3 shadow-lg">
+          <p className="mb-2 px-1 text-sm font-semibold text-ink">
+            Nowy czat
+          </p>
+          <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+            {others.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  openDm(p.id);
+                  setPickerOpen(false);
+                }}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sage-150 text-accent">
+                  {p.fullName.trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="truncate">{p.fullName}</span>
+              </button>
+            ))}
+            {others.length === 0 && (
+              <p className="px-3 py-2 text-sm text-faint">
+                Brak innych uczestników.
+              </p>
+            )}
           </div>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(false)}
+            className="mt-2 w-full rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+          >
+            Anuluj
+          </button>
         </div>
-      )}
+      </Presence>
     </div>
   );
 }

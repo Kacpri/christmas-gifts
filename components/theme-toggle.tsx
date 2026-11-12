@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ToggleSwitch } from "@/components/toggle-switch";
 
@@ -10,9 +10,13 @@ export function ThemeToggle({
   variant?: "icon" | "row";
 }) {
   const [dark, setDark] = useState(false);
+  const animTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setDark(document.documentElement.getAttribute("data-theme") === "dark");
+    return () => {
+      if (animTimer.current !== null) window.clearTimeout(animTimer.current);
+    };
   }, []);
 
   function toggle() {
@@ -22,10 +26,14 @@ export function ThemeToggle({
     } catch {
       /* ignore */
     }
-    document.documentElement.setAttribute(
-      "data-theme",
-      next ? "dark" : "light"
-    );
+    const root = document.documentElement;
+    if (animTimer.current !== null) window.clearTimeout(animTimer.current);
+    root.classList.add("theme-anim");
+    animTimer.current = window.setTimeout(() => {
+      root.classList.remove("theme-anim");
+      animTimer.current = null;
+    }, 350);
+    root.setAttribute("data-theme", next ? "dark" : "light");
     setDark(next);
   }
 
