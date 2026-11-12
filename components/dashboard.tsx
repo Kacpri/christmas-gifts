@@ -188,7 +188,7 @@ function OneColIcon() {
   );
 }
 
-function MenuIcon() {
+function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg
       width="18"
@@ -200,27 +200,24 @@ function MenuIcon() {
       strokeLinecap="round"
       aria-hidden
     >
-      <path d="M2 4h12" />
-      <path d="M2 8h12" />
-      <path d="M2 12h12" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      aria-hidden
-    >
-      <path d="M4 4l8 8" />
-      <path d="M12 4l-8 8" />
+      <path
+        d="M2 4h12"
+        className={`[transform-origin:8px_4px] transition-transform duration-200 motion-reduce:transition-none ${
+          open ? "translate-y-1 rotate-45" : ""
+        }`}
+      />
+      <path
+        d="M2 8h12"
+        className={`transition-opacity duration-200 motion-reduce:transition-none ${
+          open ? "opacity-0" : ""
+        }`}
+      />
+      <path
+        d="M2 12h12"
+        className={`[transform-origin:8px_12px] transition-transform duration-200 motion-reduce:transition-none ${
+          open ? "-translate-y-1 -rotate-45" : ""
+        }`}
+      />
     </svg>
   );
 }
@@ -1199,11 +1196,12 @@ export function Dashboard({
           <>
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Otwórz menu"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={mobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+              aria-expanded={mobileMenuOpen}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
             >
-              <MenuIcon />
+              <MenuIcon open={mobileMenuOpen} />
             </button>
             <div className="relative min-w-0 flex-1">
               <nav
@@ -1341,20 +1339,19 @@ export function Dashboard({
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="absolute left-4 top-[52px] w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            className="absolute right-4 top-[52px] w-60 rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-sm font-semibold text-cream">Menu</span>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                aria-label="Zamknij menu"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-cream/70 hover:bg-white/10"
+            <div className="flex items-center gap-2.5 px-2 py-1.5">
+              <span
+                aria-hidden
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
               >
-                <CloseIcon />
-              </button>
+                {userName.trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="truncate font-medium text-cream">{userName}</span>
             </div>
+            <div className="mx-1 border-t border-cream/20" />
             <button
               type="button"
               onClick={() => {
