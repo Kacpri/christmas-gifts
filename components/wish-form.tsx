@@ -178,9 +178,8 @@ export function WishForm({
     <div className="flex flex-col gap-6">
       <div>
         <p className="text-sm text-muted">
-          {themeLocked
-            ? "Temat prezentu pozostaje zablokowany."
-            : "Widzi je tylko osoba, która Cię wylosuje."}
+          Widzi je tylko osoba, która Cię wylosuje. Kolejność możesz zmieniać,
+          przeciągając.
         </p>
       </div>
 
@@ -281,7 +280,9 @@ export function WishForm({
       <div>
         <h3 className="text-base font-semibold">Temat Twojego prezentu</h3>
         <p className="mt-1 text-sm text-muted">
-          Osoba, która Cię wylosuje, kupi prezent w tym temacie.
+          {themeLocked
+            ? "Temat prezentu pozostaje zablokowany."
+            : "Osoba, która Cię wylosuje, kupi prezent w tym temacie."}
         </p>
       </div>
 

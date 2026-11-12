@@ -91,7 +91,7 @@ export default async function Home() {
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
   const isReady = profile?.is_ready ?? false;
-  const locked = lotteryDone || isReady;
+  const themeLocked = lotteryDone || isReady;
 
   const nameById = new Map((participants ?? []).map((p) => [p.id, p.full_name]));
   const likeCountByDish = new Map<number, number>();
@@ -333,7 +333,7 @@ export default async function Home() {
   return (
     <Dashboard
       userName={profile?.full_name ?? ""}
-      profile={{ fullName: profile?.full_name ?? "", locked }}
+      profile={{ fullName: profile?.full_name ?? "" }}
       gifts={gifts}
       chats={{
         me: user.id,
@@ -357,7 +357,7 @@ export default async function Home() {
       wishes={{
         wishes: myWishes ?? [],
         theme: myTheme?.theme ?? null,
-        themeLocked: locked,
+        themeLocked: themeLocked,
       }}
       dishes={dishes}
       party={{

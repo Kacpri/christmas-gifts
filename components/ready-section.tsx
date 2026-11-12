@@ -43,7 +43,7 @@ export function ReadySection({
             const fd = new FormData(e.currentTarget);
             setConfirm({
               message:
-                "Po potwierdzeniu gotowości nie będziesz mógł zmieniać tematu ani imienia i nazwiska. Listę życzeń nadal będziesz mógł edytować do losowania. Tej operacji nie można cofnąć.",
+                "Po potwierdzeniu gotowości nie będziesz mógł zmieniać tematu. Listę życzeń nadal będziesz mógł edytować do losowania. Tej operacji nie można cofnąć.",
               confirmLabel: "Wszystko gotowe",
               tone: "primary",
               onConfirm: () => formAction(fd),

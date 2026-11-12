@@ -272,6 +272,25 @@ function TagIcon() {
   );
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M7 17L17 7" />
+      <path d="M8 7h9v9" />
+    </svg>
+  );
+}
+
 function PanelIconSvg({ children }: { children: ReactNode }) {
   return (
     <svg
@@ -530,12 +549,15 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
   return (
     <div className="flex flex-col gap-4">
       <article className="flex flex-col gap-2.5 rounded-[14px] bg-mist p-4">
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-sage-200 px-2.5 text-xs font-bold text-list-ink">
             <ListIcon />
             Z listy
           </span>
           <span className="text-sm text-muted">Kupujesz prezent dla</span>
+          <span className="ml-auto text-sm font-medium text-ink">
+            Budżet: do 150 zł
+          </span>
         </div>
         <p className="text-[22px] font-bold leading-tight text-accent dark:text-[#7cc99a]">
           {gifts.listGift.person}
@@ -545,32 +567,33 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
             {gifts.listGift.wishes.map((wish, index) => (
               <li
                 key={wish.id}
-                className="flex items-baseline justify-between gap-3 rounded-[10px] bg-surface px-3.5 py-3"
+                className="flex items-center justify-between gap-3 rounded-[10px] bg-surface px-3.5 py-3"
               >
                 <p className="min-w-0 text-[15px] font-semibold text-ink">
                   <span className="select-none font-normal text-muted">
                     {index + 1}.
                   </span>{" "}
                   {wish.text}
-                  {wish.link && (
-                    <>
-                      {" "}
-                      <a
-                        href={wish.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent underline"
-                      >
-                        link
-                      </a>
-                    </>
-                  )}
                 </p>
-                {wish.price != null && (
-                  <span className="shrink-0 text-[13px] italic text-faint">
-                    {formatPrice(wish.price)}
-                  </span>
-                )}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {wish.link && (
+                    <a
+                      href={wish.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Otwórz link"
+                      title="Otwórz link"
+                      className="text-accent hover:opacity-75"
+                    >
+                      <ExternalLinkIcon />
+                    </a>
+                  )}
+                  {wish.price != null && (
+                    <span className="text-[13px] tabular-nums text-ink">
+                      {formatPrice(wish.price)}
+                    </span>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
@@ -582,21 +605,29 @@ function GiftsBody({ gifts }: { gifts: GiftsData }) {
       </article>
 
       <article className="flex flex-col gap-2.5 rounded-[14px] bg-honey-50 p-4">
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-honey-200 px-2.5 text-xs font-bold text-honey-800">
             <TagIcon />
             Tematyczny
           </span>
           <span className="text-sm text-muted">Kupujesz prezent dla</span>
+          <span className="ml-auto text-sm font-medium text-ink">
+            Budżet: do 100 zł
+          </span>
         </div>
         <p className="text-[22px] font-bold leading-tight text-accent dark:text-[#7cc99a]">
           {gifts.themeGift.person}
         </p>
-        <div className="mt-1 flex items-center gap-2.5 rounded-[10px] bg-surface px-3.5 py-3">
-          <span className="text-[13px] text-faint">Temat</span>
-          <span className="text-[15px] font-semibold italic text-ink">
+        <div className="mt-1 rounded-[10px] bg-surface px-4 py-3.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Temat
+          </p>
+          <p className="mt-1.5 text-xl font-semibold italic leading-snug text-ink">
             {gifts.themeGift.theme}
-          </span>
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            Wybierz prezent związany z tym tematem.
+          </p>
         </div>
       </article>
     </div>
@@ -689,7 +720,7 @@ export function Dashboard({
   organizer,
 }: {
   userName: string;
-  profile: { fullName: string; locked: boolean };
+  profile: { fullName: string };
   gifts: GiftsData;
   chats: {
     me: string;
@@ -851,7 +882,7 @@ export function Dashboard({
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
     profile: {
       title: "Twoje dane",
-      body: <NameForm fullName={profile.fullName} locked={profile.locked} />,
+      body: <NameForm fullName={profile.fullName} />,
     },
     gifts: {
       title: "Prezenty",
