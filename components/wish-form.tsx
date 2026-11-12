@@ -262,9 +262,10 @@ export function WishForm({
             name="text"
             required
             maxLength={500}
-            placeholder="Czego sobie życzysz? (np. kubek, książka, voucher)"
+            placeholder="Czego sobie życzysz?"
             className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
+          <p className="text-sm text-muted">np. kubek, książka, voucher</p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               name="link"
@@ -289,14 +290,14 @@ export function WishForm({
               className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
             />
           </div>
-          <p id="wish-budget-hint" className="text-[13px] text-muted">
+          <p id="wish-budget-hint" className="text-sm text-muted">
             Budżet na prezent z listy: do {listBudget} zł
           </p>
           {addOverBudget && (
             <p
               id="wish-price-error"
               role="alert"
-              className="text-[13px] font-medium text-danger"
+              className="text-sm font-medium text-danger"
             >
               {budgetError(listBudget)}
             </p>
@@ -362,7 +363,7 @@ export function WishForm({
             </span>
           )}
         </div>
-        <p className="text-[13px] text-muted">
+        <p className="text-sm text-muted">
           Budżet na prezent tematyczny: do {themeBudget} zł
         </p>
         {!themeLocked && (
@@ -609,15 +610,15 @@ function SortableWishItem({
           </div>
           <p
             id={`wish-budget-hint-${wish.id}`}
-            className="text-[13px] text-muted"
+            className="text-sm text-muted"
           >
-            Budżet: do {listBudget} zł
+            Budżet na prezent z listy: do {listBudget} zł
           </p>
           {editOverBudget && (
             <p
               id={`wish-price-error-${wish.id}`}
               role="alert"
-              className="text-[13px] font-medium text-danger"
+              className="text-sm font-medium text-danger"
             >
               {budgetError(listBudget)}
             </p>

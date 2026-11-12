@@ -30,6 +30,7 @@ import {
 import { listTimeOf, plural } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/client";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 export type Thread = {
   lotteryType: number;
@@ -210,6 +211,25 @@ function PlusIcon() {
   );
 }
 
+function ArrowLeftIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M19 12H5" />
+      <path d="M12 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
 export function ChatsPanel({
   me,
   threads,
@@ -250,6 +270,8 @@ export function ChatsPanel({
   const [dmState, dmSend, dmPending] = useActionState(sendDm, empty);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [listFade, setListFade] = useState(false);
+  const [listExpanded, setListExpanded] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const boxRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef("");
@@ -801,21 +823,24 @@ export function ChatsPanel({
   const others = participants.filter((p) => p.id !== me);
   const isDm = selectedItem?.kind === "dm";
   const pending = isDm ? dmPending : lotteryPending;
+  const visibleListItems =
+    isDesktop || listExpanded ? listItems : listItems.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-3">
       <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        <div className="flex h-96 flex-col gap-3 pb-3 md:w-64">
+        {(!isDesktop || !selectedItem) && (
+        <div className="flex flex-col gap-3 md:h-96 md:w-64 md:pb-3">
           <div className="relative min-h-0 flex-1">
             <div
               ref={listRef}
               onScroll={updateListFade}
-              className="flex h-full flex-col gap-2 overflow-y-auto pr-0.5"
+              className="flex flex-col gap-2 pr-0.5 md:h-full md:overflow-y-auto"
             >
-            {listItems.length === 0 && (
+            {visibleListItems.length === 0 && (
               <p className="text-sm text-faint">Brak czatów.</p>
             )}
-            {listItems.map((item) => (
+            {visibleListItems.map((item) => (
               <button
                 key={item.key}
                 type="button"
@@ -898,6 +923,17 @@ export function ChatsPanel({
               />
             )}
           </div>
+          {!isDesktop && listItems.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setListExpanded(!listExpanded)}
+              className="flex h-11 w-full items-center justify-center rounded-[14px] border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
+            >
+              {listExpanded
+                ? "Zwiń"
+                : `Pokaż wszystkie (${listItems.length})`}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
@@ -907,12 +943,25 @@ export function ChatsPanel({
             Nowy czat
           </button>
         </div>
+        )}
 
+        {(isDesktop || selectedItem) && (
         <div className="flex h-[440px] min-w-0 flex-1 flex-col gap-3 pb-3 md:h-96">
           {selectedItem ? (
             <>
               <div className="flex min-h-11 flex-col justify-center gap-0.5 px-1">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
+                  {!isDesktop && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedKey(null)}
+                      aria-label="Wróć do listy czatów"
+                      className="-ml-2 flex h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted hover:bg-mist"
+                    >
+                      <ArrowLeftIcon />
+                      Wróć
+                    </button>
+                  )}
                   <span className="min-w-0 truncate text-xl font-bold text-[#0f3d24] dark:text-[#7cc99a]">
                     {selectedItem.name}
                   </span>
@@ -920,7 +969,7 @@ export function ChatsPanel({
                 </div>
                 {selectedItem.kind === "lottery" &&
                   selectedItem.name === "Tajemniczy Mikołaj" && (
-                    <p className="text-[13px] text-[#4a5c50] dark:text-muted">
+                    <p className="text-sm text-[#4a5c50] dark:text-muted">
                       Ta osoba kupuje Ci prezent. Nie wiesz, kim jest.
                     </p>
                   )}
@@ -1019,6 +1068,7 @@ export function ChatsPanel({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {(!lotteryState.ok && lotteryState.error) ||

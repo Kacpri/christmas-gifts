@@ -130,7 +130,7 @@ export function PartyPanel({
     >
       <input type="hidden" name="starts_at" defaultValue={startsAt ?? ""} />
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="party-label" className="text-xs font-medium text-faint">
+        <label htmlFor="party-label" className="text-[13px] font-medium text-faint">
           Do czego odliczamy?
         </label>
         <input
@@ -145,7 +145,7 @@ export function PartyPanel({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="party-starts" className="text-xs font-medium text-faint">
+        <label htmlFor="party-starts" className="text-[13px] font-medium text-faint">
           Data i godzina
         </label>
         <input
@@ -166,7 +166,7 @@ export function PartyPanel({
         )}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="party-location" className="text-xs font-medium text-faint">
+        <label htmlFor="party-location" className="text-[13px] font-medium text-faint">
           Lokalizacja
         </label>
         <input
@@ -180,11 +180,11 @@ export function PartyPanel({
           className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
         />
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="party-list-budget"
-            className="text-xs font-medium text-faint"
+            className="text-[13px] font-medium text-faint"
           >
             Budżet – lista (zł)
           </label>
@@ -204,7 +204,7 @@ export function PartyPanel({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="party-theme-budget"
-            className="text-xs font-medium text-faint"
+            className="text-[13px] font-medium text-faint"
           >
             Budżet – temat (zł)
           </label>
@@ -223,7 +223,7 @@ export function PartyPanel({
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="party-notes" className="text-xs font-medium text-faint">
+        <label htmlFor="party-notes" className="text-[13px] font-medium text-faint">
           Notatki (opcjonalnie)
         </label>
         <textarea

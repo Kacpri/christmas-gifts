@@ -74,6 +74,13 @@ const DEFAULT_ORDER: PanelId[] = [
 
 const WIDE_PANELS = new Set<PanelId>(["chats", "group-chat", "organizer"]);
 
+const JUMP_SECTIONS: { id: PanelId; label: string }[] = [
+  { id: "gifts", label: "Prezenty" },
+  { id: "chats", label: "Czaty" },
+  { id: "wishes", label: "Życzenia" },
+  { id: "potrawy", label: "Potrawy" },
+];
+
 const STORAGE_KEY = "dashboard-v1";
 
 type SavedLayout = {
@@ -484,7 +491,7 @@ function PanelCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
+      className={`scroll-mt-[120px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
@@ -657,7 +664,7 @@ function GiftsBody({
         </div>
       </article>
 
-      <p className="flex items-center gap-2 text-[13px] text-[#4a5c50] dark:text-muted">
+      <p className="flex items-center gap-2 text-sm text-[#4a5c50] dark:text-muted">
         <LockIcon />
         Tylko Ty widzisz, komu kupujesz prezent.
       </p>
@@ -1050,9 +1057,13 @@ export function Dashboard({
   };
 
   function goToWishes() {
-    setCollapsed((prev) => ({ ...prev, wishes: false }));
+    goToPanel("wishes");
+  }
+
+  function goToPanel(id: PanelId) {
+    setCollapsed((prev) => ({ ...prev, [id]: false }));
     document
-      .getElementById("panel-wishes")
+      .getElementById(`panel-${id}`)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -1110,7 +1121,7 @@ export function Dashboard({
       {hydrated && gifts.kind === "done" && !revealed && (
         <LotteryReveal onDone={markRevealed} />
       )}
-      <div className="sticky top-0 z-30 -mx-5 flex items-center justify-between gap-2 bg-[#0d4024] px-5 py-2.5 dark:bg-[#061a13] md:hidden">
+      <div className="sticky top-0 z-30 -mx-5 flex h-16 items-center justify-between gap-2 bg-[#0d4024] px-5 dark:bg-[#061a13] md:hidden">
         <div className="flex min-w-0 items-center gap-2">
           <span
             aria-hidden
@@ -1142,18 +1153,33 @@ export function Dashboard({
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Otwórz menu"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
           >
             <MenuIcon />
           </button>
         )}
       </div>
+      <nav
+        aria-label="Przejdź do sekcji"
+        className="sticky top-16 z-20 -mx-5 flex gap-2 overflow-x-auto bg-[#0d4024] px-5 py-2 dark:bg-[#061a13] md:hidden"
+      >
+        {JUMP_SECTIONS.filter((s) => visible.includes(s.id)).map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => goToPanel(s.id)}
+            className="shrink-0 rounded-full border border-cream/55 bg-white/10 px-3.5 py-1.5 text-sm font-semibold text-cream hover:bg-white/20"
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
       <header className="flex flex-col gap-2">
         <h1 className="text-[38px] leading-tight text-cream">
           Świąteczne Losowanie
         </h1>
         <Countdown startsAt={party.startsAt} label={party.label} />
-        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+        <div className="hidden flex-wrap items-center justify-between gap-x-5 gap-y-2 md:flex">
           <div className="flex items-center gap-2">
             <span
               aria-hidden

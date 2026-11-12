@@ -3,6 +3,7 @@
 import {
   Fragment,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useActionState,
@@ -22,6 +23,7 @@ import {
 } from "@/components/message-bubble";
 import { notify } from "@/lib/notify";
 import { createClient } from "@/lib/supabase/client";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 const empty: ActionResult = { ok: false };
 
@@ -40,7 +42,10 @@ export function GroupChatSection({
   const [unread, setUnread] = useState(0);
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendGroupMessage, empty);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const boxRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<number | null>(null);
   const firstRunRef = useRef(true);
   const prevCollapsedRef = useRef(collapsed);
   const lastSentRef = useRef("");
@@ -209,23 +214,54 @@ export function GroupChatSection({
     firstRunRef.current = false;
   }, [local.length, collapsed, me]);
 
+  const visible = isDesktop ? local : local.slice(-visibleCount);
+  const hasOlder = !isDesktop && local.length > visibleCount;
+
+  function loadOlder() {
+    anchorRef.current = document.documentElement.scrollHeight;
+    setVisibleCount((c) => c + 20);
+  }
+
+  useLayoutEffect(() => {
+    const prev = anchorRef.current;
+    if (prev == null) return;
+    anchorRef.current = null;
+    const delta = document.documentElement.scrollHeight - prev;
+    if (delta > 0) window.scrollBy(0, delta);
+  }, [visibleCount]);
+
   return (
     <>
       <p className="text-sm text-faint">
         Anonimowy — nikt nie wie, kto co napisał.
       </p>
-      <div className="mt-3 flex h-96 flex-col overflow-hidden rounded-[14px] bg-mist">
+      <div
+        className={`mt-3 flex flex-col overflow-hidden rounded-[14px] bg-mist ${
+          isDesktop ? "h-96" : ""
+        }`}
+      >
         <div
           ref={boxRef}
-          className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4"
+          className={`flex flex-col gap-1.5 p-4 ${
+            isDesktop ? "flex-1 overflow-y-auto" : ""
+          }`}
         >
+          {hasOlder && (
+            <button
+              type="button"
+              onClick={loadOlder}
+              className="mx-auto flex h-11 items-center justify-center rounded-full border border-input-line bg-surface px-4 text-sm font-medium text-muted hover:bg-mist"
+            >
+              Załaduj starsze
+            </button>
+          )}
           {local.length === 0 && (
             <p className="text-sm text-faint">
               Brak wiadomości. Napisz pierwszą!
             </p>
           )}
-          {local.map((m, i) => {
-            const prev = local[i - 1];
+          {visible.map((m, i) => {
+            const prev = visible[i - 1];
             return (
               <Fragment key={m.id}>
                 {(!prev ||

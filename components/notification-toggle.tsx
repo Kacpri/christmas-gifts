@@ -54,7 +54,7 @@ export function NotificationToggle() {
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 hover:bg-white/20 ${
+      className={`flex h-11 w-11 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 hover:bg-white/20 ${
         active ? "text-cream" : "text-cream/60"
       }`}
     >

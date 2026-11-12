@@ -7,7 +7,8 @@ export function LogoutButton() {
     <form action={signOut}>
       <button
         type="submit"
-        className="flex h-9 items-center gap-1.5 rounded-[10px] px-2.5 text-sm font-medium text-cream hover:underline"
+        aria-label="Wyloguj się"
+        className="flex h-11 min-w-11 items-center gap-1.5 rounded-[10px] px-2.5 text-sm font-medium text-cream hover:underline"
       >
         <svg
           width="16"

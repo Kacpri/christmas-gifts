@@ -63,10 +63,40 @@ export function OrganizerPanel({
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [menuParticipant, setMenuParticipant] = useState<
+    (typeof participants)[number] | null
+  >(null);
 
   function startEditName(p: { id: string; full_name: string }) {
     setEditingNameId(p.id);
     setEditNameValue(p.full_name);
+  }
+
+  function toggleReady(p: {
+    id: string;
+    full_name: string;
+    is_ready: boolean;
+    has_theme: boolean;
+    wish_count: number;
+  }) {
+    const fd = new FormData();
+    fd.set("id", p.id);
+    fd.set("is_ready", String(!p.is_ready));
+    if (!p.is_ready) {
+      const missing: string[] = [];
+      if (!p.has_theme) missing.push("tematu");
+      if (p.wish_count < 2) missing.push("min. 2 życzeń");
+      if (missing.length > 0) {
+        setConfirm({
+          message: `${p.full_name} nie ma: ${missing.join(" i ")}. Oznaczyć jako gotowego mimo to?`,
+          confirmLabel: "Oznacz mimo to",
+          tone: "primary",
+          onConfirm: () => setReadyAction(fd),
+        });
+        return;
+      }
+    }
+    setReadyAction(fd);
   }
 
   const readyCount = participants.filter((p) => p.is_ready).length;
@@ -263,74 +293,14 @@ export function OrganizerPanel({
                     {p.is_ready ? "gotowy" : "oczekuje"}
                   </span>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => startEditName(p)}
-                    aria-label="Edytuj nazwę"
-                    title="Edytuj"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
-                  >
-                    <PencilIcon />
-                  </button>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const fd = new FormData(e.currentTarget);
-                      fd.set("id", p.id);
-                      fd.set("is_ready", String(!p.is_ready));
-                      if (!p.is_ready) {
-                        const missing: string[] = [];
-                        if (!p.has_theme) missing.push("tematu");
-                        if (p.wish_count < 2) missing.push("min. 2 życzeń");
-                        if (missing.length > 0) {
-                          setConfirm({
-                            message: `${p.full_name} nie ma: ${missing.join(
-                              " i "
-                            )}. Oznaczyć jako gotowego mimo to?`,
-                            confirmLabel: "Oznacz mimo to",
-                            tone: "primary",
-                            onConfirm: () => setReadyAction(fd),
-                          });
-                          return;
-                        }
-                      }
-                      setReadyAction(fd);
-                    }}
-                  >
-                    <button
-                      type="submit"
-                      disabled={readyPending}
-                      aria-label={p.is_ready ? "Odznacz gotowego" : "Oznacz gotowego"}
-                      title={p.is_ready ? "Odznacz" : "Oznacz gotowego"}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-accent hover:bg-sage-150 disabled:opacity-50"
-                    >
-                      {p.is_ready ? <CheckSlashIcon /> : <CheckIcon />}
-                    </button>
-                  </form>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const fd = new FormData(e.currentTarget);
-                      setConfirm({
-                        message: `Usunąć ${p.full_name} z losowania?`,
-                        confirmLabel: "Usuń",
-                        tone: "danger",
-                        onConfirm: () => removeUser(fd),
-                      });
-                    }}
-                  >
-                    <input type="hidden" name="id" value={p.id} />
-                    <button
-                      type="submit"
-                      aria-label="Usuń z losowania"
-                      title="Usuń"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </form>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setMenuParticipant(p)}
+                  aria-label={`Opcje: ${p.full_name}`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+                >
+                  <MoreIcon />
+                </button>
               </div>
               {editingNameId === p.id && (
                 <form
@@ -403,18 +373,89 @@ export function OrganizerPanel({
                   }}
                 >
                   <input type="hidden" name="id" value={p.id} />
-                  <button
-                    type="submit"
-                    aria-label="Usuń"
-                    title="Usuń"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
-                  >
-                    <TrashIcon />
-                  </button>
+                    <button
+                      type="submit"
+                      aria-label="Usuń"
+                      title="Usuń"
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
+                    >
+                      <TrashIcon />
+                    </button>
                 </form>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {menuParticipant && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4"
+          onClick={() => setMenuParticipant(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl bg-surface p-4 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 truncate text-sm font-semibold text-ink">
+              {menuParticipant.full_name}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  startEditName(menuParticipant);
+                  setMenuParticipant(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+              >
+                <PencilIcon />
+                Edytuj
+              </button>
+              <button
+                type="button"
+                disabled={readyPending}
+                onClick={() => {
+                  toggleReady(menuParticipant);
+                  setMenuParticipant(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+              >
+                {menuParticipant.is_ready ? <CheckSlashIcon /> : <CheckIcon />}
+                {menuParticipant.is_ready
+                  ? "Odznacz gotowego"
+                  : "Oznacz gotowego"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = menuParticipant;
+                  setMenuParticipant(null);
+                  setConfirm({
+                    message: `Usunąć ${target.full_name} z losowania?`,
+                    confirmLabel: "Usuń",
+                    tone: "danger",
+                    onConfirm: () => {
+                      const fd = new FormData();
+                      fd.set("id", target.id);
+                      removeUser(fd);
+                    },
+                  });
+                }}
+                className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+              >
+                <TrashIcon />
+                Usuń
+              </button>
+              <button
+                type="button"
+                onClick={() => setMenuParticipant(null)}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -437,6 +478,16 @@ function SpinnerIcon() {
       aria-hidden
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="5" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.6" fill="currentColor" />
     </svg>
   );
 }
