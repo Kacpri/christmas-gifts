@@ -40,6 +40,7 @@ import {
 } from "@/components/group-chat-section";
 import type { ChatMessage } from "@/components/message-bubble";
 import { LogoutButton } from "@/components/logout-button";
+import { Menu, MenuItem } from "@/components/menu";
 import { LotteryReveal } from "@/components/lottery-reveal";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NameForm } from "@/components/name-form";
@@ -1332,62 +1333,108 @@ export function Dashboard({
         </h1>
         <Countdown startsAt={party.startsAt} label={party.label} />
         <div className="hidden flex-wrap items-center justify-between gap-x-5 gap-y-2 md:flex">
+          <Menu
+            trigger={({ open, toggle, ref }) => (
+              <button
+                ref={ref}
+                type="button"
+                onClick={toggle}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                aria-label={`Menu użytkownika: ${userName}`}
+                className="flex h-11 items-center gap-2 rounded-[10px] border border-cream/55 bg-white/10 p-1 pr-3 hover:bg-white/20"
+              >
+                <span
+                  aria-hidden
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
+                >
+                  {userName.trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-40 truncate font-medium text-cream">
+                  {userName}
+                </span>
+                <ChevronIcon
+                  className={`shrink-0 text-cream/70 transition-transform duration-200 motion-reduce:transition-none ${
+                    open ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            )}
+          >
+            <div className="px-3 py-2 text-sm font-semibold text-cream">
+              {userName}
+            </div>
+            <div className="mx-1 my-1 border-t border-cream/20" />
+            <LogoutButton variant="row" />
+          </Menu>
           <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
-            >
-              {userName.trim().charAt(0).toUpperCase()}
-            </span>
-            <span className="font-medium text-cream">{userName}</span>
-          </div>
-          <div className="hidden items-center gap-2 text-sm md:flex">
             {editMode ? (
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={resetLayout}
-                  className="inline-flex h-9 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+                  className="inline-flex h-11 items-center rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
                 >
                   Resetuj układ
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditMode(false)}
-                  className="inline-flex h-9 items-center rounded-[10px] bg-accent px-3.5 text-sm font-semibold text-white hover:bg-accent/90"
+                  className="inline-flex h-11 items-center rounded-[10px] bg-accent px-4 text-sm font-semibold text-white hover:bg-accent/90"
                 >
                   Gotowe
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setView((v) => (v === "1col" ? "2col" : "1col"))
-                  }
-                  aria-label={
-                    view === "1col"
-                      ? "Przełącz na 2 kolumny"
-                      : "Przełącz na 1 kolumnę"
-                  }
-                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
+              <>
+                <Menu
+                  trigger={({ open, toggle, ref }) => (
+                    <button
+                      ref={ref}
+                      type="button"
+                      onClick={toggle}
+                      aria-haspopup="menu"
+                      aria-expanded={open}
+                      aria-label={`Układ widoku: ${
+                        view === "1col" ? "1 kolumna" : "2 kolumny"
+                      }`}
+                      className="inline-flex h-11 items-center gap-2 rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
+                    >
+                      {view === "1col" ? <OneColIcon /> : <TwoColIcon />}
+                      {view === "1col" ? "1 kolumna" : "2 kolumny"}
+                      <ChevronIcon
+                        className={`shrink-0 text-cream/70 transition-transform duration-200 motion-reduce:transition-none ${
+                          open ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  )}
                 >
-                  {view === "1col" ? <TwoColIcon /> : <OneColIcon />}
-                  {view === "1col" ? "2 kolumny" : "1 kolumna"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditMode(true)}
-                  className="flex h-9 items-center gap-1.5 rounded-[10px] border border-cream/55 bg-white/10 px-3.5 text-sm font-semibold text-cream hover:bg-white/20"
-                >
-                  <SlidersIcon />
-                  Dostosuj układ
-                </button>
+                  <MenuItem
+                    radio
+                    active={view === "1col"}
+                    onClick={() => setView("1col")}
+                  >
+                    <OneColIcon />
+                    1 kolumna
+                  </MenuItem>
+                  <MenuItem
+                    radio
+                    active={view === "2col"}
+                    onClick={() => setView("2col")}
+                  >
+                    <TwoColIcon />
+                    2 kolumny
+                  </MenuItem>
+                  <div className="mx-1 my-1 border-t border-cream/20" />
+                  <MenuItem onClick={() => setEditMode(true)}>
+                    <SlidersIcon />
+                    Dostosuj układ
+                  </MenuItem>
+                </Menu>
                 <NotificationToggle />
                 <ThemeToggle />
-                <LogoutButton />
-              </div>
+              </>
             )}
           </div>
         </div>

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { plural } from "@/lib/format";
-
 export function Countdown({
   startsAt,
   label,
@@ -24,7 +22,7 @@ export function Countdown({
   const diff = new Date(startsAt).getTime() - now;
   if (diff <= 0) {
     return (
-      <p className="text-sm text-cream/80">
+      <p className="text-sm text-cream/90">
         Impreza trwa lub się już odbyła 🎄
       </p>
     );
@@ -37,15 +35,15 @@ export function Countdown({
   const secs = total % 60;
 
   const parts: string[] = [];
-  if (days > 0) parts.push(`${days} ${plural(days, ["dzień", "dni", "dni"])}`);
-  if (days > 0 || hours > 0) parts.push(`${hours} godz.`);
-  if (days > 0 || hours > 0 || mins > 0) parts.push(`${mins} min`);
-  parts.push(`${secs} sek.`);
+  if (days > 0) parts.push(`${days}d`);
+  if (days > 0 || hours > 0) parts.push(`${hours}h`);
+  if (days > 0 || hours > 0 || mins > 0) parts.push(`${mins}m`);
+  parts.push(`${secs}s`);
 
   return (
-    <p className="text-sm text-cream/80">
+    <p role="timer" aria-live="off" className="text-sm text-cream/90">
       Do {label}:{" "}
-      <span suppressHydrationWarning className="font-semibold text-cream">
+      <span suppressHydrationWarning className="font-semibold tabular-nums text-cream">
         {parts.join(" ")}
       </span>
     </p>

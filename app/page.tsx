@@ -7,6 +7,7 @@ import {
 } from "@/components/chats-panel";
 import { Dashboard, type GiftsData } from "@/components/dashboard";
 import type { Wish } from "@/components/wish-form";
+import { declineName } from "@/lib/declension";
 import type { DishCategory } from "@/lib/dishes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -272,7 +273,9 @@ export default async function Home() {
       ...myAssignments!.map((a) =>
         buildThread(
           { lottery_type: a.lottery_type, drawer_id: user.id, drawee_id: a.drawee_id },
-          `Dla ${nameOf(a.drawee_id)} — ${typeLabel(a.lottery_type)}`
+          `Dla ${declineName(nameOf(a.drawee_id), "gen")} — ${typeLabel(
+            a.lottery_type
+          )}`
         )
       ),
       ...(myAsDrawee ?? []).map((a) =>

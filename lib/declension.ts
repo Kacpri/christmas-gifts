@@ -26,6 +26,18 @@ const DICT: Record<string, Entry> = {
   romana: { g: "f", gen: "Romy", acc: "Romę" },
   zosia: { g: "f", gen: "Zosi", acc: "Zosię" },
   zuzia: { g: "f", gen: "Zuzi", acc: "Zuzię" },
+  julia: { g: "f", gen: "Julii", acc: "Julię" },
+  zofia: { g: "f", gen: "Zofii", acc: "Zofię" },
+  maria: { g: "f", gen: "Marii", acc: "Marię" },
+  wiktoria: { g: "f", gen: "Wiktorii", acc: "Wiktorię" },
+  nikola: { g: "f", gen: "Nikolii", acc: "Nikolę" },
+  amelia: { g: "f", gen: "Amelii", acc: "Amelię" },
+  natalia: { g: "f", gen: "Natalii", acc: "Natalię" },
+  stefania: { g: "f", gen: "Stefanii", acc: "Stefanię" },
+  kamila: { g: "f", gen: "Kamili", acc: "Kamilę" },
+  lidia: { g: "f", gen: "Lidii", acc: "Lidzę" },
+  melania: { g: "f", gen: "Melanii", acc: "Melanię" },
+  nadia: { g: "f", gen: "Nadii", acc: "Nadię" },
 };
 
 function capitalize(s: string): string {
@@ -73,7 +85,7 @@ function declineFeminine(word: string, c: Case): string {
   }
   if (lower.endsWith("ia")) {
     const stem = word.slice(0, -2);
-    return c === "gen" ? stem + "ii" : stem + "ię";
+    return c === "gen" ? stem + "i" : stem + "ię";
   }
   if (lower.endsWith("cja")) {
     const stem = word.slice(0, -2);
