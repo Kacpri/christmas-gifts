@@ -14,7 +14,6 @@ import {
 import {
   SortableContext,
   arrayMove,
-  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -69,7 +68,7 @@ export type PanelId =
   | "impreza"
   | "organizer";
 
-const DEFAULT_ORDER: PanelId[] = [
+const ALL_PANELS: PanelId[] = [
   "profile",
   "ready",
   "impreza",
@@ -81,12 +80,25 @@ const DEFAULT_ORDER: PanelId[] = [
   "organizer",
 ];
 
-const WIDE_PANELS = new Set<PanelId>(["chats", "group-chat", "organizer"]);
+type Layout = {
+  left: PanelId[];
+  right: PanelId[];
+  wide: PanelId[];
+};
+
+const DEFAULT_LAYOUT: Layout = {
+  left: ["gifts", "wishes", "potrawy"],
+  right: ["profile", "ready", "impreza", "group-chat", "organizer"],
+  wide: ["chats"],
+};
 
 const STORAGE_KEY = "dashboard-v1";
 
 type SavedLayout = {
-  order: string[];
+  left?: string[];
+  right?: string[];
+  wide?: string[];
+  order?: string[];
   collapsed: Record<string, boolean>;
   view?: "1col" | "2col";
 };
@@ -105,7 +117,14 @@ function loadLayout(): SavedLayout | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SavedLayout;
-    if (!Array.isArray(parsed.order)) return null;
+    if (
+      !Array.isArray(parsed.left) &&
+      !Array.isArray(parsed.right) &&
+      !Array.isArray(parsed.wide) &&
+      !Array.isArray(parsed.order)
+    ) {
+      return null;
+    }
     return parsed;
   } catch {
     return null;
@@ -113,12 +132,49 @@ function loadLayout(): SavedLayout | null {
 }
 
 function normalizeOrder(saved: string[] | null): PanelId[] {
-  const valid = new Set<string>(DEFAULT_ORDER);
+  const valid = new Set<string>(ALL_PANELS);
   const known = saved
     ? (saved.filter((id) => valid.has(id)) as PanelId[])
     : [];
-  const missing = DEFAULT_ORDER.filter((id) => !known.includes(id));
+  const missing = ALL_PANELS.filter((id) => !known.includes(id));
   return [...known, ...missing];
+}
+
+function normalizeLayout(saved: SavedLayout | null): Layout {
+  const valid = new Set<string>(ALL_PANELS);
+  const pick = (arr: string[] | undefined) =>
+    (arr ?? []).filter((id) => valid.has(id)) as PanelId[];
+
+  let left = pick(saved?.left);
+  let right = pick(saved?.right);
+  let wide = pick(saved?.wide);
+
+  if (
+    left.length + right.length + wide.length === 0 &&
+    Array.isArray(saved?.order)
+  ) {
+    const order = normalizeOrder(saved.order);
+    const wideIds = order.filter((id) => id === "chats");
+    const regular = order.filter((id) => id !== "chats");
+    const half = Math.ceil(regular.length / 2);
+    left = regular.slice(0, half);
+    right = regular.slice(half);
+    wide = wideIds;
+  }
+
+  const seen = new Set<string>();
+  const dedup = (arr: PanelId[]) =>
+    arr.filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
+  left = dedup(left);
+  right = dedup(right);
+  wide = dedup(wide);
+  for (const id of ALL_PANELS) {
+    if (seen.has(id)) continue;
+    if (DEFAULT_LAYOUT.left.includes(id)) left.push(id);
+    else if (DEFAULT_LAYOUT.right.includes(id)) right.push(id);
+    else wide.push(id);
+  }
+  return { left, right, wide };
 }
 
 function GripIcon() {
@@ -459,7 +515,6 @@ function PanelCard({
   onToggle,
   editMode,
   isHole,
-  wide,
   enterDelay,
   children,
 }: {
@@ -476,7 +531,6 @@ function PanelCard({
   onToggle: () => void;
   editMode: boolean;
   isHole: boolean;
-  wide?: boolean;
   enterDelay?: number;
   children: ReactNode;
 }) {
@@ -509,8 +563,8 @@ function PanelCard({
       } ${
         isHole
           ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
-          : `border-line bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
-      } ${wide ? "md:col-span-2" : ""} ${enterDelay != null ? "panel-enter" : ""}`}
+           : `border-line bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
+       } ${enterDelay != null ? "panel-enter" : ""}`}
     >
       <div className="flex items-center gap-2">
         {editMode && !isHole && (
@@ -895,11 +949,11 @@ export function Dashboard({
     themeBudget: number | null;
   } | null;
 }) {
-  const [order, setOrder] = useState<PanelId[]>(DEFAULT_ORDER);
+  const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     profile: true,
   });
-  const [view, setView] = useState<"1col" | "2col">("1col");
+  const [view, setView] = useState<"1col" | "2col">("2col");
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -939,7 +993,7 @@ export function Dashboard({
   useEffect(() => {
     const saved = loadLayout();
     if (saved) {
-      setOrder(normalizeOrder(saved.order));
+      setLayout(normalizeLayout(saved));
       setCollapsed((prev) => ({ ...prev, ...(saved.collapsed ?? {}) }));
       if (saved.view === "2col" || saved.view === "1col") setView(saved.view);
     }
@@ -958,12 +1012,12 @@ export function Dashboard({
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ order, collapsed, view })
+        JSON.stringify({ left: layout.left, right: layout.right, wide: layout.wide, collapsed, view })
       );
     } catch {
       // localStorage niedostępny — ignoruj
     }
-  }, [order, collapsed, view, hydrated]);
+  }, [layout, collapsed, view, hydrated]);
 
   const handleUnreadChange = useCallback(
     (total: number) => setChatUnread(total),
@@ -990,11 +1044,39 @@ export function Dashboard({
     setActiveId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    setOrder((prev) => {
-      const oldIndex = prev.indexOf(active.id as PanelId);
-      const newIndex = prev.indexOf(over.id as PanelId);
-      if (oldIndex < 0 || newIndex < 0) return prev;
-      return arrayMove(prev, oldIndex, newIndex);
+    const activeId = active.id as PanelId;
+    const overId = over.id as PanelId;
+    setLayout((prev) => {
+      const zones: Record<"left" | "right" | "wide", PanelId[]> = {
+        left: [...prev.left],
+        right: [...prev.right],
+        wide: [...prev.wide],
+      };
+      const findZone = (id: PanelId): "left" | "right" | "wide" | null =>
+        zones.left.includes(id)
+          ? "left"
+          : zones.right.includes(id)
+            ? "right"
+            : zones.wide.includes(id)
+              ? "wide"
+              : null;
+      const from = findZone(activeId);
+      const to = findZone(overId);
+      if (!from || !to) return prev;
+      if (from === to) {
+        const oldIndex = zones[from].indexOf(activeId);
+        const newIndex = zones[from].indexOf(overId);
+        if (oldIndex < 0 || newIndex < 0) return prev;
+        zones[from] = arrayMove(zones[from], oldIndex, newIndex);
+      } else {
+        const fromIdx = zones[from].indexOf(activeId);
+        if (fromIdx < 0) return prev;
+        zones[from].splice(fromIdx, 1);
+        let toIdx = zones[to].indexOf(overId);
+        if (toIdx < 0) toIdx = zones[to].length;
+        zones[to].splice(toIdx, 0, activeId);
+      }
+      return { left: zones.left, right: zones.right, wide: zones.wide };
     });
   }
 
@@ -1003,9 +1085,9 @@ export function Dashboard({
   }
 
   function resetLayout() {
-    setOrder(DEFAULT_ORDER);
+    setLayout(DEFAULT_LAYOUT);
     setCollapsed({ profile: true });
-    setView("1col");
+    setView("2col");
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -1013,13 +1095,16 @@ export function Dashboard({
     }
   }
 
-  const visible = order.filter(
-    (id) =>
-      (id !== "organizer" || organizer) &&
-      (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
-      (id !== "gifts" || gifts.kind !== "waiting") &&
-      (id !== "chats" || chats.lotteryDone)
-  );
+  const isVisible = (id: PanelId) =>
+    (id !== "organizer" || organizer) &&
+    (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
+    (id !== "gifts" || gifts.kind !== "waiting") &&
+    (id !== "chats" || chats.lotteryDone);
+
+  const leftVisible = layout.left.filter(isVisible);
+  const rightVisible = layout.right.filter(isVisible);
+  const wideVisible = layout.wide.filter(isVisible);
+  const visible = [...leftVisible, ...rightVisible, ...wideVisible];
 
   visibleIdsRef.current = visible;
 
@@ -1081,9 +1166,6 @@ export function Dashboard({
   }, [updateChipFades, visibleKey]);
 
   const isTwoCol = view === "2col";
-  const panelsContainer = isTwoCol
-    ? "grid grid-cols-1 gap-5 md:grid-cols-2"
-    : "flex flex-col gap-5";
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
     profile: {
@@ -1174,7 +1256,7 @@ export function Dashboard({
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const cards = visible.map((id, index) => {
+  function renderCard(id: PanelId, index: number) {
     const isReadyPanel = id === "ready";
     const readyInfo = isReadyPanel
       ? readyHeader(ready, goToWishes)
@@ -1209,7 +1291,6 @@ export function Dashboard({
         }
         editMode={editMode}
         isHole={activeId === id}
-        wide={WIDE_PANELS.has(id)}
         enterDelay={entering ? index * 50 : undefined}
       >
         {isReadyPanel &&
@@ -1218,12 +1299,12 @@ export function Dashboard({
           : panels[id].body}
       </PanelCard>
     );
-  });
+  }
 
   return (
     <main
       className={`mx-auto flex w-full flex-1 flex-col gap-5 px-5 pb-16 pt-0 md:pt-7 ${
-        isTwoCol ? "max-w-[1120px]" : "max-w-[680px]"
+        isTwoCol ? "max-w-[1200px]" : "max-w-[800px]"
       }`}
     >
       {hydrated && gifts.kind === "done" && !revealed && (
@@ -1488,12 +1569,76 @@ export function Dashboard({
         onDragEnd={onDragEnd}
         onDragCancel={onDragCancel}
       >
-        <SortableContext
-          items={visible}
-          strategy={isTwoCol ? rectSortingStrategy : verticalListSortingStrategy}
-        >
-          <div className={panelsContainer}>{cards}</div>
-        </SortableContext>
+        {isTwoCol ? (
+          <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-start">
+              <SortableContext
+                items={leftVisible}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex min-w-0 flex-col gap-5">
+                  {leftVisible.map((id, i) => renderCard(id, i))}
+                </div>
+              </SortableContext>
+              <SortableContext
+                items={rightVisible}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex min-w-0 flex-col gap-5">
+                  {rightVisible.map((id, i) =>
+                    renderCard(id, leftVisible.length + i)
+                  )}
+                </div>
+              </SortableContext>
+            </div>
+            {wideVisible.length > 0 && (
+              <SortableContext
+                items={wideVisible}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-5">
+                  {wideVisible.map((id, i) =>
+                    renderCard(
+                      id,
+                      leftVisible.length + rightVisible.length + i
+                    )
+                  )}
+                </div>
+              </SortableContext>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            <SortableContext
+              items={leftVisible}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-5">
+                {leftVisible.map((id, i) => renderCard(id, i))}
+              </div>
+            </SortableContext>
+            <SortableContext
+              items={rightVisible}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-5">
+                {rightVisible.map((id, i) =>
+                  renderCard(id, leftVisible.length + i)
+                )}
+              </div>
+            </SortableContext>
+            <SortableContext
+              items={wideVisible}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-5">
+                {wideVisible.map((id, i) =>
+                  renderCard(id, leftVisible.length + rightVisible.length + i)
+                )}
+              </div>
+            </SortableContext>
+          </div>
+        )}
         <DragOverlay>
           {activeId ? (
             <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
