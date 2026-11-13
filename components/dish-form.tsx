@@ -943,12 +943,17 @@ function LikeButton({
   onClick: (e: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const filled = likedByMe ? !hovered : hovered;
+  const hoverLikedRef = useRef(likedByMe);
+  const freshHover = hovered && hoverLikedRef.current === likedByMe;
+  const filled = likedByMe ? !freshHover : freshHover;
   return (
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => {
+        hoverLikedRef.current = likedByMe;
+        setHovered(true);
+      }}
       onMouseLeave={() => setHovered(false)}
       aria-label={likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
       title={likedByMe ? "Odpolub" : "Polub"}
