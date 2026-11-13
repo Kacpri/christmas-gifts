@@ -847,7 +847,7 @@ export function ChatsPanel({
   const isDm = selectedItem?.kind === "dm";
   const pending = isDm ? dmPending : lotteryPending;
   const visibleListItems =
-    !useMobileLayout || listExpanded ? listItems : listItems.slice(0, 5);
+    isDesktop || listExpanded ? listItems : listItems.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-3">
@@ -859,15 +859,15 @@ export function ChatsPanel({
         {(!useMobileLayout || !selectedItem) && (
         <div
           className={`flex flex-col gap-3 ${
-            !useMobileLayout ? "h-96 w-72 pb-3" : ""
-          }`}
+            isDesktop ? "h-96 pb-3" : ""
+          } ${!useMobileLayout ? "w-72" : ""}`}
         >
           <div className="relative min-h-0 flex-1">
             <div
               ref={listRef}
               onScroll={updateListFade}
               className={`flex flex-col gap-2 pr-0.5 ${
-                !useMobileLayout ? "h-full overflow-y-auto" : ""
+                isDesktop ? "h-full overflow-y-auto" : ""
               }`}
             >
             {visibleListItems.length === 0 && (
@@ -956,7 +956,7 @@ export function ChatsPanel({
               />
             )}
           </div>
-          {useMobileLayout && listItems.length > 5 && (
+          {!isDesktop && listItems.length > 5 && (
             <button
               type="button"
               onClick={() => setListExpanded(!listExpanded)}
