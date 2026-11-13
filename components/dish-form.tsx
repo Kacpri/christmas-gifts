@@ -498,11 +498,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                           like.likedByMe ? "Odpolub potrawę" : "Polub potrawę"
                         }
                         title={like.likedByMe ? "Odpolub" : "Polub"}
-                        className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors ${
-                          like.likedByMe
-                            ? "text-danger"
-                            : "text-muted hover:bg-icon-hover"
-                        }`}
+                        className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted transition-colors hover:bg-icon-hover"
                       >
                         <HeartIcon filled={like.likedByMe} />
                         {like.likeCount > 0 && (
