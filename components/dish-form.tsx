@@ -505,9 +505,11 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         }`}
                       >
                         <HeartIcon filled={like.likedByMe} />
-                        <span className="w-4 text-right tabular-nums text-xs">
-                          {like.likeCount > 0 ? like.likeCount : ""}
-                        </span>
+                        {like.likeCount > 0 && (
+                          <span className="w-4 text-right tabular-nums text-xs">
+                            {like.likeCount}
+                          </span>
+                        )}
                       </button>
                     </div>
                     {dish.isMine && (
