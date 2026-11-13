@@ -14,9 +14,9 @@ import {
 import {
   SortableContext,
   arrayMove,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -25,6 +25,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type Ref,
 } from "react";
 
 import {
@@ -56,6 +57,7 @@ import {
 } from "@/lib/budget";
 import { declineName, possessive } from "@/lib/declension";
 import { formatPrice, participationVerb, plural } from "@/lib/format";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 export type PanelId =
   | "profile"
@@ -81,14 +83,22 @@ const ALL_PANELS: PanelId[] = [
 ];
 
 type Layout = {
-  left: PanelId[];
-  right: PanelId[];
+  order: PanelId[];
   wide: PanelId[];
 };
 
 const DEFAULT_LAYOUT: Layout = {
-  left: ["gifts", "wishes", "potrawy"],
-  right: ["profile", "ready", "impreza", "group-chat", "organizer"],
+  order: [
+    "profile",
+    "gifts",
+    "ready",
+    "wishes",
+    "impreza",
+    "potrawy",
+    "group-chat",
+    "organizer",
+    "chats",
+  ],
   wide: ["chats"],
 };
 
@@ -131,50 +141,46 @@ function loadLayout(): SavedLayout | null {
   }
 }
 
-function normalizeOrder(saved: string[] | null): PanelId[] {
-  const valid = new Set<string>(ALL_PANELS);
-  const known = saved
-    ? (saved.filter((id) => valid.has(id)) as PanelId[])
-    : [];
-  const missing = ALL_PANELS.filter((id) => !known.includes(id));
-  return [...known, ...missing];
-}
-
 function normalizeLayout(saved: SavedLayout | null): Layout {
   const valid = new Set<string>(ALL_PANELS);
   const pick = (arr: string[] | undefined) =>
     (arr ?? []).filter((id) => valid.has(id)) as PanelId[];
 
-  let left = pick(saved?.left);
-  let right = pick(saved?.right);
-  let wide = pick(saved?.wide);
+  let order: PanelId[];
+  let wide: PanelId[];
 
-  if (
-    left.length + right.length + wide.length === 0 &&
-    Array.isArray(saved?.order)
-  ) {
-    const order = normalizeOrder(saved.order);
-    const wideIds = order.filter((id) => id === "chats");
-    const regular = order.filter((id) => id !== "chats");
-    const half = Math.ceil(regular.length / 2);
-    left = regular.slice(0, half);
-    right = regular.slice(half);
-    wide = wideIds;
+  if (Array.isArray(saved?.order)) {
+    order = pick(saved.order);
+    wide = pick(saved.wide);
+  } else {
+    const left = pick(saved?.left);
+    const right = pick(saved?.right);
+    const wideOld = pick(saved?.wide);
+    const interleaved: PanelId[] = [];
+    const maxLen = Math.max(left.length, right.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (right[i]) interleaved.push(right[i]);
+      if (left[i]) interleaved.push(left[i]);
+    }
+    order = [...interleaved, ...wideOld];
+    wide = wideOld;
   }
 
   const seen = new Set<string>();
   const dedup = (arr: PanelId[]) =>
     arr.filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
-  left = dedup(left);
-  right = dedup(right);
+  order = dedup(order);
   wide = dedup(wide);
   for (const id of ALL_PANELS) {
-    if (seen.has(id)) continue;
-    if (DEFAULT_LAYOUT.left.includes(id)) left.push(id);
-    else if (DEFAULT_LAYOUT.right.includes(id)) right.push(id);
-    else wide.push(id);
+    if (!seen.has(id)) {
+      order.push(id);
+      seen.add(id);
+    }
   }
-  return { left, right, wide };
+  for (const id of wide) {
+    if (!order.includes(id)) order.push(id);
+  }
+  return { order, wide };
 }
 
 function GripIcon() {
@@ -186,6 +192,23 @@ function GripIcon() {
       <circle cx="11" cy="8" r="1.5" />
       <circle cx="5" cy="13" r="1.5" />
       <circle cx="11" cy="13" r="1.5" />
+    </svg>
+  );
+}
+
+function WidthIcon({ wide }: { wide: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <rect x="2" y="5" width="12" height="6" rx="1" />
+      {!wide && <line x1="8" y1="4" x2="8" y2="12" strokeDasharray="2 1.5" />}
     </svg>
   );
 }
@@ -515,6 +538,8 @@ function PanelCard({
   onToggle,
   editMode,
   isHole,
+  isWide,
+  onToggleWidth,
   enterDelay,
   children,
 }: {
@@ -531,6 +556,8 @@ function PanelCard({
   onToggle: () => void;
   editMode: boolean;
   isHole: boolean;
+  isWide: boolean;
+  onToggleWidth?: () => void;
   enterDelay?: number;
   children: ReactNode;
 }) {
@@ -559,12 +586,14 @@ function PanelCard({
         ...(enterDelay != null ? { animationDelay: `${enterDelay}ms` } : {}),
       }}
       className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
+        isWide ? "md:col-span-2" : ""
+      } ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
           ? "border-dashed border-amber-400 bg-amber-50/60 opacity-60"
            : `border-line bg-surface ${editMode ? "ring-2 ring-amber-300" : ""}`
-       } ${enterDelay != null ? "panel-enter" : ""}`}
+        } ${enterDelay != null ? "panel-enter" : ""}`}
     >
       <div className="flex items-center gap-2">
         {editMode && !isHole && (
@@ -596,6 +625,18 @@ function PanelCard({
             <p className="mt-0.5 text-sm text-muted">{subtitle}</p>
           )}
         </div>
+        {editMode && !isHole && onToggleWidth && (
+          <button
+            type="button"
+            onClick={onToggleWidth}
+            aria-label={
+              isWide ? `Zmień na wąski: ${title}` : `Zmień na szeroki: ${title}`
+            }
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-mist hover:text-ink"
+          >
+            <WidthIcon wide={isWide} />
+          </button>
+        )}
         {headerRight !== undefined ? (
           headerRight
         ) : (
@@ -969,6 +1010,8 @@ export function Dashboard({
   const lastScrollY = useRef(0);
   const visibleIdsRef = useRef<PanelId[]>([]);
   const chipNavRef = useRef<HTMLElement>(null);
+  const desktopChipNavRef = useRef<HTMLElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [chipFades, setChipFades] = useState({ left: false, right: false });
   const [entering, setEntering] = useState(false);
   const lastActivePanel = useRef<PanelId | null>(null);
@@ -1012,7 +1055,7 @@ export function Dashboard({
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ left: layout.left, right: layout.right, wide: layout.wide, collapsed, view })
+        JSON.stringify({ order: layout.order, wide: layout.wide, collapsed, view })
       );
     } catch {
       // localStorage niedostępny — ignoruj
@@ -1047,36 +1090,20 @@ export function Dashboard({
     const activeId = active.id as PanelId;
     const overId = over.id as PanelId;
     setLayout((prev) => {
-      const zones: Record<"left" | "right" | "wide", PanelId[]> = {
-        left: [...prev.left],
-        right: [...prev.right],
-        wide: [...prev.wide],
-      };
-      const findZone = (id: PanelId): "left" | "right" | "wide" | null =>
-        zones.left.includes(id)
-          ? "left"
-          : zones.right.includes(id)
-            ? "right"
-            : zones.wide.includes(id)
-              ? "wide"
-              : null;
-      const from = findZone(activeId);
-      const to = findZone(overId);
-      if (!from || !to) return prev;
-      if (from === to) {
-        const oldIndex = zones[from].indexOf(activeId);
-        const newIndex = zones[from].indexOf(overId);
-        if (oldIndex < 0 || newIndex < 0) return prev;
-        zones[from] = arrayMove(zones[from], oldIndex, newIndex);
-      } else {
-        const fromIdx = zones[from].indexOf(activeId);
-        if (fromIdx < 0) return prev;
-        zones[from].splice(fromIdx, 1);
-        let toIdx = zones[to].indexOf(overId);
-        if (toIdx < 0) toIdx = zones[to].length;
-        zones[to].splice(toIdx, 0, activeId);
-      }
-      return { left: zones.left, right: zones.right, wide: zones.wide };
+      const oldIndex = prev.order.indexOf(activeId);
+      const newIndex = prev.order.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return prev;
+      return { ...prev, order: arrayMove(prev.order, oldIndex, newIndex) };
+    });
+  }
+
+  function toggleWidth(id: PanelId) {
+    setLayout((prev) => {
+      const isWide = prev.wide.includes(id);
+      const wide = isWide
+        ? prev.wide.filter((x) => x !== id)
+        : [...prev.wide, id];
+      return { ...prev, wide };
     });
   }
 
@@ -1101,10 +1128,8 @@ export function Dashboard({
     (id !== "gifts" || gifts.kind !== "waiting") &&
     (id !== "chats" || chats.lotteryDone);
 
-  const leftVisible = layout.left.filter(isVisible);
-  const rightVisible = layout.right.filter(isVisible);
-  const wideVisible = layout.wide.filter(isVisible);
-  const visible = [...leftVisible, ...rightVisible, ...wideVisible];
+  const visible = layout.order.filter(isVisible);
+  const isWide = (id: PanelId) => id === "chats" || layout.wide.includes(id);
 
   visibleIdsRef.current = visible;
 
@@ -1124,7 +1149,7 @@ export function Dashboard({
       }
       if (current !== lastActivePanel.current) {
         if (lastActivePanel.current !== null && current !== null) {
-          const nav = chipNavRef.current;
+          const nav = (isDesktop ? desktopChipNavRef : chipNavRef).current;
           const chip = nav?.querySelector<HTMLElement>(
             `[data-chip="${current}"]`
           );
@@ -1145,17 +1170,17 @@ export function Dashboard({
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [isDesktop]);
 
   const updateChipFades = useCallback(() => {
-    const el = chipNavRef.current;
+    const el = (isDesktop ? desktopChipNavRef : chipNavRef).current;
     if (!el) return;
     const left = el.scrollLeft > 4;
     const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
     setChipFades((prev) =>
       prev.left === left && prev.right === right ? prev : { left, right }
     );
-  }, []);
+  }, [isDesktop]);
 
   const visibleKey = visible.join(",");
 
@@ -1256,7 +1281,7 @@ export function Dashboard({
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function renderCard(id: PanelId, index: number) {
+  function renderCard(id: PanelId, index: number, wide: boolean) {
     const isReadyPanel = id === "ready";
     const readyInfo = isReadyPanel
       ? readyHeader(ready, goToWishes)
@@ -1291,6 +1316,8 @@ export function Dashboard({
         }
         editMode={editMode}
         isHole={activeId === id}
+        isWide={wide}
+        onToggleWidth={id === "chats" ? undefined : () => toggleWidth(id)}
         enterDelay={entering ? index * 50 : undefined}
       >
         {isReadyPanel &&
@@ -1298,6 +1325,73 @@ export function Dashboard({
           ? null
           : panels[id].body}
       </PanelCard>
+    );
+  }
+
+  function renderChipNav(ref: Ref<HTMLElement>) {
+    return (
+      <div className="relative min-w-0 flex-1">
+        <nav
+          ref={ref}
+          aria-label="Przejdź do sekcji"
+          onScroll={updateChipFades}
+          className="no-scrollbar flex gap-2 overflow-x-auto px-1"
+        >
+          {visible.map((id) => {
+            const unread =
+              id === "chats"
+                ? chatUnread
+                : id === "group-chat"
+                  ? groupUnread
+                  : 0;
+            return (
+              <button
+                key={id}
+                type="button"
+                data-chip={id}
+                onClick={() => goToPanel(id)}
+                aria-current={activePanel === id ? "true" : undefined}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
+                  activePanel === id
+                    ? "border-cream bg-cream text-[#0d4024]"
+                    : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+                }`}
+              >
+                {panels[id].title}
+                {unread > 0 && (
+                  <span
+                    key={unread}
+                    aria-label={`${unread} ${plural(unread, [
+                      "nieprzeczytana wiadomość",
+                      "nieprzeczytane wiadomości",
+                      "nieprzeczytanych wiadomości",
+                    ])}`}
+                    className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                      activePanel === id
+                        ? "bg-[#0d4024] text-cream"
+                        : "bg-cream text-[#0d4024]"
+                    }`}
+                  >
+                    {unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+        {chipFades.left && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-[#0d4024] to-transparent dark:from-[#061a13]"
+          />
+        )}
+        {chipFades.right && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[#0d4024] to-transparent dark:from-[#061a13]"
+          />
+        )}
+      </div>
     );
   }
 
@@ -1334,68 +1428,7 @@ export function Dashboard({
           </div>
         ) : (
           <>
-            <div className="relative min-w-0 flex-1">
-              <nav
-                ref={chipNavRef}
-                aria-label="Przejdź do sekcji"
-                onScroll={updateChipFades}
-                className="no-scrollbar flex gap-2 overflow-x-auto px-1"
-              >
-                {visible.map((id) => {
-                  const unread =
-                    id === "chats"
-                      ? chatUnread
-                      : id === "group-chat"
-                        ? groupUnread
-                        : 0;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      data-chip={id}
-                      onClick={() => goToPanel(id)}
-                      aria-current={activePanel === id ? "true" : undefined}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
-                        activePanel === id
-                          ? "border-cream bg-cream text-[#0d4024]"
-                          : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-                      }`}
-                    >
-                      {panels[id].title}
-                      {unread > 0 && (
-                        <span
-                          key={unread}
-                          aria-label={`${unread} ${plural(unread, [
-                            "nieprzeczytana wiadomość",
-                            "nieprzeczytane wiadomości",
-                            "nieprzeczytanych wiadomości",
-                          ])}`}
-                          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
-                            activePanel === id
-                              ? "bg-[#0d4024] text-cream"
-                              : "bg-cream text-[#0d4024]"
-                          }`}
-                        >
-                          {unread}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-              {chipFades.left && (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-[#0d4024] to-transparent dark:from-[#061a13]"
-                />
-              )}
-              {chipFades.right && (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[#0d4024] to-transparent dark:from-[#061a13]"
-                />
-              )}
-            </div>
+            {renderChipNav(chipNavRef)}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}
@@ -1413,113 +1446,86 @@ export function Dashboard({
           Świąteczne Losowanie
         </h1>
         <Countdown startsAt={party.startsAt} label={party.label} />
-        <div className="hidden flex-wrap items-center justify-between gap-x-5 gap-y-2 md:flex">
-          <Menu
-            trigger={({ open, toggle, ref }) => (
-              <button
-                ref={ref}
-                type="button"
-                onClick={toggle}
-                aria-haspopup="menu"
-                aria-expanded={open}
-                aria-label={`Menu użytkownika: ${userName}`}
-                className="flex h-11 items-center gap-2 rounded-[10px] border border-cream/55 bg-white/10 p-1 pr-3 hover:bg-white/20"
-              >
+      </header>
+      <div className="sticky top-0 z-30 hidden -mx-5 border-b border-cream/10 bg-[#0d4024] px-5 dark:bg-[#061a13] md:block">
+        {editMode ? (
+          <div className="flex items-center justify-end gap-2 py-2">
+            <button
+              type="button"
+              onClick={resetLayout}
+              className="inline-flex h-11 items-center rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
+            >
+              Resetuj układ
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="inline-flex h-11 items-center rounded-[10px] bg-accent px-4 text-sm font-semibold text-white hover:bg-accent/90"
+            >
+              Gotowe
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 py-2">
+            {renderChipNav(desktopChipNavRef)}
+            <Menu
+              align="end"
+              panelClassName="w-64"
+              trigger={({ open, toggle, ref }) => (
+                <button
+                  ref={ref}
+                  type="button"
+                  onClick={toggle}
+                  aria-haspopup="menu"
+                  aria-expanded={open}
+                  aria-label={open ? "Zamknij menu" : "Otwórz menu"}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] border border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+                >
+                  <MenuIcon open={open} />
+                </button>
+              )}
+            >
+              <div className="flex items-center gap-2.5 px-3 py-2">
                 <span
                   aria-hidden
                   className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
                 >
                   {userName.trim().charAt(0).toUpperCase()}
                 </span>
-                <span className="max-w-40 truncate font-medium text-cream">
+                <span className="truncate font-medium text-cream">
                   {userName}
                 </span>
-                <ChevronIcon
-                  className={`shrink-0 text-cream/70 transition-transform duration-200 motion-reduce:transition-none ${
-                    open ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-            )}
-          >
-            <div className="px-3 py-2 text-sm font-semibold text-cream">
-              {userName}
-            </div>
-            <div className="mx-1 my-1 border-t border-cream/20" />
-            <LogoutButton variant="row" />
-          </Menu>
-          <div className="flex items-center gap-2">
-            {editMode ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={resetLayout}
-                  className="inline-flex h-11 items-center rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
-                >
-                  Resetuj układ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditMode(false)}
-                  className="inline-flex h-11 items-center rounded-[10px] bg-accent px-4 text-sm font-semibold text-white hover:bg-accent/90"
-                >
-                  Gotowe
-                </button>
               </div>
-            ) : (
-              <>
-                <Menu
-                  trigger={({ open, toggle, ref }) => (
-                    <button
-                      ref={ref}
-                      type="button"
-                      onClick={toggle}
-                      aria-haspopup="menu"
-                      aria-expanded={open}
-                      aria-label={`Układ widoku: ${
-                        view === "1col" ? "1 kolumna" : "2 kolumny"
-                      }`}
-                      className="inline-flex h-11 items-center gap-2 rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
-                    >
-                      {view === "1col" ? <OneColIcon /> : <TwoColIcon />}
-                      {view === "1col" ? "1 kolumna" : "2 kolumny"}
-                      <ChevronIcon
-                        className={`shrink-0 text-cream/70 transition-transform duration-200 motion-reduce:transition-none ${
-                          open ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                  )}
-                >
-                  <MenuItem
-                    radio
-                    active={view === "1col"}
-                    onClick={() => setView("1col")}
-                  >
-                    <OneColIcon />
-                    1 kolumna
-                  </MenuItem>
-                  <MenuItem
-                    radio
-                    active={view === "2col"}
-                    onClick={() => setView("2col")}
-                  >
-                    <TwoColIcon />
-                    2 kolumny
-                  </MenuItem>
-                  <div className="mx-1 my-1 border-t border-cream/20" />
-                  <MenuItem onClick={() => setEditMode(true)}>
-                    <SlidersIcon />
-                    Dostosuj układ
-                  </MenuItem>
-                </Menu>
-                <NotificationToggle />
-                <ThemeToggle />
-              </>
-            )}
+              <div className="mx-1 my-1 border-t border-cream/20" />
+              <MenuItem onClick={() => setEditMode(true)}>
+                <SlidersIcon />
+                Dostosuj układ
+              </MenuItem>
+              <MenuItem
+                radio
+                active={view === "1col"}
+                onClick={() => setView("1col")}
+              >
+                <OneColIcon />
+                1 kolumna
+              </MenuItem>
+              <MenuItem
+                radio
+                active={view === "2col"}
+                onClick={() => setView("2col")}
+              >
+                <TwoColIcon />
+                2 kolumny
+              </MenuItem>
+              <div className="mx-1 my-1 border-t border-cream/20" />
+              <NotificationToggle variant="row" />
+              <ThemeToggle variant="row" />
+              <div className="mx-1 my-1 border-t border-cream/20" />
+              <LogoutButton variant="row" />
+            </Menu>
           </div>
-        </div>
-      </header>
+        )}
+      </div>
 
       <Presence
         open={mobileMenuOpen && !editMode}
@@ -1562,84 +1568,24 @@ export function Dashboard({
         </div>
       </Presence>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragCancel={onDragCancel}
-      >
-        {isTwoCol ? (
-          <div className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-start">
-              <SortableContext
-                items={leftVisible}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="flex min-w-0 flex-col gap-5">
-                  {leftVisible.map((id, i) => renderCard(id, i))}
-                </div>
-              </SortableContext>
-              <SortableContext
-                items={rightVisible}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="flex min-w-0 flex-col gap-5">
-                  {rightVisible.map((id, i) =>
-                    renderCard(id, leftVisible.length + i)
-                  )}
-                </div>
-              </SortableContext>
-            </div>
-            {wideVisible.length > 0 && (
-              <SortableContext
-                items={wideVisible}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="flex flex-col gap-5">
-                  {wideVisible.map((id, i) =>
-                    renderCard(
-                      id,
-                      leftVisible.length + rightVisible.length + i
-                    )
-                  )}
-                </div>
-              </SortableContext>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-5">
-            <SortableContext
-              items={leftVisible}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="flex flex-col gap-5">
-                {leftVisible.map((id, i) => renderCard(id, i))}
-              </div>
-            </SortableContext>
-            <SortableContext
-              items={rightVisible}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="flex flex-col gap-5">
-                {rightVisible.map((id, i) =>
-                  renderCard(id, leftVisible.length + i)
-                )}
-              </div>
-            </SortableContext>
-            <SortableContext
-              items={wideVisible}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="flex flex-col gap-5">
-                {wideVisible.map((id, i) =>
-                  renderCard(id, leftVisible.length + rightVisible.length + i)
-                )}
-              </div>
+      {hydrated && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragCancel={onDragCancel}
+        >
+          <div
+            className={`grid grid-cols-1 gap-5 ${
+              isTwoCol ? "md:grid-cols-2 md:items-start" : ""
+            }`}
+          >
+            <SortableContext items={visible} strategy={rectSortingStrategy}>
+              {visible.map((id, i) => renderCard(id, i, isWide(id)))}
             </SortableContext>
           </div>
-        )}
-        <DragOverlay>
+          <DragOverlay>
           {activeId ? (
             <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
               <div className="flex items-center gap-2">
@@ -1666,8 +1612,9 @@ export function Dashboard({
               )}
             </section>
           ) : null}
-        </DragOverlay>
-      </DndContext>
+          </DragOverlay>
+        </DndContext>
+      )}
     </main>
   );
 }
