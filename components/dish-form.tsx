@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useActionState,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 
@@ -484,8 +485,9 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         dish.isMine ? "group-hover:hidden" : ""
                       }`}
                     >
-                      <button
-                        type="button"
+                      <LikeButton
+                        likedByMe={like.likedByMe}
+                        likeCount={like.likeCount}
                         onClick={(e) => {
                           if (longPressFired.current) {
                             e.preventDefault();
@@ -494,19 +496,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                           }
                           handleLike(dish);
                         }}
-                        aria-label={
-                          like.likedByMe ? "Odpolub potrawę" : "Polub potrawę"
-                        }
-                        title={like.likedByMe ? "Odpolub" : "Polub"}
-                        className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted transition-colors hover:bg-icon-hover"
-                      >
-                        <HeartIcon filled={like.likedByMe} />
-                        {like.likeCount > 0 && (
-                          <span className="w-4 text-right tabular-nums text-xs">
-                            {like.likeCount}
-                          </span>
-                        )}
-                      </button>
+                      />
                     </div>
                     {dish.isMine && (
                       <div className="hidden items-center gap-0.5 group-hover:flex">
@@ -940,6 +930,37 @@ function HeartIcon({ filled = false }: { filled?: boolean }) {
     >
       <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
     </svg>
+  );
+}
+
+function LikeButton({
+  likedByMe,
+  likeCount,
+  onClick,
+}: {
+  likedByMe: boolean;
+  likeCount: number;
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const filled = likedByMe ? !hovered : hovered;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label={likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
+      title={likedByMe ? "Odpolub" : "Polub"}
+      className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted"
+    >
+      <span aria-hidden className={likedByMe ? "text-danger" : "text-muted"}>
+        <HeartIcon filled={filled} />
+      </span>
+      <span className="w-4 text-right tabular-nums text-xs">
+        {likeCount > 0 ? likeCount : ""}
+      </span>
+    </button>
   );
 }
 

@@ -859,7 +859,7 @@ export function ChatsPanel({
         {(!useMobileLayout || !selectedItem) && (
         <div
           className={`flex flex-col gap-3 ${
-            !useMobileLayout ? "h-96 w-64 pb-3" : ""
+            !useMobileLayout ? "h-96 w-72 pb-3" : ""
           }`}
         >
           <div className="relative min-h-0 flex-1">
