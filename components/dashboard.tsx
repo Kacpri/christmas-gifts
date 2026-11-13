@@ -1270,6 +1270,7 @@ export function Dashboard({
 
   const isVisible = (id: PanelId) =>
     (id !== "organizer" || organizer) &&
+    (id !== "impreza" || organizer) &&
     (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
     (id !== "gifts" || gifts.kind !== "waiting") &&
     (id !== "chats" || chats.lotteryDone);
@@ -1738,7 +1739,7 @@ export function Dashboard({
         onDragEnd={onDragEnd}
         onDragCancel={onDragCancel}
       >
-      <div className="sticky top-0 z-30 hidden -mx-5 border-b border-cream/10 bg-[#0d4024] px-5 dark:bg-[#061a13] md:block">
+      <div className="sticky top-0 z-30 hidden -mx-5 -mt-3 border-b border-cream/10 bg-[#0d4024] px-5 dark:bg-[#061a13] md:block">
         {editMode ? (
           <div className="flex items-center gap-2 py-2">
             {renderChipNav(desktopChipNavRef, { sortable: true })}

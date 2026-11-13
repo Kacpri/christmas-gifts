@@ -169,6 +169,24 @@ export function WishForm({
       });
   }
 
+  function handleMoveTo(wish: Wish, target: number) {
+    const index = localWishes.findIndex((w) => w.id === wish.id);
+    if (index === -1 || index === target) return;
+    if (target < 0 || target >= localWishes.length) return;
+    const prev = localWishes;
+    const next = arrayMove(localWishes, index, target);
+    setReorderError(null);
+    setLocalWishes(next);
+    createClient()
+      .rpc("reorder_wishes", { p_ids: next.map((w) => w.id) })
+      .then(({ error }) => {
+        if (error) {
+          setLocalWishes(prev);
+          setReorderError("Nie udało się zapisać kolejności życzeń.");
+        }
+      });
+  }
+
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
@@ -440,6 +458,19 @@ export function WishForm({
               <button
                 type="button"
                 onClick={() => {
+                  handleMoveTo(menuWish, 0);
+                  setMenuWish(null);
+                }}
+                disabled={menuIndex === 0}
+                aria-label={`Na samą górę: ${menuWish.text}`}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+              >
+                <ArrowToTopIcon />
+                Na samą górę
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   handleMove(menuWish, -1);
                   setMenuWish(null);
                 }}
@@ -462,6 +493,19 @@ export function WishForm({
               >
                 <ArrowDownIcon />
                 Przenieś niżej
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleMoveTo(menuWish, localWishes.length - 1);
+                  setMenuWish(null);
+                }}
+                disabled={menuIndex === localWishes.length - 1}
+                aria-label={`Na sam dół: ${menuWish.text}`}
+                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+              >
+                <ArrowToBottomIcon />
+                Na sam dół
               </button>
               <button
                 type="button"
@@ -776,6 +820,46 @@ function ArrowDownIcon() {
     >
       <path d="M12 5v14" />
       <path d="M19 12l-7 7-7-7" />
+    </svg>
+  );
+}
+
+function ArrowToTopIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 4h14" />
+      <path d="M12 20V9" />
+      <path d="M8 13l4-4 4 4" />
+    </svg>
+  );
+}
+
+function ArrowToBottomIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 20h14" />
+      <path d="M12 4v11" />
+      <path d="M8 11l4 4 4-4" />
     </svg>
   );
 }
