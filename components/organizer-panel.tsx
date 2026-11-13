@@ -15,6 +15,7 @@ import {
 } from "@/app/actions";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
+import { declineName } from "@/lib/declension";
 
 const empty: ActionResult = { ok: false };
 
@@ -453,7 +454,7 @@ export function OrganizerPanel({
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
                     setConfirm({
-                      message: `Usunąć ${p.full_name}?`,
+                      message: `Usunąć ${declineName(p.full_name, "acc")}?`,
                       confirmLabel: "Usuń",
                       tone: "danger",
                       onConfirm: () => removeUser(fd),
@@ -521,7 +522,7 @@ export function OrganizerPanel({
                   const target = menuParticipant;
                   setMenuParticipant(null);
                   setConfirm({
-                    message: `Usunąć ${target.full_name} z losowania?`,
+                    message: `Usunąć ${declineName(target.full_name, "acc")} z losowania?`,
                     confirmLabel: "Usuń",
                     tone: "danger",
                     onConfirm: () => {

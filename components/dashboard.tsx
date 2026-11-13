@@ -54,6 +54,7 @@ import {
   effectiveListBudget,
   effectiveThemeBudget,
 } from "@/lib/budget";
+import { declineName, possessive } from "@/lib/declension";
 import { formatPrice, participationVerb, plural } from "@/lib/format";
 
 export type PanelId =
@@ -630,10 +631,11 @@ function GiftsBody({
           Kupujesz prezent dla
         </p>
         <p className="text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
-          {gifts.listGift.person}
+          {declineName(gifts.listGift.person, "gen")}
         </p>
         <p className="text-sm text-[#4a5c50] dark:text-muted">
-          Ułożone według jego preferencji, od najbardziej wymarzonego.
+          Ułożone według {possessive(gifts.listGift.person)} preferencji, od
+          najbardziej wymarzonego.
         </p>
         {gifts.listGift.wishes.length > 0 ? (
           <ul className="flex flex-col gap-2">
@@ -667,7 +669,7 @@ function GiftsBody({
           Kupujesz prezent dla
         </p>
         <p className="text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
-          {gifts.themeGift.person}
+          {declineName(gifts.themeGift.person, "gen")}
         </p>
         <div className="rounded-[10px] bg-surface px-4 py-3.5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#5b5240] dark:text-honey-800">
@@ -1437,13 +1439,23 @@ export function Dashboard({
         </SortableContext>
         <DragOverlay>
           {activeId ? (
-            <section className="rounded-2xl bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
+            <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
               <div className="flex items-center gap-2">
-                <GripIcon />
-                <h2 className="flex-1 text-xl">{panels[activeId].title}</h2>
+                <span aria-hidden className="shrink-0 text-muted">
+                  <GripIcon />
+                </span>
+                <span
+                  aria-hidden
+                  className="shrink-0 text-[#c0392b] dark:text-cream"
+                >
+                  {PANEL_ICONS[activeId]}
+                </span>
+                <h2 className="min-w-0 flex-1 text-[26px] text-accent dark:text-[#7cc99a]">
+                  {panels[activeId].title}
+                </h2>
                 {activeId !== "ready" && (
                   <ChevronIcon
-                    className={`${collapsed[activeId] ? "rotate-0" : "rotate-180"} transition-transform duration-200 ease-out motion-reduce:transition-none`}
+                    className={`shrink-0 text-muted ${collapsed[activeId] ? "rotate-0" : "rotate-180"} transition-transform duration-200 ease-out motion-reduce:transition-none`}
                   />
                 )}
               </div>

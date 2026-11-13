@@ -12,6 +12,7 @@ import {
 } from "@/lib/budget";
 import { createClient } from "@/lib/supabase/server";
 import { DISH_CATEGORY_VALUES } from "@/lib/dishes";
+import { declineName } from "@/lib/declension";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -708,9 +709,9 @@ export async function sendLotteryEmails(
         emails: rows.map((r) => ({
           to: r.recipient_email,
           name: r.recipient_name,
-          listPerson: r.list_drawee_name,
+          listPerson: declineName(r.list_drawee_name, "gen"),
           listWishes: r.list_wishes ?? [],
-          themePerson: r.theme_drawee_name,
+          themePerson: declineName(r.theme_drawee_name, "gen"),
           theme: r.theme_text ?? "",
         })),
       }),
