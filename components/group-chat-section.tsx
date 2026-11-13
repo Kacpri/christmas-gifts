@@ -48,6 +48,7 @@ export function GroupChatSection({
   const anchorRef = useRef<number | null>(null);
   const firstRunRef = useRef(true);
   const prevCollapsedRef = useRef(collapsed);
+  const prevDesktopRef = useRef(isDesktop);
   const lastSentRef = useRef("");
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
@@ -198,21 +199,26 @@ export function GroupChatSection({
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
-    const justExpanded = prevCollapsedRef.current && !collapsed;
+    const wasCollapsed = prevCollapsedRef.current;
+    const wasDesktop = prevDesktopRef.current;
     prevCollapsedRef.current = collapsed;
-    if (collapsed) return;
+    prevDesktopRef.current = isDesktop;
+    if (collapsed || !isDesktop) return;
+    const justExpanded = wasCollapsed && !collapsed;
+    const justDesktop = !wasDesktop && isDesktop;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 8;
     const last = localRef.current[localRef.current.length - 1];
     if (
       firstRunRef.current ||
       justExpanded ||
+      justDesktop ||
       atBottom ||
       last?.senderId === me
     ) {
       el.scrollTop = el.scrollHeight;
     }
     firstRunRef.current = false;
-  }, [local.length, collapsed, me]);
+  }, [local.length, collapsed, isDesktop, me]);
 
   const visible = isDesktop ? local : local.slice(-visibleCount);
   const hasOlder = !isDesktop && local.length > visibleCount;
