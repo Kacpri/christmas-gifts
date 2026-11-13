@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
@@ -92,6 +93,7 @@ type Layout = {
 
 const DEFAULT_LAYOUT: Layout = {
   order: [
+    "profile",
     "ready",
     "gifts",
     "wishes",
@@ -99,7 +101,6 @@ const DEFAULT_LAYOUT: Layout = {
     "potrawy",
     "group-chat",
     "impreza",
-    "profile",
     "organizer",
   ],
 };
@@ -1106,13 +1107,13 @@ export function Dashboard({
   const [view, setView] = useState<"1col" | "2col">("2col");
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
+  const [overId, setOverId] = useState<PanelId | null>(null);
   const [activeChip, setActiveChip] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [heights, setHeights] = useState<Record<string, number>>({});
   const [containerW, setContainerW] = useState(0);
   const [measured, setMeasured] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const frozenLayoutRef = useRef<PanelLayout | null>(null);
   const chipDragRef = useRef<{
     x: number;
     sl: number;
@@ -1209,6 +1210,18 @@ export function Dashboard({
     } else {
       setActiveId(id as PanelId);
     }
+    setOverId(null);
+  }
+
+  function onDragOver(event: DragOverEvent) {
+    const a = String(event.active.id);
+    if (a.startsWith("chip-")) return;
+    const over = event.over;
+    if (!over || String(over.id).startsWith("chip-")) {
+      setOverId(null);
+      return;
+    }
+    setOverId(String(over.id) as PanelId);
   }
 
   function suppressChipClick() {
@@ -1222,6 +1235,7 @@ export function Dashboard({
     const a = String(event.active.id);
     if (a.startsWith("chip-")) suppressChipClick();
     setActiveId(null);
+    setOverId(null);
     setActiveChip(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -1240,6 +1254,7 @@ export function Dashboard({
   function onDragCancel() {
     if (activeChip) suppressChipClick();
     setActiveId(null);
+    setOverId(null);
     setActiveChip(null);
   }
 
@@ -1401,17 +1416,12 @@ export function Dashboard({
 
   const isTwoCol = view === "2col";
   const absLayout = isDesktop && containerW > 0;
-  const computedLayout = absLayout
-    ? computeLayout(visible, heights, containerW, isTwoCol ? 2 : 1)
-    : null;
-  if (activeId) {
-    if (!frozenLayoutRef.current && computedLayout)
-      frozenLayoutRef.current = computedLayout;
-  } else {
-    frozenLayoutRef.current = null;
-  }
+  const previewVisible =
+    activeId && overId && activeId !== overId
+      ? arrayMove(visible, visible.indexOf(activeId), visible.indexOf(overId))
+      : visible;
   const masonryLayout = absLayout
-    ? (frozenLayoutRef.current ?? computedLayout)
+    ? computeLayout(previewVisible, heights, containerW, isTwoCol ? 2 : 1)
     : null;
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
@@ -1724,6 +1734,7 @@ export function Dashboard({
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={onDragStart}
+        onDragOver={onDragOver}
         onDragEnd={onDragEnd}
         onDragCancel={onDragCancel}
       >
