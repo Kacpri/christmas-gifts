@@ -1452,6 +1452,7 @@ export function Dashboard({
           participants={chats.participants}
           dmThreads={chats.dmThreads}
           onUnreadChange={handleUnreadChange}
+          narrow={isTwoCol}
         />
       ),
     },

@@ -240,6 +240,7 @@ export function ChatsPanel({
   participants,
   dmThreads,
   onUnreadChange,
+  narrow = false,
 }: {
   me: string;
   threads: Thread[];
@@ -249,6 +250,7 @@ export function ChatsPanel({
   participants: DmParticipant[];
   dmThreads: DmThread[];
   onUnreadChange?: (total: number) => void;
+  narrow?: boolean;
 }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [lotteryMsgs, setLotteryMsgs] = useState<
@@ -273,6 +275,7 @@ export function ChatsPanel({
   const [listFade, setListFade] = useState(false);
   const [listExpanded, setListExpanded] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const useMobileLayout = !isDesktop || narrow;
   const boxRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef("");
@@ -844,18 +847,28 @@ export function ChatsPanel({
   const isDm = selectedItem?.kind === "dm";
   const pending = isDm ? dmPending : lotteryPending;
   const visibleListItems =
-    isDesktop || listExpanded ? listItems : listItems.slice(0, 5);
+    !useMobileLayout || listExpanded ? listItems : listItems.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="mt-3 flex flex-col gap-4 md:flex-row">
-        {(isDesktop || !selectedItem) && (
-        <div className="flex flex-col gap-3 md:h-96 md:w-64 md:pb-3">
+      <div
+        className={`mt-3 flex flex-col gap-4 ${
+          !useMobileLayout ? "flex-row" : ""
+        }`}
+      >
+        {(!useMobileLayout || !selectedItem) && (
+        <div
+          className={`flex flex-col gap-3 ${
+            !useMobileLayout ? "h-96 w-64 pb-3" : ""
+          }`}
+        >
           <div className="relative min-h-0 flex-1">
             <div
               ref={listRef}
               onScroll={updateListFade}
-              className="flex flex-col gap-2 pr-0.5 md:h-full md:overflow-y-auto"
+              className={`flex flex-col gap-2 pr-0.5 ${
+                !useMobileLayout ? "h-full overflow-y-auto" : ""
+              }`}
             >
             {visibleListItems.length === 0 && (
               <p className="text-sm text-faint">Brak czatów.</p>
@@ -943,7 +956,7 @@ export function ChatsPanel({
               />
             )}
           </div>
-          {!isDesktop && listItems.length > 5 && (
+          {useMobileLayout && listItems.length > 5 && (
             <button
               type="button"
               onClick={() => setListExpanded(!listExpanded)}
@@ -965,13 +978,17 @@ export function ChatsPanel({
         </div>
         )}
 
-        {(isDesktop || selectedItem) && (
-        <div className="flex h-[440px] min-w-0 flex-1 flex-col gap-3 pb-3 md:h-96">
+        {(!useMobileLayout || selectedItem) && (
+        <div
+          className={`flex min-w-0 flex-1 flex-col gap-3 pb-3 ${
+            useMobileLayout ? "h-[440px]" : "h-96"
+          }`}
+        >
           {selectedItem ? (
             <>
               <div className="flex min-h-11 flex-col justify-center gap-0.5 px-1">
                 <div className="flex items-center gap-2">
-                  {!isDesktop && (
+                  {useMobileLayout && (
                     <button
                       type="button"
                       onClick={() => setSelectedKey(null)}
