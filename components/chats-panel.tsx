@@ -355,6 +355,25 @@ export function ChatsPanel({
     updateListFade();
   }, [listItems, updateListFade]);
 
+  const latestActivity = useMemo(() => {
+    let max = "";
+    for (const item of listItems) {
+      const t = item.last?.createdAt ?? "";
+      if (t > max) max = t;
+    }
+    return max;
+  }, [listItems]);
+
+  const prevLatestRef = useRef(latestActivity);
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const isNew = latestActivity > prevLatestRef.current;
+    prevLatestRef.current = latestActivity;
+    if (!isNew || el.scrollTop <= 0) return;
+    el.scrollTo({ top: 0, behavior: "smooth" });
+  }, [latestActivity]);
+
   const selectedItem = useMemo(() => {
     if (!selectedKey) return null;
     if (selectedKey.startsWith("dm:")) {
