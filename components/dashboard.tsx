@@ -84,7 +84,6 @@ const ALL_PANELS: PanelId[] = [
 
 type Layout = {
   order: PanelId[];
-  wide: PanelId[];
 };
 
 const DEFAULT_LAYOUT: Layout = {
@@ -99,7 +98,6 @@ const DEFAULT_LAYOUT: Layout = {
     "organizer",
     "chats",
   ],
-  wide: ["chats"],
 };
 
 const STORAGE_KEY = "dashboard-v1";
@@ -147,11 +145,9 @@ function normalizeLayout(saved: SavedLayout | null): Layout {
     (arr ?? []).filter((id) => valid.has(id)) as PanelId[];
 
   let order: PanelId[];
-  let wide: PanelId[];
 
   if (Array.isArray(saved?.order)) {
     order = pick(saved.order);
-    wide = pick(saved.wide);
   } else {
     const left = pick(saved?.left);
     const right = pick(saved?.right);
@@ -163,24 +159,19 @@ function normalizeLayout(saved: SavedLayout | null): Layout {
       if (left[i]) interleaved.push(left[i]);
     }
     order = [...interleaved, ...wideOld];
-    wide = wideOld;
   }
 
   const seen = new Set<string>();
   const dedup = (arr: PanelId[]) =>
     arr.filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
   order = dedup(order);
-  wide = dedup(wide);
   for (const id of ALL_PANELS) {
     if (!seen.has(id)) {
       order.push(id);
       seen.add(id);
     }
   }
-  for (const id of wide) {
-    if (!order.includes(id)) order.push(id);
-  }
-  return { order, wide };
+  return { order };
 }
 
 function GripIcon() {
@@ -192,23 +183,6 @@ function GripIcon() {
       <circle cx="11" cy="8" r="1.5" />
       <circle cx="5" cy="13" r="1.5" />
       <circle cx="11" cy="13" r="1.5" />
-    </svg>
-  );
-}
-
-function WidthIcon({ wide }: { wide: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden
-    >
-      <rect x="2" y="5" width="12" height="6" rx="1" />
-      {!wide && <line x1="8" y1="4" x2="8" y2="12" strokeDasharray="2 1.5" />}
     </svg>
   );
 }
@@ -538,8 +512,6 @@ function PanelCard({
   onToggle,
   editMode,
   isHole,
-  isWide,
-  onToggleWidth,
   enterDelay,
   children,
 }: {
@@ -556,8 +528,6 @@ function PanelCard({
   onToggle: () => void;
   editMode: boolean;
   isHole: boolean;
-  isWide: boolean;
-  onToggleWidth?: () => void;
   enterDelay?: number;
   children: ReactNode;
 }) {
@@ -586,8 +556,6 @@ function PanelCard({
         ...(enterDelay != null ? { animationDelay: `${enterDelay}ms` } : {}),
       }}
       className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
-        isWide ? "md:col-span-2" : ""
-      } ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
@@ -625,18 +593,6 @@ function PanelCard({
             <p className="mt-0.5 text-sm text-muted">{subtitle}</p>
           )}
         </div>
-        {editMode && !isHole && onToggleWidth && (
-          <button
-            type="button"
-            onClick={onToggleWidth}
-            aria-label={
-              isWide ? `Zmień na wąski: ${title}` : `Zmień na szeroki: ${title}`
-            }
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-mist hover:text-ink"
-          >
-            <WidthIcon wide={isWide} />
-          </button>
-        )}
         {headerRight !== undefined ? (
           headerRight
         ) : (
@@ -994,7 +950,17 @@ export function Dashboard({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     profile: true,
   });
-  const [view, setView] = useState<"1col" | "2col">("2col");
+  const [view, setView] = useState<"1col" | "2col">(() => {
+    if (typeof window === "undefined") return "2col";
+    try {
+      const saved = loadLayout();
+      if (saved && (saved.view === "1col" || saved.view === "2col"))
+        return saved.view;
+    } catch {
+      // localStorage niedostępny — ignoruj
+    }
+    return "2col";
+  });
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -1055,7 +1021,7 @@ export function Dashboard({
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ order: layout.order, wide: layout.wide, collapsed, view })
+        JSON.stringify({ order: layout.order, collapsed, view })
       );
     } catch {
       // localStorage niedostępny — ignoruj
@@ -1097,16 +1063,6 @@ export function Dashboard({
     });
   }
 
-  function toggleWidth(id: PanelId) {
-    setLayout((prev) => {
-      const isWide = prev.wide.includes(id);
-      const wide = isWide
-        ? prev.wide.filter((x) => x !== id)
-        : [...prev.wide, id];
-      return { ...prev, wide };
-    });
-  }
-
   function onDragCancel() {
     setActiveId(null);
   }
@@ -1129,7 +1085,6 @@ export function Dashboard({
     (id !== "chats" || chats.lotteryDone);
 
   const visible = layout.order.filter(isVisible);
-  const isWide = (id: PanelId) => id === "chats" || layout.wide.includes(id);
 
   visibleIdsRef.current = visible;
 
@@ -1281,7 +1236,7 @@ export function Dashboard({
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function renderCard(id: PanelId, index: number, wide: boolean) {
+  function renderCard(id: PanelId, index: number) {
     const isReadyPanel = id === "ready";
     const readyInfo = isReadyPanel
       ? readyHeader(ready, goToWishes)
@@ -1316,8 +1271,6 @@ export function Dashboard({
         }
         editMode={editMode}
         isHole={activeId === id}
-        isWide={wide}
-        onToggleWidth={id === "chats" ? undefined : () => toggleWidth(id)}
         enterDelay={entering ? index * 50 : undefined}
       >
         {isReadyPanel &&
@@ -1582,7 +1535,7 @@ export function Dashboard({
             }`}
           >
             <SortableContext items={visible} strategy={rectSortingStrategy}>
-              {visible.map((id, i) => renderCard(id, i, isWide(id)))}
+              {visible.map((id, i) => renderCard(id, i))}
             </SortableContext>
           </div>
           <DragOverlay>
