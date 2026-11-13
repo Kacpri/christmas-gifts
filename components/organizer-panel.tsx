@@ -40,6 +40,7 @@ export function OrganizerPanel({
     is_ready: boolean;
     has_theme: boolean;
     wish_count: number;
+    theme_text: string | null;
   }[];
   lateJoiners: { id: string; full_name: string }[];
   lotteryDone: boolean;
@@ -82,6 +83,10 @@ export function OrganizerPanel({
   useEffect(() => {
     if (budgetState.ok) setBudgetSaved(true);
   }, [budgetState]);
+
+  useEffect(() => {
+    if (nameState.ok) setEditingNameId(null);
+  }, [nameState]);
 
   function startEditName(p: { id: string; full_name: string }) {
     setEditingNameId(p.id);
@@ -133,47 +138,120 @@ export function OrganizerPanel({
         </p>
       </div>
 
-      <form
-        className="flex flex-col items-start gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const fd = new FormData(e.currentTarget);
-          if (lotteryDone) {
-            setConfirm({
-              message: "Powtórzyć losowanie? Obecne wyniki zostaną zastąpione.",
-              confirmLabel: "Powtórz",
-              tone: "danger",
-              onConfirm: () => formAction(fd),
-            });
-            return;
-          }
-          formAction(fd);
-        }}
-      >
-        <button
-          type="submit"
-          disabled={pending || !allReady}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+      <div className={lotteryDone ? "grid gap-2 md:grid-cols-3" : undefined}>
+        <form
+          className="flex flex-col items-start gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            if (lotteryDone) {
+              setConfirm({
+                message:
+                  "Powtórzyć losowanie? Obecne wyniki zostaną zastąpione.",
+                confirmLabel: "Powtórz",
+                tone: "danger",
+                onConfirm: () => formAction(fd),
+              });
+              return;
+            }
+            formAction(fd);
+          }}
         >
-          {pending ? (
-            <>
-              <SpinnerIcon />
-              Losowanie…
-            </>
-          ) : lotteryDone ? (
-            "Powtórz losowanie"
-          ) : (
-            "Start losowania"
+          <button
+            type="submit"
+            disabled={pending || !allReady}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          >
+            {pending ? (
+              <>
+                <SpinnerIcon />
+                Losowanie…
+              </>
+            ) : lotteryDone ? (
+              "Powtórz losowanie"
+            ) : (
+              "Start losowania"
+            )}
+          </button>
+          {!allReady && (
+            <span className="text-xs text-muted">
+              Czekamy na: {notReadyNames.join(", ")}
+            </span>
           )}
-        </button>
-        {!allReady && (
-          <span className="text-xs text-muted">
-            Czekamy na: {notReadyNames.join(", ")}
-          </span>
+        </form>
+        {lotteryDone && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              setConfirm({
+                message:
+                  "Anulować losowanie? Wyniki zostaną usunięte, a życzenia i tematy odblokowane.",
+                confirmLabel: "Tak, anuluj",
+                cancelLabel: "Wróć",
+                tone: "danger",
+                onConfirm: () => cancelAction(fd),
+              });
+            }}
+          >
+            <button
+              type="submit"
+              disabled={cancelPending}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-danger-soft px-4 py-2 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
+            >
+              {cancelPending ? (
+                <>
+                  <SpinnerIcon />
+                  Anulowanie…
+                </>
+              ) : (
+                "Anuluj losowanie"
+              )}
+            </button>
+          </form>
         )}
-      </form>
+        {lotteryDone && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              setConfirm({
+                message:
+                  "Wysłać maile z wynikami losowania do wszystkich uczestników?",
+                confirmLabel: "Wyślij",
+                tone: "primary",
+                onConfirm: () => emailAction(fd),
+              });
+            }}
+          >
+            <button
+              type="submit"
+              disabled={emailPending}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
+            >
+              {emailPending ? (
+                <>
+                  <SpinnerIcon />
+                  Wysyłanie…
+                </>
+              ) : (
+                "Wyślij wyniki mailem"
+              )}
+            </button>
+          </form>
+        )}
+      </div>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
+      )}
+      {!cancelState.ok && cancelState.error && (
+        <p className="text-sm text-red-600">{cancelState.error}</p>
+      )}
+      {emailState.ok && (
+        <p className="text-sm font-medium text-accent">Maile wysłane ✓</p>
+      )}
+      {!emailState.ok && emailState.error && (
+        <p className="text-sm text-red-600">{emailState.error}</p>
       )}
 
       {!lotteryDone && notReadyNames.length > 0 && (
@@ -212,78 +290,6 @@ export function OrganizerPanel({
       )}
       {!remindState.ok && remindState.error && (
         <p className="text-sm text-red-600">{remindState.error}</p>
-      )}
-
-      {lotteryDone && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const fd = new FormData(e.currentTarget);
-            setConfirm({
-              message:
-                "Anulować losowanie? Wyniki zostaną usunięte, a życzenia i tematy odblokowane.",
-              confirmLabel: "Tak, anuluj",
-              cancelLabel: "Wróć",
-              tone: "danger",
-              onConfirm: () => cancelAction(fd),
-            });
-          }}
-        >
-          <button
-            type="submit"
-            disabled={cancelPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            {cancelPending ? (
-              <>
-                <SpinnerIcon />
-                Anulowanie…
-              </>
-            ) : (
-              "Anuluj losowanie"
-            )}
-          </button>
-        </form>
-      )}
-      {!cancelState.ok && cancelState.error && (
-        <p className="text-sm text-red-600">{cancelState.error}</p>
-      )}
-
-      {lotteryDone && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const fd = new FormData(e.currentTarget);
-            setConfirm({
-              message:
-                "Wysłać maile z wynikami losowania do wszystkich uczestników?",
-              confirmLabel: "Wyślij",
-              tone: "primary",
-              onConfirm: () => emailAction(fd),
-            });
-          }}
-        >
-          <button
-            type="submit"
-            disabled={emailPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-mist disabled:opacity-50"
-          >
-            {emailPending ? (
-              <>
-                <SpinnerIcon />
-                Wysyłanie…
-              </>
-            ) : (
-              "Wyślij wyniki mailem"
-            )}
-          </button>
-        </form>
-      )}
-      {emailState.ok && (
-        <p className="text-sm font-medium text-accent">Maile wysłane ✓</p>
-      )}
-      {!emailState.ok && emailState.error && (
-        <p className="text-sm text-red-600">{emailState.error}</p>
       )}
 
       <div>
@@ -391,6 +397,9 @@ export function OrganizerPanel({
                   <MoreIcon />
                 </button>
               </div>
+              <p className="truncate text-xs text-faint">
+                Życzenia: {p.wish_count} · Temat: {p.theme_text ?? "brak"}
+              </p>
               {editingNameId === p.id && (
                 <form
                   action={(formData) => {

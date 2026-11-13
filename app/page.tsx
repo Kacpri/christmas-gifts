@@ -126,6 +126,7 @@ export default async function Home() {
     is_ready: boolean;
     has_theme: boolean;
     wish_count: number;
+    theme_text: string | null;
   }[] = [];
   let lateJoiners: { id: string; full_name: string }[] = [];
   if (profile?.is_organizer) {
@@ -134,11 +135,14 @@ export default async function Home() {
       { data: wishRows },
       { data: assignmentRows },
     ] = await Promise.all([
-      supabase.from("themes").select("user_id"),
+      supabase.from("themes").select("user_id, text"),
       supabase.from("wishes").select("user_id"),
       supabase.from("assignments").select("drawer_id, drawee_id"),
     ]);
-    const themeIds = new Set((themesData ?? []).map((t) => t.user_id));
+    const themeTextById = new Map(
+      (themesData ?? []).map((t) => [t.user_id as string, t.text as string])
+    );
+    const themeIds = new Set(themeTextById.keys());
     const wishCountById = new Map<string, number>();
     for (const w of wishRows ?? []) {
       wishCountById.set(w.user_id, (wishCountById.get(w.user_id) ?? 0) + 1);
@@ -156,6 +160,7 @@ export default async function Home() {
       in_lottery: lotteryActive ? inLotteryIds.has(p.id) : true,
       has_theme: themeIds.has(p.id),
       wish_count: wishCountById.get(p.id) ?? 0,
+      theme_text: themeTextById.get(p.id) ?? null,
     }));
     lotteryParticipants = status
       .filter((p) => p.in_lottery)
@@ -165,6 +170,7 @@ export default async function Home() {
         is_ready: p.is_ready,
         has_theme: p.has_theme,
         wish_count: p.wish_count,
+        theme_text: p.theme_text,
       }));
     lateJoiners = status
       .filter((p) => !p.in_lottery)

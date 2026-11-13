@@ -487,6 +487,13 @@ function PanelCard({
     transition,
   } = useSortable({ id, disabled: !editMode });
 
+  const [settled, setSettled] = useState(true);
+  useEffect(() => {
+    setSettled(false);
+    const t = setTimeout(() => setSettled(true), 250);
+    return () => clearTimeout(t);
+  }, [collapsed]);
+
   return (
     <section
       id={`panel-${id}`}
@@ -573,7 +580,9 @@ function PanelCard({
           style={{ gridTemplateRows: collapsed ? "0fr" : "1fr" }}
         >
           <div
-            className={`overflow-hidden transition-[visibility] duration-200 ${
+            className={`${
+              collapsed || !settled ? "overflow-hidden" : "overflow-visible"
+            } transition-[visibility] duration-200 ${
               collapsed ? "invisible" : "visible"
             }`}
           >
@@ -877,6 +886,7 @@ export function Dashboard({
       is_ready: boolean;
       has_theme: boolean;
       wish_count: number;
+      theme_text: string | null;
     }[];
     lateJoiners: { id: string; full_name: string }[];
     lotteryDone: boolean;
