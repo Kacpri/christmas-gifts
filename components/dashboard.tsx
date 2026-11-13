@@ -14,6 +14,7 @@ import {
 import {
   SortableContext,
   arrayMove,
+  horizontalListSortingStrategy,
   rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
@@ -22,8 +23,11 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type Ref,
 } from "react";
@@ -88,15 +92,15 @@ type Layout = {
 
 const DEFAULT_LAYOUT: Layout = {
   order: [
-    "profile",
-    "gifts",
     "ready",
+    "gifts",
     "wishes",
+    "profile",
     "impreza",
     "potrawy",
     "group-chat",
-    "organizer",
     "chats",
+    "organizer",
   ],
 };
 
@@ -172,6 +176,37 @@ function normalizeLayout(saved: SavedLayout | null): Layout {
     }
   }
   return { order };
+}
+
+const MASONRY_GAP = 20;
+
+type Masonry = {
+  pos: Map<PanelId, { top: number; left: number }>;
+  colW: number;
+  totalH: number;
+};
+
+function computeMasonry(
+  order: PanelId[],
+  heights: Record<string, number>,
+  containerW: number
+): Masonry {
+  const colW = Math.max(0, (containerW - MASONRY_GAP) / 2);
+  const pos = new Map<PanelId, { top: number; left: number }>();
+  let leftH = 0;
+  let rightH = 0;
+  for (const id of order) {
+    const h = heights[id] ?? 0;
+    if (leftH <= rightH) {
+      pos.set(id, { top: leftH, left: 0 });
+      leftH += h + MASONRY_GAP;
+    } else {
+      pos.set(id, { top: rightH, left: colW + MASONRY_GAP });
+      rightH += h + MASONRY_GAP;
+    }
+  }
+  const totalH = Math.max(0, Math.max(leftH, rightH) - MASONRY_GAP);
+  return { pos, colW, totalH };
 }
 
 function GripIcon() {
@@ -513,6 +548,7 @@ function PanelCard({
   editMode,
   isHole,
   enterDelay,
+  dndTransform,
   children,
 }: {
   id: PanelId;
@@ -529,6 +565,7 @@ function PanelCard({
   editMode: boolean;
   isHole: boolean;
   enterDelay?: number;
+  dndTransform: boolean;
   children: ReactNode;
 }) {
   const {
@@ -551,8 +588,9 @@ function PanelCard({
       id={`panel-${id}`}
       ref={setNodeRef}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
+        ...(dndTransform
+          ? { transform: CSS.Transform.toString(transform), transition }
+          : {}),
         ...(enterDelay != null ? { animationDelay: `${enterDelay}ms` } : {}),
       }}
       className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
@@ -643,6 +681,111 @@ function PanelCard({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function ChipButton({
+  id,
+  title,
+  unread,
+  active,
+  onClick,
+}: {
+  id: PanelId;
+  title: string;
+  unread: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-chip={id}
+      onClick={onClick}
+      aria-current={active ? "true" : undefined}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
+        active
+          ? "border-cream bg-cream text-[#0d4024]"
+          : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+      }`}
+    >
+      {title}
+      {unread > 0 && (
+        <span
+          key={unread}
+          aria-label={`${unread} ${plural(unread, [
+            "nieprzeczytana wiadomość",
+            "nieprzeczytane wiadomości",
+            "nieprzeczytanych wiadomości",
+          ])}`}
+          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+            active ? "bg-[#0d4024] text-cream" : "bg-cream text-[#0d4024]"
+          }`}
+        >
+          {unread}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function SortableChip({
+  id,
+  title,
+  unread,
+  active,
+  onClick,
+}: {
+  id: PanelId;
+  title: string;
+  unread: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `chip-${id}` });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      data-chip={id}
+      onClick={onClick}
+      aria-current={active ? "true" : undefined}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      {...attributes}
+      {...listeners}
+      className={`flex shrink-0 cursor-grab touch-none items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold active:cursor-grabbing ${
+        active
+          ? "border-cream bg-cream text-[#0d4024]"
+          : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+      } ${isDragging ? "opacity-40" : ""}`}
+    >
+      {title}
+      {unread > 0 && (
+        <span
+          key={unread}
+          aria-label={`${unread} ${plural(unread, [
+            "nieprzeczytana wiadomość",
+            "nieprzeczytane wiadomości",
+            "nieprzeczytanych wiadomości",
+          ])}`}
+          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+            active ? "bg-[#0d4024] text-cream" : "bg-cream text-[#0d4024]"
+          }`}
+        >
+          {unread}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -950,20 +1093,24 @@ export function Dashboard({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     profile: true,
   });
-  const [view, setView] = useState<"1col" | "2col">(() => {
-    if (typeof window === "undefined") return "2col";
-    try {
-      const saved = loadLayout();
-      if (saved && (saved.view === "1col" || saved.view === "2col"))
-        return saved.view;
-    } catch {
-      // localStorage niedostępny — ignoruj
-    }
-    return "2col";
-  });
+  const [view, setView] = useState<"1col" | "2col">("2col");
   const [editMode, setEditMode] = useState(false);
   const [activeId, setActiveId] = useState<PanelId | null>(null);
+  const [activeChip, setActiveChip] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const [containerW, setContainerW] = useState(0);
+  const [measured, setMeasured] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const frozenMasonryRef = useRef<Masonry | null>(null);
+  const chipDragRef = useRef<{
+    x: number;
+    sl: number;
+    moved: boolean;
+    pointerId: number;
+  } | null>(null);
+  const suppressChipClickRef = useRef(false);
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(() =>
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
@@ -1046,31 +1193,49 @@ export function Dashboard({
   );
 
   function onDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id as PanelId);
+    const id = String(event.active.id);
+    if (id.startsWith("chip-")) {
+      setActiveChip(id);
+    } else {
+      setActiveId(id as PanelId);
+    }
+  }
+
+  function suppressChipClick() {
+    suppressChipClickRef.current = true;
+    window.setTimeout(() => {
+      suppressChipClickRef.current = false;
+    }, 150);
   }
 
   function onDragEnd(event: DragEndEvent) {
+    const a = String(event.active.id);
+    if (a.startsWith("chip-")) suppressChipClick();
     setActiveId(null);
+    setActiveChip(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const activeId = active.id as PanelId;
-    const overId = over.id as PanelId;
+    const o = String(over.id);
+    if (a.startsWith("chip-") !== o.startsWith("chip-")) return;
+    const from = (a.startsWith("chip-") ? a.slice(5) : a) as PanelId;
+    const to = (o.startsWith("chip-") ? o.slice(5) : o) as PanelId;
     setLayout((prev) => {
-      const oldIndex = prev.order.indexOf(activeId);
-      const newIndex = prev.order.indexOf(overId);
+      const oldIndex = prev.order.indexOf(from);
+      const newIndex = prev.order.indexOf(to);
       if (oldIndex < 0 || newIndex < 0) return prev;
       return { ...prev, order: arrayMove(prev.order, oldIndex, newIndex) };
     });
   }
 
   function onDragCancel() {
+    if (activeChip) suppressChipClick();
     setActiveId(null);
+    setActiveChip(null);
   }
 
   function resetLayout() {
     setLayout(DEFAULT_LAYOUT);
     setCollapsed({ profile: true });
-    setView("2col");
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -1145,7 +1310,99 @@ export function Dashboard({
     return () => window.removeEventListener("resize", updateChipFades);
   }, [updateChipFades, visibleKey]);
 
+  useLayoutEffect(() => {
+    if (!hydrated) return;
+    const c = containerRef.current;
+    if (c) {
+      const w = Math.round(c.clientWidth);
+      setContainerW((prev) => (prev === w ? prev : w));
+    }
+    setHeights((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const id of visibleKey.split(",")) {
+        if (!id) continue;
+        const el = document.getElementById(`panel-${id}`);
+        if (!el) continue;
+        const h = Math.round(el.getBoundingClientRect().height);
+        if (next[id] !== h) {
+          next[id] = h;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setMeasured(true);
+  }, [hydrated, visibleKey]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    let raf = 0;
+    const pending = new Map<Element, number>();
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const el = entry.target as HTMLElement;
+        pending.set(el, Math.round(el.getBoundingClientRect().height));
+      }
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        let containerH = 0;
+        const nextHeights: Record<string, number> = {};
+        pending.forEach((h, el) => {
+          if (el === containerRef.current) {
+            containerH = h;
+          } else {
+            nextHeights[el.id.slice("panel-".length)] = h;
+          }
+        });
+        pending.clear();
+        if (containerH) {
+          const w = Math.round(containerRef.current!.clientWidth);
+          setContainerW((prev) => (prev === w ? prev : w));
+        }
+        if (Object.keys(nextHeights).length > 0) {
+          setHeights((prev) => {
+            let changed = false;
+            const next = { ...prev };
+            for (const [k, v] of Object.entries(nextHeights)) {
+              if (next[k] !== v) {
+                next[k] = v;
+                changed = true;
+              }
+            }
+            return changed ? next : prev;
+          });
+        }
+        setMeasured(true);
+      });
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+    for (const id of visibleKey.split(",")) {
+      if (!id) continue;
+      const el = document.getElementById(`panel-${id}`);
+      if (el) ro.observe(el);
+    }
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [hydrated, visibleKey]);
+
   const isTwoCol = view === "2col";
+  const masonry = isTwoCol && isDesktop && containerW > 0;
+  const computedMasonry = masonry
+    ? computeMasonry(visible, heights, containerW)
+    : null;
+  if (activeId) {
+    if (!frozenMasonryRef.current && computedMasonry)
+      frozenMasonryRef.current = computedMasonry;
+  } else {
+    frozenMasonryRef.current = null;
+  }
+  const masonryLayout = masonry
+    ? (frozenMasonryRef.current ?? computedMasonry)
+    : null;
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
     profile: {
@@ -1272,6 +1529,7 @@ export function Dashboard({
         editMode={editMode}
         isHole={activeId === id}
         enterDelay={entering ? index * 50 : undefined}
+        dndTransform={!masonry}
       >
         {isReadyPanel &&
         (ready.lotteryDone || ready.lateJoiner)
@@ -1281,56 +1539,108 @@ export function Dashboard({
     );
   }
 
-  function renderChipNav(ref: Ref<HTMLElement>) {
+  const chipUnread = (id: PanelId) =>
+    id === "chats"
+      ? chatUnread
+      : id === "group-chat"
+        ? groupUnread
+        : 0;
+
+  function handleChipClick(id: PanelId) {
+    if (suppressChipClickRef.current) {
+      suppressChipClickRef.current = false;
+      return;
+    }
+    goToPanel(id);
+  }
+
+  function onChipNavPointerDown(e: ReactPointerEvent) {
+    if (e.pointerType !== "mouse") return;
+    chipDragRef.current = {
+      x: e.clientX,
+      sl: e.currentTarget.scrollLeft,
+      moved: false,
+      pointerId: e.pointerId,
+    };
+  }
+
+  function onChipNavPointerMove(e: ReactPointerEvent) {
+    const drag = chipDragRef.current;
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) > 5) {
+      drag.moved = true;
+      e.currentTarget.setPointerCapture(drag.pointerId);
+    }
+    if (drag.moved) {
+      e.currentTarget.scrollLeft = drag.sl - dx;
+    }
+  }
+
+  function onChipNavPointerUp(e: ReactPointerEvent) {
+    const drag = chipDragRef.current;
+    if (drag?.moved) {
+      suppressChipClick();
+      if (e.currentTarget.hasPointerCapture(drag.pointerId)) {
+        e.currentTarget.releasePointerCapture(drag.pointerId);
+      }
+    }
+    chipDragRef.current = null;
+  }
+
+  function onChipNavClickCapture(e: ReactMouseEvent) {
+    if (suppressChipClickRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  function renderChipNav(
+    ref: Ref<HTMLElement>,
+    opts?: { sortable?: boolean; dragScroll?: boolean }
+  ) {
+    const { sortable = false, dragScroll = false } = opts ?? {};
     return (
       <div className="relative min-w-0 flex-1">
         <nav
           ref={ref}
           aria-label="Przejdź do sekcji"
           onScroll={updateChipFades}
+          onPointerDown={dragScroll ? onChipNavPointerDown : undefined}
+          onPointerMove={dragScroll ? onChipNavPointerMove : undefined}
+          onPointerUp={dragScroll ? onChipNavPointerUp : undefined}
+          onPointerCancel={dragScroll ? onChipNavPointerUp : undefined}
+          onClickCapture={dragScroll ? onChipNavClickCapture : undefined}
           className="no-scrollbar flex gap-2 overflow-x-auto px-1"
         >
-          {visible.map((id) => {
-            const unread =
-              id === "chats"
-                ? chatUnread
-                : id === "group-chat"
-                  ? groupUnread
-                  : 0;
-            return (
-              <button
+          {sortable ? (
+            <SortableContext
+              items={visible.map((id) => `chip-${id}`)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {visible.map((id) => (
+                <SortableChip
+                  key={id}
+                  id={id}
+                  title={panels[id].title}
+                  unread={chipUnread(id)}
+                  active={activePanel === id}
+                  onClick={() => handleChipClick(id)}
+                />
+              ))}
+            </SortableContext>
+          ) : (
+            visible.map((id) => (
+              <ChipButton
                 key={id}
-                type="button"
-                data-chip={id}
-                onClick={() => goToPanel(id)}
-                aria-current={activePanel === id ? "true" : undefined}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
-                  activePanel === id
-                    ? "border-cream bg-cream text-[#0d4024]"
-                    : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-                }`}
-              >
-                {panels[id].title}
-                {unread > 0 && (
-                  <span
-                    key={unread}
-                    aria-label={`${unread} ${plural(unread, [
-                      "nieprzeczytana wiadomość",
-                      "nieprzeczytane wiadomości",
-                      "nieprzeczytanych wiadomości",
-                    ])}`}
-                    className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
-                      activePanel === id
-                        ? "bg-[#0d4024] text-cream"
-                        : "bg-cream text-[#0d4024]"
-                    }`}
-                  >
-                    {unread}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                id={id}
+                title={panels[id].title}
+                unread={chipUnread(id)}
+                active={activePanel === id}
+                onClick={() => handleChipClick(id)}
+              />
+            ))
+          )}
         </nav>
         {chipFades.left && (
           <div
@@ -1402,25 +1712,26 @@ export function Dashboard({
       </header>
       <div className="sticky top-0 z-30 hidden -mx-5 border-b border-cream/10 bg-[#0d4024] px-5 dark:bg-[#061a13] md:block">
         {editMode ? (
-          <div className="flex items-center justify-end gap-2 py-2">
+          <div className="flex items-center gap-2 py-2">
+            {renderChipNav(desktopChipNavRef, { sortable: true })}
             <button
               type="button"
               onClick={resetLayout}
-              className="inline-flex h-11 items-center rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
+              className="inline-flex h-11 shrink-0 items-center rounded-[10px] border border-cream/55 bg-white/10 px-4 text-sm font-semibold text-cream hover:bg-white/20"
             >
               Resetuj układ
             </button>
             <button
               type="button"
               onClick={() => setEditMode(false)}
-              className="inline-flex h-11 items-center rounded-[10px] bg-accent px-4 text-sm font-semibold text-white hover:bg-accent/90"
+              className="inline-flex h-11 shrink-0 items-center rounded-[10px] bg-accent px-4 text-sm font-semibold text-white hover:bg-accent/90"
             >
               Gotowe
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 py-2">
-            {renderChipNav(desktopChipNavRef)}
+            {renderChipNav(desktopChipNavRef, { dragScroll: true })}
             <Menu
               align="end"
               panelClassName="w-64"
@@ -1530,41 +1841,68 @@ export function Dashboard({
           onDragCancel={onDragCancel}
         >
           <div
-            className={`grid grid-cols-1 gap-5 ${
-              isTwoCol ? "md:grid-cols-2 md:items-start" : ""
-            }`}
+            ref={containerRef}
+            className={masonry ? "relative" : "flex flex-col gap-5"}
+            style={
+              masonry && masonryLayout
+                ? { height: masonryLayout.totalH }
+                : undefined
+            }
           >
             <SortableContext items={visible} strategy={rectSortingStrategy}>
-              {visible.map((id, i) => renderCard(id, i))}
+              {visible.map((id, i) => {
+                const p = masonryLayout?.pos.get(id);
+                return (
+                  <div
+                    key={id}
+                    className={masonry ? "absolute" : undefined}
+                    style={
+                      masonry && p && masonryLayout
+                        ? {
+                            top: p.top,
+                            left: p.left,
+                            width: masonryLayout.colW,
+                            transition:
+                              measured && !reducedMotion
+                                ? "top 250ms ease, left 250ms ease"
+                                : undefined,
+                          }
+                        : undefined
+                    }
+                  >
+                    {renderCard(id, i)}
+                  </div>
+                );
+              })}
             </SortableContext>
           </div>
           <DragOverlay>
-          {activeId ? (
-            <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300">
-              <div className="flex items-center gap-2">
-                <span aria-hidden className="shrink-0 text-muted">
-                  <GripIcon />
-                </span>
-                <span
-                  aria-hidden
-                  className="shrink-0 text-[#c0392b] dark:text-cream"
-                >
-                  {PANEL_ICONS[activeId]}
-                </span>
-                <h2 className="min-w-0 flex-1 text-[26px] text-accent dark:text-[#7cc99a]">
-                  {panels[activeId].title}
-                </h2>
-                {activeId !== "ready" && (
-                  <ChevronIcon
-                    className={`shrink-0 text-muted ${collapsed[activeId] ? "rotate-0" : "rotate-180"} transition-transform duration-200 ease-out motion-reduce:transition-none`}
-                  />
-                )}
+            {activeChip ? (
+              <div className="flex items-center gap-1.5 rounded-full border border-cream bg-cream px-3.5 py-1.5 text-sm font-semibold text-[#0d4024] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                {panels[activeChip.slice(5) as PanelId].title}
               </div>
-              {(activeId === "ready" || !collapsed[activeId]) && (
-                <div className="mt-3">{panels[activeId].body}</div>
-              )}
-            </section>
-          ) : null}
+            ) : activeId ? (
+              <section
+                style={{ height: heights[activeId] || undefined }}
+                className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.18)] ring-2 ring-amber-300"
+              >
+                <div className="flex items-center gap-2">
+                  <span aria-hidden className="shrink-0 text-muted">
+                    <GripIcon />
+                  </span>
+                  <span
+                    aria-hidden
+                    className="shrink-0 text-[#c0392b] dark:text-cream"
+                  >
+                    {PANEL_ICONS[activeId]}
+                  </span>
+                  <h2 className="min-w-0 flex-1 text-[26px] text-accent dark:text-[#7cc99a]">
+                    {panels[activeId].title}
+                  </h2>
+                </div>
+                <div className="mt-3 min-h-0 flex-1 rounded-xl bg-mist/50" />
+              </section>
+            ) : null}
           </DragOverlay>
         </DndContext>
       )}
