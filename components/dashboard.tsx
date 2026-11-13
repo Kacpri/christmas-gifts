@@ -95,11 +95,11 @@ const DEFAULT_LAYOUT: Layout = {
     "ready",
     "gifts",
     "wishes",
-    "profile",
-    "impreza",
+    "chats",
     "potrawy",
     "group-chat",
-    "chats",
+    "impreza",
+    "profile",
     "organizer",
   ],
 };
@@ -178,34 +178,44 @@ function normalizeLayout(saved: SavedLayout | null): Layout {
   return { order };
 }
 
-const MASONRY_GAP = 20;
+const LAYOUT_GAP = 20;
 
-type Masonry = {
+type PanelLayout = {
   pos: Map<PanelId, { top: number; left: number }>;
   colW: number;
   totalH: number;
 };
 
-function computeMasonry(
+function computeLayout(
   order: PanelId[],
   heights: Record<string, number>,
-  containerW: number
-): Masonry {
-  const colW = Math.max(0, (containerW - MASONRY_GAP) / 2);
+  containerW: number,
+  numCols: number
+): PanelLayout {
   const pos = new Map<PanelId, { top: number; left: number }>();
+  if (numCols <= 1) {
+    let top = 0;
+    for (const id of order) {
+      const h = heights[id] ?? 0;
+      pos.set(id, { top, left: 0 });
+      top += h + LAYOUT_GAP;
+    }
+    return { pos, colW: containerW, totalH: Math.max(0, top - LAYOUT_GAP) };
+  }
+  const colW = Math.max(0, (containerW - LAYOUT_GAP) / 2);
   let leftH = 0;
   let rightH = 0;
   for (const id of order) {
     const h = heights[id] ?? 0;
     if (leftH <= rightH) {
       pos.set(id, { top: leftH, left: 0 });
-      leftH += h + MASONRY_GAP;
+      leftH += h + LAYOUT_GAP;
     } else {
-      pos.set(id, { top: rightH, left: colW + MASONRY_GAP });
-      rightH += h + MASONRY_GAP;
+      pos.set(id, { top: rightH, left: colW + LAYOUT_GAP });
+      rightH += h + LAYOUT_GAP;
     }
   }
-  const totalH = Math.max(0, Math.max(leftH, rightH) - MASONRY_GAP);
+  const totalH = Math.max(0, Math.max(leftH, rightH) - LAYOUT_GAP);
   return { pos, colW, totalH };
 }
 
@@ -593,7 +603,7 @@ function PanelCard({
           : {}),
         ...(enterDelay != null ? { animationDelay: `${enterDelay}ms` } : {}),
       }}
-      className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-4 ${
+      className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-[76px] ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
@@ -1102,7 +1112,7 @@ export function Dashboard({
   const [containerW, setContainerW] = useState(0);
   const [measured, setMeasured] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const frozenMasonryRef = useRef<Masonry | null>(null);
+  const frozenLayoutRef = useRef<PanelLayout | null>(null);
   const chipDragRef = useRef<{
     x: number;
     sl: number;
@@ -1308,7 +1318,7 @@ export function Dashboard({
     updateChipFades();
     window.addEventListener("resize", updateChipFades);
     return () => window.removeEventListener("resize", updateChipFades);
-  }, [updateChipFades, visibleKey]);
+  }, [updateChipFades, visibleKey, view]);
 
   useLayoutEffect(() => {
     if (!hydrated) return;
@@ -1390,18 +1400,18 @@ export function Dashboard({
   }, [hydrated, visibleKey]);
 
   const isTwoCol = view === "2col";
-  const masonry = isTwoCol && isDesktop && containerW > 0;
-  const computedMasonry = masonry
-    ? computeMasonry(visible, heights, containerW)
+  const absLayout = isDesktop && containerW > 0;
+  const computedLayout = absLayout
+    ? computeLayout(visible, heights, containerW, isTwoCol ? 2 : 1)
     : null;
   if (activeId) {
-    if (!frozenMasonryRef.current && computedMasonry)
-      frozenMasonryRef.current = computedMasonry;
+    if (!frozenLayoutRef.current && computedLayout)
+      frozenLayoutRef.current = computedLayout;
   } else {
-    frozenMasonryRef.current = null;
+    frozenLayoutRef.current = null;
   }
-  const masonryLayout = masonry
-    ? (frozenMasonryRef.current ?? computedMasonry)
+  const masonryLayout = absLayout
+    ? (frozenLayoutRef.current ?? computedLayout)
     : null;
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
@@ -1529,7 +1539,7 @@ export function Dashboard({
         editMode={editMode}
         isHole={activeId === id}
         enterDelay={entering ? index * 50 : undefined}
-        dndTransform={!masonry}
+        dndTransform={!absLayout}
       >
         {isReadyPanel &&
         (ready.lotteryDone || ready.lateJoiner)
@@ -1710,6 +1720,13 @@ export function Dashboard({
         </h1>
         <Countdown startsAt={party.startsAt} label={party.label} />
       </header>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={onDragCancel}
+      >
       <div className="sticky top-0 z-30 hidden -mx-5 border-b border-cream/10 bg-[#0d4024] px-5 dark:bg-[#061a13] md:block">
         {editMode ? (
           <div className="flex items-center gap-2 py-2">
@@ -1833,18 +1850,11 @@ export function Dashboard({
       </Presence>
 
       {hydrated && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragCancel={onDragCancel}
-        >
           <div
             ref={containerRef}
-            className={masonry ? "relative" : "flex flex-col gap-5"}
+            className={absLayout ? "relative" : "flex flex-col gap-5"}
             style={
-              masonry && masonryLayout
+              absLayout && masonryLayout
                 ? { height: masonryLayout.totalH }
                 : undefined
             }
@@ -1855,9 +1865,9 @@ export function Dashboard({
                 return (
                   <div
                     key={id}
-                    className={masonry ? "absolute" : undefined}
+                    className={absLayout ? "absolute" : undefined}
                     style={
-                      masonry && p && masonryLayout
+                      absLayout && p && masonryLayout
                         ? {
                             top: p.top,
                             left: p.left,
@@ -1876,7 +1886,8 @@ export function Dashboard({
               })}
             </SortableContext>
           </div>
-          <DragOverlay>
+      )}
+        <DragOverlay>
             {activeChip ? (
               <div className="flex items-center gap-1.5 rounded-full border border-cream bg-cream px-3.5 py-1.5 text-sm font-semibold text-[#0d4024] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
                 {panels[activeChip.slice(5) as PanelId].title}
@@ -1903,9 +1914,8 @@ export function Dashboard({
                 <div className="mt-3 min-h-0 flex-1 rounded-xl bg-mist/50" />
               </section>
             ) : null}
-          </DragOverlay>
-        </DndContext>
-      )}
+        </DragOverlay>
+      </DndContext>
     </main>
   );
 }
