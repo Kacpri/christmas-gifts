@@ -53,6 +53,7 @@ export function OrganizerPanel({
     description: string;
     full_name: string;
     created_at: string;
+    screenshot_url: string | null;
   }[];
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
@@ -535,6 +536,20 @@ export function OrganizerPanel({
                     </button>
                   </form>
                 </div>
+                {r.screenshot_url && (
+                  <a
+                    href={r.screenshot_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <img
+                      src={r.screenshot_url}
+                      alt="Zrzut ekranu do zgłoszenia"
+                      className="max-h-40 w-auto rounded-lg border border-input-line"
+                    />
+                  </a>
+                )}
                 <p className="text-xs text-faint">
                   {r.full_name} ·{" "}
                   {new Date(r.created_at).toLocaleString("pl-PL", {

@@ -903,9 +903,21 @@ export async function createErrorReport(
   if (!description || description.length > 500) {
     return { ok: false, error: "Opis: 1–500 znaków." };
   }
+  let screenshotPath: string | null = null;
+  const screenshot = formData.get("screenshot");
+  if (screenshot instanceof Blob && screenshot.size > 0) {
+    const name = `${user.id}/${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}.png`;
+    const { error: uploadError } = await supabase.storage
+      .from("error-reports")
+      .upload(name, screenshot, { contentType: "image/png" });
+    if (uploadError) return { ok: false, error: uploadError.message };
+    screenshotPath = name;
+  }
   const { error } = await supabase
     .from("error_reports")
-    .insert({ user_id: user.id, description });
+    .insert({ user_id: user.id, description, screenshot_path: screenshotPath });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
@@ -922,8 +934,16 @@ export async function deleteErrorReport(
   const { supabase } = org;
   const id = String(formData.get("id") ?? "");
   if (!id) return { ok: false, error: "Nieprawidłowe zgłoszenie." };
+  const { data: row } = await supabase
+    .from("error_reports")
+    .select("screenshot_path")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("error_reports").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  if (row?.screenshot_path) {
+    await supabase.storage.from("error-reports").remove([row.screenshot_path]);
+  }
   revalidatePath("/");
   return { ok: true };
 }

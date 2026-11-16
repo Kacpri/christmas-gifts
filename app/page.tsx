@@ -135,6 +135,7 @@ export default async function Home() {
     description: string;
     full_name: string;
     created_at: string;
+    screenshot_url: string | null;
   }[] = [];
   if (profile?.is_organizer) {
     const [
@@ -148,7 +149,7 @@ export default async function Home() {
       supabase.from("assignments").select("drawer_id, drawee_id"),
       supabase
         .from("error_reports")
-        .select("id, description, created_at, user_id")
+        .select("id, description, created_at, user_id, screenshot_path")
         .order("created_at", { ascending: false }),
     ]);
     const themeTextById = new Map(
@@ -187,11 +188,13 @@ export default async function Home() {
     lateJoiners = status
       .filter((p) => !p.in_lottery)
       .map((p) => ({ id: p.profile_id, full_name: p.full_name }));
+    const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/error-reports`;
     errorReports = (reportRows ?? []).map((r) => ({
       id: r.id,
       description: r.description,
       full_name: nameById.get(r.user_id) ?? "??",
       created_at: r.created_at,
+      screenshot_url: r.screenshot_path ? `${storageBase}/${r.screenshot_path}` : null,
     }));
   }
 

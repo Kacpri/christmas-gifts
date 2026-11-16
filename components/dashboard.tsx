@@ -1131,6 +1131,7 @@ export function Dashboard({
       description: string;
       full_name: string;
       created_at: string;
+      screenshot_url: string | null;
     }[];
   } | null;
 }) {
@@ -1919,7 +1920,11 @@ export function Dashboard({
         </div>
       </Presence>
 
-      <ErrorReportForm open={reportOpen} onClose={() => setReportOpen(false)} />
+      <ErrorReportForm
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        activePanel={activePanel}
+      />
 
       {hydrated && (
           <div
