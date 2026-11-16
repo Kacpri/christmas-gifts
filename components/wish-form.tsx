@@ -726,24 +726,26 @@ function SortableWishItem({
           </span>{" "}
           {wish.text}
         </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs">
-          {wish.price != null && (
-            <span className="font-medium tabular-nums text-[#15251b] dark:text-ink">
-              {formatPrice(wish.price)}
-            </span>
-          )}
-          {wish.link && (
-            <a
-              href={wish.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-semibold text-[#14532d] dark:text-list-ink"
-            >
-              Zobacz
-              <ExternalLinkIcon />
-            </a>
-          )}
-        </p>
+        {(wish.price != null || wish.link) && (
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs">
+            {wish.price != null && (
+              <span className="font-medium tabular-nums text-[#15251b] dark:text-ink">
+                {formatPrice(wish.price)}
+              </span>
+            )}
+            {wish.link && (
+              <a
+                href={wish.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-semibold text-[#14532d] dark:text-list-ink"
+              >
+                Zobacz
+                <ExternalLinkIcon />
+              </a>
+            )}
+          </p>
+        )}
       </div>
       <button
         type="button"
