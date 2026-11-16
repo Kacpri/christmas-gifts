@@ -136,12 +136,12 @@ export default async function Home() {
       { data: wishRows },
       { data: assignmentRows },
     ] = await Promise.all([
-      supabase.from("themes").select("user_id, text"),
+      supabase.from("themes").select("user_id, theme"),
       supabase.from("wishes").select("user_id"),
       supabase.from("assignments").select("drawer_id, drawee_id"),
     ]);
     const themeTextById = new Map(
-      (themesData ?? []).map((t) => [t.user_id as string, t.text as string])
+      (themesData ?? []).map((t) => [t.user_id as string, t.theme as string])
     );
     const themeIds = new Set(themeTextById.keys());
     const wishCountById = new Map<string, number>();

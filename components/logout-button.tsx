@@ -13,6 +13,7 @@ export function LogoutButton({
         <button
           type="submit"
           aria-label="Wyloguj się"
+          onClick={(e) => e.stopPropagation()}
           className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#e0685c] hover:bg-[#e0685c]/15"
         >
           <LogoutIcon />
@@ -27,6 +28,7 @@ export function LogoutButton({
       <button
         type="submit"
         aria-label="Wyloguj się"
+        onClick={(e) => e.stopPropagation()}
         className="flex h-11 min-w-11 items-center gap-1.5 rounded-[10px] px-2.5 text-sm font-medium text-cream hover:underline"
       >
         <LogoutIcon />
