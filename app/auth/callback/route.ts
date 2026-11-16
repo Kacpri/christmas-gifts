@@ -19,6 +19,13 @@ export async function GET(request: Request) {
         } catch {
           // samonaprawiajacy profil jest best-effort; nie blokuje logowania
         }
+        const picture = user.user_metadata?.picture;
+        if (typeof picture === "string" && picture) {
+          await supabase
+            .from("profiles")
+            .update({ oauth_avatar_url: picture })
+            .eq("id", user.id);
+        }
       }
       return NextResponse.redirect(`${origin}/`);
     }

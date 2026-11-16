@@ -35,12 +35,12 @@ export default async function Home() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, is_organizer, is_ready")
+      .select("id, full_name, is_organizer, is_ready, avatar_path, oauth_avatar_url")
       .eq("id", user.id)
       .single(),
     supabase
       .from("profiles")
-      .select("id, full_name, is_ready")
+      .select("id, full_name, is_ready, avatar_path, oauth_avatar_url")
       .order("full_name"),
     supabase
       .from("wishes")
@@ -100,6 +100,17 @@ export default async function Home() {
       : null;
 
   const nameById = new Map((participants ?? []).map((p) => [p.id, p.full_name]));
+  const avatarBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars`;
+  const avatarUrlOf = (
+    p:
+      | { avatar_path: string | null; oauth_avatar_url: string | null }
+      | null
+      | undefined
+  ): string | null =>
+    p?.avatar_path ? `${avatarBase}/${p.avatar_path}` : (p?.oauth_avatar_url ?? null);
+  const avatarById = new Map(
+    (participants ?? []).map((p) => [p.id, avatarUrlOf(p)])
+  );
   const likeCountByDish = new Map<number, number>();
   const myLikedDishIds = new Set<number>();
   for (const l of allLikes ?? []) {
@@ -128,14 +139,16 @@ export default async function Home() {
     has_theme: boolean;
     wish_count: number;
     theme_text: string | null;
+    avatar_url: string | null;
   }[] = [];
-  let lateJoiners: { id: string; full_name: string }[] = [];
+  let lateJoiners: { id: string; full_name: string; avatar_url: string | null }[] = [];
   let errorReports: {
     id: number;
     description: string;
     full_name: string;
     created_at: string;
     screenshot_url: string | null;
+    avatar_url: string | null;
   }[] = [];
   if (profile?.is_organizer) {
     const [
@@ -174,6 +187,7 @@ export default async function Home() {
       has_theme: themeIds.has(p.id),
       wish_count: wishCountById.get(p.id) ?? 0,
       theme_text: themeTextById.get(p.id) ?? null,
+      avatar_url: avatarUrlOf(p),
     }));
     lotteryParticipants = status
       .filter((p) => p.in_lottery)
@@ -184,10 +198,15 @@ export default async function Home() {
         has_theme: p.has_theme,
         wish_count: p.wish_count,
         theme_text: p.theme_text,
+        avatar_url: p.avatar_url,
       }));
     lateJoiners = status
       .filter((p) => !p.in_lottery)
-      .map((p) => ({ id: p.profile_id, full_name: p.full_name }));
+      .map((p) => ({
+        id: p.profile_id,
+        full_name: p.full_name,
+        avatar_url: p.avatar_url,
+      }));
     const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/error-reports`;
     errorReports = (reportRows ?? []).map((r) => ({
       id: r.id,
@@ -195,6 +214,7 @@ export default async function Home() {
       full_name: nameById.get(r.user_id) ?? "??",
       created_at: r.created_at,
       screenshot_url: r.screenshot_path ? `${storageBase}/${r.screenshot_path}` : null,
+      avatar_url: avatarById.get(r.user_id) ?? null,
     }));
   }
 
@@ -211,8 +231,8 @@ export default async function Home() {
     deleted_at: string | null;
   }[];
 
-  let listGift: { person: string; wishes: Wish[] } | null = null;
-  let themeGift: { person: string; theme: string } | null = null;
+  let listGift: { person: string; avatarUrl: string | null; wishes: Wish[] } | null = null;
+  let themeGift: { person: string; avatarUrl: string | null; theme: string } | null = null;
   let threads: Thread[] = [];
 
   if (lotteryDone) {
@@ -225,7 +245,10 @@ export default async function Home() {
       { data: draweeWishes },
       { data: draweeThemes },
     ] = await Promise.all([
-      supabase.from("profiles").select("id, full_name").in("id", draweeIds),
+      supabase
+        .from("profiles")
+        .select("id, full_name, avatar_path, oauth_avatar_url")
+        .in("id", draweeIds),
       supabase
         .from("wishes")
         .select("id, user_id, text, link, price")
@@ -236,14 +259,18 @@ export default async function Home() {
 
     const nameOf = (id: string) =>
       drawees?.find((p) => p.id === id)?.full_name ?? "??";
+    const avatarOf = (id: string) =>
+      avatarUrlOf(drawees?.find((p) => p.id === id));
     listGift = {
       person: nameOf(listDrawee.drawee_id),
+      avatarUrl: avatarOf(listDrawee.drawee_id),
       wishes: (draweeWishes ?? []).filter(
         (w) => w.user_id === listDrawee.drawee_id
       ),
     };
     themeGift = {
       person: nameOf(themeDrawee.drawee_id),
+      avatarUrl: avatarOf(themeDrawee.drawee_id),
       theme:
         draweeThemes?.find((t) => t.user_id === themeDrawee.drawee_id)
           ?.theme ?? "",
@@ -314,6 +341,7 @@ export default async function Home() {
   const dmParticipants: DmParticipant[] = (participants ?? []).map((p) => ({
     id: p.id,
     fullName: p.full_name,
+    avatarUrl: avatarUrlOf(p),
   }));
   const dmMsgs = (myDmMessages ?? []) as {
     id: number;
@@ -340,6 +368,7 @@ export default async function Home() {
     return {
       peerId,
       label: nameById.get(peerId) ?? "??",
+      avatarUrl: avatarById.get(peerId) ?? null,
       messages: peerMsgs.map((m) => ({
         id: m.id,
         senderId: m.sender_id,
@@ -367,7 +396,11 @@ export default async function Home() {
   return (
     <Dashboard
       userName={profile?.full_name ?? ""}
-      profile={{ fullName: profile?.full_name ?? "" }}
+      profile={{
+        fullName: profile?.full_name ?? "",
+        avatarUrl: avatarUrlOf(profile),
+        hasUpload: Boolean(profile?.avatar_path),
+      }}
       gifts={gifts}
       chats={{
         me: user.id,

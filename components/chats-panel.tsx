@@ -21,6 +21,7 @@ import {
   sendMessage,
   type ActionResult,
 } from "@/app/actions";
+import { Avatar } from "@/components/avatar";
 import {
   DateSeparator,
   MessageBubble,
@@ -45,6 +46,7 @@ export type Thread = {
 export type DmThread = {
   peerId: string;
   label: string;
+  avatarUrl: string | null;
   messages: ChatMessage[];
   unread: number;
 };
@@ -52,6 +54,7 @@ export type DmThread = {
 export type DmParticipant = {
   id: string;
   fullName: string;
+  avatarUrl: string | null;
 };
 
 const empty: ActionResult = { ok: false };
@@ -93,6 +96,7 @@ type ListItem = {
   last: ChatMessage | null;
   unread: number;
   kind: "lottery" | "dm";
+  avatarUrl?: string | null;
   lotteryType?: number;
   drawerId?: string;
   draweeId?: string;
@@ -313,6 +317,7 @@ export function ChatsPanel({
         });
       }
     }
+    const dmAvatarById = new Map(dmThreads.map((t) => [t.peerId, t.avatarUrl]));
     const peerIds = new Set(dmThreads.map((t) => t.peerId));
     if (selectedKey?.startsWith("dm:")) peerIds.add(dmPeerOf(selectedKey));
     for (const peerId of peerIds) {
@@ -325,6 +330,7 @@ export function ChatsPanel({
         last,
         unread: dmUnread[peerId] ?? 0,
         kind: "dm",
+        avatarUrl: dmAvatarById.get(peerId) ?? null,
         peerId,
       });
     }
@@ -892,16 +898,25 @@ export function ChatsPanel({
                 }`}
               >
                 <span className="flex items-center justify-between gap-2 leading-5">
-                  <span
-                    className={`min-w-0 truncate text-base text-ink ${
-                      item.unread > 0
-                        ? "font-bold"
-                        : selectedKey === item.key
-                          ? "font-semibold"
-                          : "font-medium"
-                    }`}
-                  >
-                    {item.name}
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    {item.kind === "dm" && (
+                      <Avatar
+                        name={item.name}
+                        src={item.avatarUrl ?? null}
+                        size={28}
+                      />
+                    )}
+                    <span
+                      className={`min-w-0 truncate text-base text-ink ${
+                        item.unread > 0
+                          ? "font-bold"
+                          : selectedKey === item.key
+                            ? "font-semibold"
+                            : "font-medium"
+                      }`}
+                    >
+                      {item.name}
+                    </span>
                   </span>
                   {item.last && (
                     <span
@@ -1138,9 +1153,7 @@ export function ChatsPanel({
                 }}
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
               >
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sage-150 text-accent">
-                  {p.fullName.trim().charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={p.fullName} src={p.avatarUrl} size={32} />
                 <span className="truncate">{p.fullName}</span>
               </button>
             ))}

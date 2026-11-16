@@ -34,6 +34,7 @@ import {
   type Ref,
 } from "react";
 
+import { Avatar } from "@/components/avatar";
 import {
   ChatsPanel,
   type DmParticipant,
@@ -121,8 +122,8 @@ type SavedLayout = {
 export type GiftsData =
   | {
       kind: "done";
-      listGift: { person: string; wishes: Wish[] };
-      themeGift: { person: string; theme: string };
+      listGift: { person: string; avatarUrl: string | null; wishes: Wish[] };
+      themeGift: { person: string; avatarUrl: string | null; theme: string };
     }
   | { kind: "late" }
   | { kind: "waiting"; count: number };
@@ -935,7 +936,12 @@ function GiftsBody({
         <p className="text-sm text-[#4a5c50] dark:text-muted">
           Kupujesz prezent dla
         </p>
-        <p className="text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
+        <p className="flex items-center gap-2.5 text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
+          <Avatar
+            name={gifts.listGift.person}
+            src={gifts.listGift.avatarUrl}
+            size={36}
+          />
           {declineName(gifts.listGift.person, "gen")}
         </p>
         <p className="text-sm text-[#4a5c50] dark:text-muted">
@@ -973,7 +979,12 @@ function GiftsBody({
         <p className="text-sm text-[#4a5c50] dark:text-muted">
           Kupujesz prezent dla
         </p>
-        <p className="text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
+        <p className="flex items-center gap-2.5 text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
+          <Avatar
+            name={gifts.themeGift.person}
+            src={gifts.themeGift.avatarUrl}
+            size={36}
+          />
           {declineName(gifts.themeGift.person, "gen")}
         </p>
         <div className="rounded-[10px] bg-surface px-4 py-3.5">
@@ -1141,7 +1152,7 @@ export function Dashboard({
   organizer,
 }: {
   userName: string;
-  profile: { fullName: string };
+  profile: { fullName: string; avatarUrl: string | null; hasUpload: boolean };
   gifts: GiftsData;
   chats: {
     me: string;
@@ -1183,8 +1194,9 @@ export function Dashboard({
       has_theme: boolean;
       wish_count: number;
       theme_text: string | null;
+      avatar_url: string | null;
     }[];
-    lateJoiners: { id: string; full_name: string }[];
+    lateJoiners: { id: string; full_name: string; avatar_url: string | null }[];
     lotteryDone: boolean;
     listBudget: number | null;
     themeBudget: number | null;
@@ -1194,6 +1206,7 @@ export function Dashboard({
       full_name: string;
       created_at: string;
       screenshot_url: string | null;
+      avatar_url: string | null;
     }[];
   } | null;
 }) {
@@ -1546,7 +1559,13 @@ export function Dashboard({
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
     profile: {
       title: "Twoje dane",
-      body: <NameForm fullName={profile.fullName} />,
+      body: (
+        <NameForm
+          fullName={profile.fullName}
+          avatarUrl={profile.avatarUrl}
+          hasUpload={profile.hasUpload}
+        />
+      ),
     },
     gifts: {
       title: "Prezenty",
@@ -1903,12 +1922,7 @@ export function Dashboard({
               )}
             >
               <div className="flex items-center gap-2.5 px-3 py-2">
-                <span
-                  aria-hidden
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
-                >
-                  {userName.trim().charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={userName} src={profile.avatarUrl} size={32} />
                 <span className="truncate font-medium text-cream">
                   {userName}
                 </span>
@@ -1959,12 +1973,7 @@ export function Dashboard({
       >
         <div className="rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
           <div className="flex items-center gap-2.5 px-2 py-1.5">
-            <span
-              aria-hidden
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cream text-sm font-bold text-accent-deep dark:text-[#0d4024]"
-            >
-              {userName.trim().charAt(0).toUpperCase()}
-            </span>
+            <Avatar name={userName} src={profile.avatarUrl} size={32} />
             <span className="truncate font-medium text-cream">{userName}</span>
           </div>
           <div className="mx-1 border-t border-cream/20" />

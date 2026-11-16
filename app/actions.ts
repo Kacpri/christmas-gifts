@@ -252,6 +252,65 @@ export async function saveName(
   return { ok: true };
 }
 
+const AVATAR_MAX_BYTES = 4 * 1024 * 1024;
+const AVATAR_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export async function uploadAvatar(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const file = formData.get("avatar");
+  if (!(file instanceof Blob) || file.size === 0) {
+    return { ok: false, error: "Wybierz zdjęcie." };
+  }
+  const ext = AVATAR_TYPES[file.type];
+  if (!ext) {
+    return { ok: false, error: "Dozwolone formaty: JPG, PNG, WebP." };
+  }
+  if (file.size > AVATAR_MAX_BYTES) {
+    return { ok: false, error: "Zdjęcie może mieć maks. 4 MB." };
+  }
+  const path = `${user.id}/avatar.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (uploadError) return { ok: false, error: uploadError.message };
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_path: path })
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteAvatar(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const { data: row } = await supabase
+    .from("profiles")
+    .select("avatar_path")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (row?.avatar_path) {
+    await supabase.storage.from("avatars").remove([row.avatar_path]);
+  }
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_path: null })
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function markReady(
   _prev: ActionResult,
   _formData: FormData

@@ -14,6 +14,7 @@ import {
   setReadyForUser,
   type ActionResult,
 } from "@/app/actions";
+import { Avatar } from "@/components/avatar";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
 import { declineName } from "@/lib/declension";
@@ -43,8 +44,9 @@ export function OrganizerPanel({
     has_theme: boolean;
     wish_count: number;
     theme_text: string | null;
+    avatar_url: string | null;
   }[];
-  lateJoiners: { id: string; full_name: string }[];
+  lateJoiners: { id: string; full_name: string; avatar_url: string | null }[];
   lotteryDone: boolean;
   listBudget: number | null;
   themeBudget: number | null;
@@ -54,6 +56,7 @@ export function OrganizerPanel({
     full_name: string;
     created_at: string;
     screenshot_url: string | null;
+    avatar_url: string | null;
   }[];
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
@@ -386,6 +389,7 @@ export function OrganizerPanel({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
+                  <Avatar name={p.full_name} src={p.avatar_url} size={28} />
                   <span className="truncate text-sm font-medium text-ink">
                     {p.full_name}
                   </span>
@@ -468,7 +472,10 @@ export function OrganizerPanel({
                 key={p.id}
                 className="flex items-center justify-between text-sm"
               >
-                <span>{p.full_name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Avatar name={p.full_name} src={p.avatar_url} size={24} />
+                  <span className="truncate">{p.full_name}</span>
+                </span>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -550,7 +557,8 @@ export function OrganizerPanel({
                     />
                   </a>
                 )}
-                <p className="text-xs text-faint">
+                <p className="flex items-center gap-1.5 text-xs text-faint">
+                  <Avatar name={r.full_name} src={r.avatar_url} size={18} />
                   {r.full_name} ·{" "}
                   {new Date(r.created_at).toLocaleString("pl-PL", {
                     dateStyle: "medium",
@@ -576,9 +584,16 @@ export function OrganizerPanel({
       >
         {menuParticipant && (
           <div className="rounded-2xl bg-surface p-4 shadow-lg">
-            <p className="mb-3 truncate text-sm font-semibold text-ink">
-              {menuParticipant.full_name}
-            </p>
+            <div className="mb-3 flex items-center gap-2">
+              <Avatar
+                name={menuParticipant.full_name}
+                src={menuParticipant.avatar_url}
+                size={28}
+              />
+              <p className="min-w-0 truncate text-sm font-semibold text-ink">
+                {menuParticipant.full_name}
+              </p>
+            </div>
             <div className="flex flex-col gap-2">
               <button
                 type="button"
