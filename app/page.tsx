@@ -130,15 +130,26 @@ export default async function Home() {
     theme_text: string | null;
   }[] = [];
   let lateJoiners: { id: string; full_name: string }[] = [];
+  let errorReports: {
+    id: number;
+    description: string;
+    full_name: string;
+    created_at: string;
+  }[] = [];
   if (profile?.is_organizer) {
     const [
       { data: themesData },
       { data: wishRows },
       { data: assignmentRows },
+      { data: reportRows },
     ] = await Promise.all([
       supabase.from("themes").select("user_id, theme"),
       supabase.from("wishes").select("user_id"),
       supabase.from("assignments").select("drawer_id, drawee_id"),
+      supabase
+        .from("error_reports")
+        .select("id, description, created_at, user_id")
+        .order("created_at", { ascending: false }),
     ]);
     const themeTextById = new Map(
       (themesData ?? []).map((t) => [t.user_id as string, t.theme as string])
@@ -176,6 +187,12 @@ export default async function Home() {
     lateJoiners = status
       .filter((p) => !p.in_lottery)
       .map((p) => ({ id: p.profile_id, full_name: p.full_name }));
+    errorReports = (reportRows ?? []).map((r) => ({
+      id: r.id,
+      description: r.description,
+      full_name: nameById.get(r.user_id) ?? "??",
+      created_at: r.created_at,
+    }));
   }
 
   const { data: groupMessagesData } = await supabase
@@ -399,6 +416,7 @@ export default async function Home() {
               lotteryDone,
               listBudget: partyRow?.list_budget ?? null,
               themeBudget: partyRow?.theme_budget ?? null,
+              errorReports,
             }
           : null
       }

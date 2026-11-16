@@ -893,3 +893,37 @@ export async function sendReadyReminders(
   }
   return { ok: true };
 }
+
+export async function createErrorReport(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const description = String(formData.get("description") ?? "").trim();
+  if (!description || description.length > 500) {
+    return { ok: false, error: "Opis: 1–500 znaków." };
+  }
+  const { error } = await supabase
+    .from("error_reports")
+    .insert({ user_id: user.id, description });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteErrorReport(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może usuwać zgłoszenia." };
+  }
+  const { supabase } = org;
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false, error: "Nieprawidłowe zgłoszenie." };
+  const { error } = await supabase.from("error_reports").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}

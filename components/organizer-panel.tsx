@@ -4,6 +4,7 @@ import { useEffect, useActionState, useState } from "react";
 
 import {
   cancelLottery,
+  deleteErrorReport,
   removeUser,
   runLottery,
   savePartyBudgets,
@@ -33,6 +34,7 @@ export function OrganizerPanel({
   lotteryDone,
   listBudget,
   themeBudget,
+  errorReports,
 }: {
   participants: {
     id: string;
@@ -46,6 +48,12 @@ export function OrganizerPanel({
   lotteryDone: boolean;
   listBudget: number | null;
   themeBudget: number | null;
+  errorReports: {
+    id: number;
+    description: string;
+    full_name: string;
+    created_at: string;
+  }[];
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
   const [cancelState, cancelAction, cancelPending] = useActionState(
@@ -72,6 +80,8 @@ export function OrganizerPanel({
     savePartyBudgets,
     empty
   );
+  const [reportState, deleteReportAction, deleteReportPending] =
+    useActionState(deleteErrorReport, empty);
   const [budgetSaved, setBudgetSaved] = useState(false);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
@@ -485,6 +495,61 @@ export function OrganizerPanel({
           </ul>
         </div>
       )}
+
+      <div>
+        <h3 className="text-sm font-medium text-muted">Zgłoszenia błędów</h3>
+        {errorReports.length === 0 ? (
+          <p className="mt-2 text-sm text-faint">Brak zgłoszeń.</p>
+        ) : (
+          <ul className="mt-2 flex flex-col gap-2">
+            {errorReports.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-col gap-2 rounded-[10px] bg-mist px-3 py-2.5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 flex-1 break-words text-sm text-ink">
+                    {r.description}
+                  </p>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const fd = new FormData(e.currentTarget);
+                      setConfirm({
+                        message: "Usunąć to zgłoszenie?",
+                        confirmLabel: "Usuń",
+                        tone: "danger",
+                        onConfirm: () => deleteReportAction(fd),
+                      });
+                    }}
+                  >
+                    <input type="hidden" name="id" value={r.id} />
+                    <button
+                      type="submit"
+                      disabled={deleteReportPending}
+                      aria-label="Usuń zgłoszenie"
+                      title="Usuń"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-danger hover:bg-danger-soft disabled:opacity-50"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </form>
+                </div>
+                <p className="text-xs text-faint">
+                  {r.full_name} ·{" "}
+                  {new Date(r.created_at).toLocaleString("pl-PL", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {!reportState.ok && reportState.error && (
+          <p className="mt-2 text-sm text-red-600">{reportState.error}</p>
+        )}
+      </div>
 
       <Presence
         open={!!menuParticipant}

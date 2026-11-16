@@ -41,6 +41,7 @@ import {
   type Thread,
 } from "@/components/chats-panel";
 import { Countdown } from "@/components/countdown";
+import { ErrorReportForm } from "@/components/error-report-form";
 import {
   GroupChatSection,
 } from "@/components/group-chat-section";
@@ -287,6 +288,26 @@ function OneColIcon() {
       aria-hidden
     >
       <rect x="2" y="2" width="12" height="12" rx="1" />
+    </svg>
+  );
+}
+
+function ReportIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="8" cy="8" r="6.5" />
+      <path d="M8 4.5v4" />
+      <path d="M8 11.5h.01" />
     </svg>
   );
 }
@@ -1105,6 +1126,12 @@ export function Dashboard({
     lotteryDone: boolean;
     listBudget: number | null;
     themeBudget: number | null;
+    errorReports: {
+      id: number;
+      description: string;
+      full_name: string;
+      created_at: string;
+    }[];
   } | null;
 }) {
   const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
@@ -1130,6 +1157,7 @@ export function Dashboard({
   const suppressChipClickRef = useRef(false);
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(() =>
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
   );
@@ -1825,6 +1853,10 @@ export function Dashboard({
                 <TwoColIcon />
                 2 kolumny
               </MenuItem>
+              <MenuItem onClick={() => setReportOpen(true)}>
+                <ReportIcon />
+                Zgłoś błąd
+              </MenuItem>
               <div className="mx-1 my-1 border-t border-cream/20" />
               <NotificationToggle variant="row" />
               <ThemeToggle variant="row" />
@@ -1866,6 +1898,17 @@ export function Dashboard({
             <SlidersIcon />
             Dostosuj układ
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setReportOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
+          >
+            <ReportIcon />
+            Zgłoś błąd
+          </button>
           <div className="mt-1 flex flex-col">
             <NotificationToggle variant="row" />
             <ThemeToggle variant="row" />
@@ -1875,6 +1918,8 @@ export function Dashboard({
           </div>
         </div>
       </Presence>
+
+      <ErrorReportForm open={reportOpen} onClose={() => setReportOpen(false)} />
 
       {hydrated && (
           <div
