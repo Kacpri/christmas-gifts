@@ -19,6 +19,7 @@ import {
   rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -1872,7 +1873,10 @@ export function Dashboard({
                 : undefined
             }
           >
-            <SortableContext items={visible} strategy={rectSortingStrategy}>
+            <SortableContext
+              items={visible}
+              strategy={absLayout ? rectSortingStrategy : verticalListSortingStrategy}
+            >
               {visible.map((id, i) => {
                 const p = masonryLayout?.pos.get(id);
                 return (
