@@ -10,6 +10,11 @@ export const DISH_CATEGORIES = [
     badge: "bg-[#eef0dd] text-[#6f7a40] dark:bg-[#333a20] dark:text-[#b3c07a]",
   },
   {
+    value: "ryby",
+    label: "Ryby",
+    badge: "bg-[#e3ecf5] text-[#4a6a8a] dark:bg-[#253240] dark:text-[#8ab0d0]",
+  },
+  {
     value: "glowne",
     label: "Dania główne",
     badge: "bg-[#f4e5e3] text-[#8a5049] dark:bg-[#3a2825] dark:text-[#d09a90]",
