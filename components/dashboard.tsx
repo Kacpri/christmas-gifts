@@ -718,9 +718,12 @@ function ChipButton({
       className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
         active
           ? "border-cream bg-cream text-[#0d4024]"
-          : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-      }`}
+           : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+       }`}
     >
+      <span aria-hidden className="shrink-0">
+        {PANEL_ICONS[id]}
+      </span>
       {title}
       {unread > 0 && (
         <span
@@ -779,8 +782,11 @@ function SortableChip({
         active
           ? "border-cream bg-cream text-[#0d4024]"
           : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-      } ${isDragging ? "opacity-40" : ""}`}
+       } ${isDragging ? "opacity-40" : ""}`}
     >
+      <span aria-hidden className="shrink-0">
+        {PANEL_ICONS[id]}
+      </span>
       {title}
       {unread > 0 && (
         <span
@@ -1914,6 +1920,9 @@ export function Dashboard({
         <DragOverlay>
             {activeChip ? (
               <div className="flex items-center gap-1.5 rounded-full border border-cream bg-cream px-3.5 py-1.5 text-sm font-semibold text-[#0d4024] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                <span aria-hidden className="shrink-0">
+                  {PANEL_ICONS[activeChip.slice(5) as PanelId]}
+                </span>
                 {panels[activeChip.slice(5) as PanelId].title}
               </div>
             ) : activeId ? (

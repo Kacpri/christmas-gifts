@@ -560,7 +560,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
           <form
             ref={addFormRef}
             action={addAction}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-3 scroll-mt-[80px] md:scroll-mt-[76px]"
           >
             <input
               name="name"
