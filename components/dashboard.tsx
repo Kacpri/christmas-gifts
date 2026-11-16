@@ -1417,13 +1417,18 @@ export function Dashboard({
   }, [hydrated, visibleKey]);
 
   const isTwoCol = view === "2col";
-  const absLayout = isDesktop && containerW > 0;
+  const absLayout = containerW > 0;
   const previewVisible =
     activeId && overId && activeId !== overId
       ? arrayMove(visible, visible.indexOf(activeId), visible.indexOf(overId))
       : visible;
   const masonryLayout = absLayout
-    ? computeLayout(previewVisible, heights, containerW, isTwoCol ? 2 : 1)
+    ? computeLayout(
+        previewVisible,
+        heights,
+        containerW,
+        isDesktop && isTwoCol ? 2 : 1
+      )
     : null;
 
   const panels: Record<PanelId, { title: string; body: ReactNode }> = {
@@ -1697,18 +1702,19 @@ export function Dashboard({
         }`}
       >
         {editMode ? (
-          <div className="flex w-full items-center justify-end gap-2">
+          <div className="flex w-full items-center gap-2">
+            {renderChipNav(chipNavRef, { sortable: true })}
             <button
               type="button"
               onClick={resetLayout}
-              className="inline-flex h-9 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3 text-sm font-semibold text-cream hover:bg-white/20"
+              className="inline-flex h-9 shrink-0 items-center rounded-[10px] border border-cream/55 bg-white/10 px-3 text-sm font-semibold text-cream hover:bg-white/20"
             >
               Resetuj
             </button>
             <button
               type="button"
               onClick={() => setEditMode(false)}
-              className="inline-flex h-9 items-center rounded-[10px] bg-accent px-3 text-sm font-semibold text-white hover:bg-accent/90"
+              className="inline-flex h-9 shrink-0 items-center rounded-[10px] bg-accent px-3 text-sm font-semibold text-white hover:bg-accent/90"
             >
               Gotowe
             </button>

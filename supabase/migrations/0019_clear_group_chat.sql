@@ -15,7 +15,7 @@ begin
     raise exception 'Tylko organizator może czyścić czat wspólny.';
   end if;
 
-  delete from public.group_messages;
+  delete from public.group_messages where true;
 end;
 $$;
 
