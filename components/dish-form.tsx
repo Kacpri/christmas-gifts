@@ -166,7 +166,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
 
   useEffect(() => {
     if (addOpen) {
-      addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [addOpen]);
 
