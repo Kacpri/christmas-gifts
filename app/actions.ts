@@ -899,6 +899,11 @@ export async function createErrorReport(
   formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  try {
+    await supabase.rpc("ensure_profile");
+  } catch {
+    // samonaprawiający profil jest best-effort
+  }
   const description = String(formData.get("description") ?? "").trim();
   if (!description || description.length > 500) {
     return { ok: false, error: "Opis: 1–500 znaków." };

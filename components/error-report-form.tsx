@@ -25,8 +25,21 @@ export function ErrorReportForm({
   const [capturing, setCapturing] = useState(false);
 
   const capture = useCallback(async () => {
-    if (!activePanel) return;
-    const el = document.getElementById(`panel-${activePanel}`);
+    let el = activePanel
+      ? document.getElementById(`panel-${activePanel}`)
+      : null;
+    if (!el) {
+      let bestTop = Infinity;
+      for (const p of document.querySelectorAll<HTMLElement>(
+        '[id^="panel-"]'
+      )) {
+        const rect = p.getBoundingClientRect();
+        if (rect.bottom > 0 && rect.top < bestTop) {
+          bestTop = rect.top;
+          el = p;
+        }
+      }
+    }
     if (!el) return;
     setCapturing(true);
     try {
