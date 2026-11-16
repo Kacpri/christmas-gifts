@@ -582,6 +582,9 @@ function PanelCard({
   isHole,
   enterDelay,
   dndTransform,
+  reducedMotion,
+  onHeightChange,
+  onAnimState,
   children,
 }: {
   id: PanelId;
@@ -599,6 +602,9 @@ function PanelCard({
   isHole: boolean;
   enterDelay?: number;
   dndTransform: boolean;
+  reducedMotion: boolean;
+  onHeightChange?: (id: string, h: number) => void;
+  onAnimState?: (id: string, animating: boolean) => void;
   children: ReactNode;
 }) {
   const {
@@ -609,17 +615,75 @@ function PanelCard({
     transition,
   } = useSortable({ id, disabled: !editMode });
 
-  const [settled, setSettled] = useState(true);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const animWrapRef = useRef<HTMLDivElement | null>(null);
+  const animRafRef = useRef(0);
+  const prevCollapsedRef = useRef(collapsed);
+  const [displayCollapsed, setDisplayCollapsed] = useState(collapsed);
+  const [animH, setAnimH] = useState<number | null>(null);
+
   useEffect(() => {
-    setSettled(false);
-    const t = setTimeout(() => setSettled(true), 250);
-    return () => clearTimeout(t);
-  }, [collapsed]);
+    const prev = prevCollapsedRef.current;
+    prevCollapsedRef.current = collapsed;
+    if (prev === collapsed) return;
+    const wrap = animWrapRef.current;
+    if (!wrap) {
+      setDisplayCollapsed(collapsed);
+      return;
+    }
+    if (reducedMotion) {
+      setAnimH(null);
+      setDisplayCollapsed(collapsed);
+      return;
+    }
+    cancelAnimationFrame(animRafRef.current);
+    const from = wrap.getBoundingClientRect().height;
+    const to = collapsed ? 0 : wrap.scrollHeight;
+    if (from === to) {
+      setAnimH(null);
+      setDisplayCollapsed(collapsed);
+      return;
+    }
+    onAnimState?.(id, true);
+    const start = performance.now();
+    const DURATION = 200;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / DURATION);
+      const e = 1 - Math.pow(1 - t, 3);
+      setAnimH(from + (to - from) * e);
+      if (t < 1) {
+        animRafRef.current = requestAnimationFrame(tick);
+      } else {
+        setAnimH(null);
+        setDisplayCollapsed(collapsed);
+        onAnimState?.(id, false);
+      }
+    };
+    animRafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRafRef.current);
+  }, [collapsed, id, onAnimState, reducedMotion]);
+
+  useLayoutEffect(() => {
+    const el = sectionRef.current;
+    if (el && onHeightChange) {
+      onHeightChange(id, Math.round(el.getBoundingClientRect().height));
+    }
+  }, [animH, displayCollapsed, id, onHeightChange]);
+
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(animRafRef.current);
+      onAnimState?.(id, false);
+    };
+  }, [id, onAnimState]);
 
   return (
     <section
       id={`panel-${id}`}
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el);
+        sectionRef.current = el;
+      }}
       style={{
         ...(dndTransform
           ? { transform: CSS.Transform.toString(transform), transition }
@@ -699,18 +763,16 @@ function PanelCard({
       </div>
       {children ? (
         <div
-          className="grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none"
-          style={{ gridTemplateRows: collapsed ? "0fr" : "1fr" }}
+          ref={animWrapRef}
+          style={{
+            height:
+              animH != null ? `${animH}px` : displayCollapsed ? "0px" : undefined,
+            overflow: animH != null || displayCollapsed ? "hidden" : "visible",
+            visibility:
+              displayCollapsed && animH == null ? "hidden" : undefined,
+          }}
         >
-          <div
-            className={`${
-              collapsed || !settled ? "overflow-hidden" : "overflow-visible"
-            } transition-[visibility] duration-200 ${
-              collapsed ? "invisible" : "visible"
-            }`}
-          >
-            <div className="mt-3">{children}</div>
-          </div>
+          <div className="mt-3">{children}</div>
         </div>
       ) : null}
     </section>
@@ -1148,6 +1210,7 @@ export function Dashboard({
   const [heights, setHeights] = useState<Record<string, number>>({});
   const [containerW, setContainerW] = useState(0);
   const [measured, setMeasured] = useState(false);
+  const [animating, setAnimating] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const chipDragRef = useRef<{
     x: number;
@@ -1191,6 +1254,19 @@ export function Dashboard({
       // localStorage niedostępny — ignoruj
     }
     setRevealed(true);
+  }, []);
+
+  const handleHeightChange = useCallback((id: string, h: number) => {
+    setHeights((prev) => (prev[id] === h ? prev : { ...prev, [id]: h }));
+  }, []);
+
+  const handleAnimState = useCallback((id: string, on: boolean) => {
+    setAnimating((prev) => {
+      if (on) return { ...prev, [id]: true };
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -1453,6 +1529,7 @@ export function Dashboard({
 
   const isTwoCol = view === "2col";
   const absLayout = containerW > 0;
+  const anyAnimating = Object.keys(animating).length > 0;
   const previewVisible =
     activeId && overId && activeId !== overId
       ? arrayMove(visible, visible.indexOf(activeId), visible.indexOf(overId))
@@ -1594,6 +1671,9 @@ export function Dashboard({
         isHole={activeId === id}
         enterDelay={entering ? index * 50 : undefined}
         dndTransform={!absLayout}
+        reducedMotion={reducedMotion}
+        onHeightChange={handleHeightChange}
+        onAnimState={handleAnimState}
       >
         {isReadyPanel &&
         (ready.lotteryDone || ready.lateJoiner)
@@ -1953,7 +2033,7 @@ export function Dashboard({
                             left: p.left,
                             width: masonryLayout.colW,
                             transition:
-                              measured && !reducedMotion
+                              measured && !reducedMotion && !anyAnimating
                                 ? "top 250ms ease, left 250ms ease"
                                 : undefined,
                           }
