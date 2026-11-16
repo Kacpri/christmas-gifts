@@ -1464,6 +1464,7 @@ export function Dashboard({
           me={groupChat.me}
           messages={groupChat.messages}
           collapsed={!!collapsed["group-chat"]}
+          isOrganizer={party.isOrganizer}
           onUnreadChange={handleGroupUnreadChange}
         />
       ),

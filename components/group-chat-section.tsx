@@ -10,11 +10,16 @@ import {
 } from "react";
 
 import {
+  clearGroupChat,
   deleteGroupMessage,
   editGroupMessage,
   sendGroupMessage,
   type ActionResult,
 } from "@/app/actions";
+import {
+  ConfirmDialog,
+  type ConfirmState,
+} from "@/components/confirm-dialog";
 import {
   DateSeparator,
   MessageBubble,
@@ -31,17 +36,24 @@ export function GroupChatSection({
   me,
   messages,
   collapsed,
+  isOrganizer,
   onUnreadChange,
 }: {
   me: string;
   messages: ChatMessage[];
   collapsed: boolean;
+  isOrganizer: boolean;
   onUnreadChange?: (total: number) => void;
 }) {
   const [local, setLocal] = useState<ChatMessage[]>(messages);
   const [unread, setUnread] = useState(0);
   const [value, setValue] = useState("");
   const [state, sendAction, pending] = useActionState(sendGroupMessage, empty);
+  const [clearState, clearAction, clearPending] = useActionState(
+    clearGroupChat,
+    empty
+  );
+  const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const boxRef = useRef<HTMLDivElement>(null);
@@ -187,6 +199,14 @@ export function GroupChatSection({
             );
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "group_messages" },
+          (payload) => {
+            const m = payload.old as { id: number };
+            setLocal((prev) => prev.filter((x) => x.id !== m.id));
+          }
+        )
         .subscribe();
     })();
 
@@ -238,9 +258,50 @@ export function GroupChatSection({
 
   return (
     <>
-      <p className="text-sm text-faint">
-        Anonimowy — nikt nie wie, kto co napisał.
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-faint">
+          Anonimowy — nikt nie wie, kto co napisał.
+        </p>
+        {isOrganizer && (
+          <button
+            type="button"
+            disabled={clearPending}
+            onClick={() =>
+              setConfirm({
+                message:
+                  "Wyczyścić czat wspólny? Wszystkie wiadomości zostaną usunięte.",
+                confirmLabel: "Wyczyść",
+                cancelLabel: "Wróć",
+                tone: "danger",
+                onConfirm: () => {
+                  const fd = new FormData();
+                  clearAction(fd);
+                },
+              })
+            }
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M3 6h18" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            {clearPending ? "Czyszczenie…" : "Wyczyść czat"}
+          </button>
+        )}
+      </div>
       <div
         className={`mt-3 flex flex-col overflow-hidden rounded-[14px] bg-mist ${
           isDesktop ? "h-96" : ""
@@ -327,6 +388,10 @@ export function GroupChatSection({
       {!state.ok && state.error && (
         <p className="mt-2 text-sm text-red-600">{state.error}</p>
       )}
+      {!clearState.ok && clearState.error && (
+        <p className="mt-2 text-sm text-red-600">{clearState.error}</p>
+      )}
+      <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

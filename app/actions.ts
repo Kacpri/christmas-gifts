@@ -482,6 +482,21 @@ export async function deleteGroupMessage(
   return { ok: true };
 }
 
+export async function clearGroupChat(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może czyścić czat wspólny." };
+  }
+  const { supabase } = org;
+  const { error } = await supabase.rpc("clear_group_chat");
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function markThreadRead(formData: FormData): Promise<void> {
   const { supabase, user } = await requireUser();
   const lotteryType = Number(formData.get("lottery_type"));
