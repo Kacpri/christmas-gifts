@@ -943,15 +943,18 @@ function LikeButton({
   onClick: (e: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const hoverLikedRef = useRef(likedByMe);
-  const freshHover = hovered && hoverLikedRef.current === likedByMe;
+  const clickedSinceHoverRef = useRef(false);
+  const freshHover = hovered && !clickedSinceHoverRef.current;
   const filled = likedByMe ? !freshHover : freshHover;
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        clickedSinceHoverRef.current = true;
+        onClick(e);
+      }}
       onMouseEnter={() => {
-        hoverLikedRef.current = likedByMe;
+        clickedSinceHoverRef.current = false;
         setHovered(true);
       }}
       onMouseLeave={() => setHovered(false)}
