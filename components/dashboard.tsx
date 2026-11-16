@@ -1689,7 +1689,7 @@ export function Dashboard({
 
   return (
     <main
-      className={`mx-auto flex w-full flex-1 flex-col gap-5 px-5 pb-16 pt-0 md:pt-7 ${
+        className={`mx-auto flex w-full flex-1 flex-col gap-5 px-5 pb-16 pt-4 md:pt-7 ${
         isTwoCol ? "max-w-[1200px]" : "max-w-[800px]"
       }`}
     >
@@ -1873,7 +1873,7 @@ export function Dashboard({
       {hydrated && (
           <div
             ref={containerRef}
-            className={absLayout ? "relative" : "flex flex-col gap-5"}
+            className={`${absLayout ? "relative" : "flex flex-col gap-5"} -mt-3 md:mt-0`}
             style={
               absLayout && masonryLayout
                 ? { height: masonryLayout.totalH }
