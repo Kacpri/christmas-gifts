@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Świąteczne Losowanie",
-    short_name: "Losowanie",
-    description: "Losowanie prezentów świątecznych",
+    name: "Świąteczna Tablica",
+    short_name: "Tablica",
+    description: "Świąteczna tablica do wymiany prezentów",
     start_url: "/",
     scope: "/",
     display: "standalone",

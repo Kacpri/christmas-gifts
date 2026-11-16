@@ -20,12 +20,12 @@ const lobster = Lobster({
 });
 
 export const metadata: Metadata = {
-  title: "Świąteczne Losowanie",
-  description: "Losowanie prezentów świątecznych",
+  title: "Świąteczna Tablica",
+  description: "Świąteczna tablica do wymiany prezentów",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Świąteczne Losowanie",
+    title: "Świąteczna Tablica",
   },
 };
 

@@ -1735,9 +1735,9 @@ export function Dashboard({
         )}
       </div>
       <header className="flex flex-col gap-2">
-        <h1 className="text-[38px] leading-tight text-cream">
-          Świąteczne Losowanie
-        </h1>
+          <h1 className="text-[38px] leading-tight text-cream">
+            Świąteczna Tablica
+          </h1>
         <Countdown startsAt={party.startsAt} label={party.label} />
       </header>
       <DndContext
