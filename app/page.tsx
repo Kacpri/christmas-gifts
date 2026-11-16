@@ -18,8 +18,6 @@ export default async function Home() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  await supabase.rpc("ensure_profile");
-
   const [
     { data: profile },
     { data: participants },
