@@ -1696,8 +1696,14 @@ export function Dashboard({
       {hydrated && gifts.kind === "done" && !revealed && (
         <LotteryReveal onDone={markRevealed} />
       )}
+      <header className="flex flex-col gap-2">
+          <h1 className="text-[38px] leading-tight text-cream">
+            Świąteczna Tablica
+          </h1>
+        <Countdown startsAt={party.startsAt} label={party.label} />
+      </header>
       <div
-        className={`sticky top-0 z-30 -mx-5 flex h-[52px] items-center gap-1.5 bg-[#0d4024] px-3 transition-transform duration-200 dark:bg-[#061a13] md:hidden ${
+        className={`sticky top-0 z-30 -mx-5 -mt-3 flex h-[52px] items-center gap-1.5 bg-[#0d4024] px-3 transition-transform duration-200 dark:bg-[#061a13] md:hidden ${
           topBarHidden ? "-translate-y-full" : ""
         }`}
       >
@@ -1734,12 +1740,6 @@ export function Dashboard({
           </>
         )}
       </div>
-      <header className="flex flex-col gap-2">
-          <h1 className="text-[38px] leading-tight text-cream">
-            Świąteczna Tablica
-          </h1>
-        <Countdown startsAt={party.startsAt} label={party.label} />
-      </header>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
