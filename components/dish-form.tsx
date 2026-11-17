@@ -26,7 +26,7 @@ import {
   dishCategoryLabel,
   type DishCategory,
 } from "@/lib/dishes";
-import { capitalizeFirst, plural } from "@/lib/format";
+import { capitalizeFirst, formatQuantity, plural } from "@/lib/format";
 
 export type Dish = {
   id: number;
@@ -471,13 +471,13 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                       )}
                       {dish.quantity && (
                         <span className="truncate sm:hidden">
-                          · {dish.quantity}
+                          · {formatQuantity(dish.quantity)}
                         </span>
                       )}
                     </p>
                   </div>
                   <span className="hidden w-[72px] shrink-0 text-right text-sm text-muted sm:block">
-                    {dish.quantity ?? ""}
+                    {dish.quantity ? formatQuantity(dish.quantity) : ""}
                   </span>
                   <div className="flex w-[74px] shrink-0 items-center justify-end gap-0.5">
                     <div

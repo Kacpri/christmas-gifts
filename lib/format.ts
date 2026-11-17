@@ -38,6 +38,14 @@ export const plural = (n: number, forms: [string, string, string]) => {
 export const capitalizeFirst = (s: string) =>
   s.charAt(0).toUpperCase() + s.slice(1);
 
+export const formatQuantity = (q: string) => {
+  const s = q.trim().toLowerCase();
+  const m = s.match(/^(\d+(?:[.,]\d+)?)(.*)$/);
+  if (!m) return s;
+  const rest = m[2].trimStart();
+  return rest ? `${m[1]} ${rest}` : m[1];
+};
+
 export const participationVerb = (n: number) => {
   const d = n % 10;
   const h = n % 100;
