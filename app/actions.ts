@@ -276,27 +276,15 @@ export async function uploadAvatar(
     return { ok: false, error: "Zdjęcie może mieć maks. 4 MB." };
   }
   const path = `${user.id}/avatar.${ext}`;
-  const { data: diag, error: diagError } = await supabase.rpc("diag_jwt");
-  const diagMsg = diagError
-    ? `diag=RPC_BLED(${diagError.message})`
-    : `diag=${JSON.stringify(diag)}`;
   const { error: uploadError } = await supabase.storage
     .from("avatars")
     .upload(path, file, { contentType: file.type, upsert: true });
-  if (uploadError)
-    return {
-      ok: false,
-      error: `[DEBUG-a4f2] STORAGE padło (uid=${user.id}) ${diagMsg}: ${uploadError.message}`,
-    };
+  if (uploadError) return { ok: false, error: uploadError.message };
   const { error } = await supabase
     .from("profiles")
     .update({ avatar_path: path })
     .eq("id", user.id);
-  if (error)
-    return {
-      ok: false,
-      error: `[DEBUG-a4f2] PROFILES padło (uid=${user.id}): ${error.message}`,
-    };
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
 }
