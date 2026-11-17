@@ -32,6 +32,7 @@ export function NameForm({
   const [nameValue, setNameValue] = useState(fullName);
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, startBusy] = useTransition();
+  const [deleting, startDeleting] = useTransition();
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
@@ -55,7 +56,7 @@ export function NameForm({
 
   function handleDeleteAvatar() {
     setAvatarError(null);
-    startBusy(async () => {
+    startDeleting(async () => {
       const res = await deleteAvatar(empty, new FormData());
       if (!res.ok) setAvatarError(res.error ?? "Nie udało się usunąć zdjęcia.");
     });
@@ -70,7 +71,7 @@ export function NameForm({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            disabled={busy || pending}
+            disabled={busy || deleting || pending}
             className="text-sm font-medium text-accent-deep hover:underline disabled:opacity-50"
           >
             Zmień zdjęcie
@@ -79,10 +80,10 @@ export function NameForm({
             <button
               type="button"
               onClick={handleDeleteAvatar}
-              disabled={busy || pending}
+              disabled={busy || deleting || pending}
               className="inline-flex items-center gap-1.5 text-sm text-danger hover:underline disabled:opacity-50"
             >
-              {busy ? (
+              {deleting ? (
                 <>
                   <SpinnerIcon />
                   Usuwanie…
