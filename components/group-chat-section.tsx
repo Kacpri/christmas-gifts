@@ -343,6 +343,7 @@ export function GroupChatSection({
       })
       .then(({ error }) => {
         if (error) {
+          console.error("toggle_message_reaction (group):", error.message);
           setLocal((prev) =>
             prev.map((m) =>
               m.id === messageId

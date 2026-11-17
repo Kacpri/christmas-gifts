@@ -1035,6 +1035,7 @@ export function ChatsPanel({
       })
       .then(({ error }) => {
         if (error) {
+          console.error("toggle_message_reaction (lottery):", error.message);
           setLotteryMsgs((prev) => ({
             ...prev,
             [key]: applyReactionToMessages(
@@ -1072,6 +1073,7 @@ export function ChatsPanel({
       })
       .then(({ error }) => {
         if (error) {
+          console.error("toggle_message_reaction (dm):", error.message);
           setDmMsgs((prev) => ({
             ...prev,
             [peerId]: applyReactionToMessages(
