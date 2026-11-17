@@ -33,9 +33,6 @@ import { formatPrice } from "@/lib/format";
 import { THEME_IDEAS } from "@/lib/theme-ideas";
 import { Presence } from "@/components/presence";
 
-const BAD_THEME_HINT =
-  "Unikaj ogólników typu: cokolwiek, co chcesz, nie mam pomysłu — im konkretniejszy temat, tym trafniejszy prezent.";
-
 export type Wish = {
   id: number;
   text: string;
@@ -385,9 +382,6 @@ export function WishForm({
             </span>
           )}
         </div>
-        {!themeLocked && (
-          <p className="text-sm text-muted">{BAD_THEME_HINT}</p>
-        )}
         <p className="text-sm text-muted">
           Budżet na prezent tematyczny: do {themeBudget} zł
         </p>
