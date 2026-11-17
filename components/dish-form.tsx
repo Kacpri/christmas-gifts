@@ -400,7 +400,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                         name="quantity"
                         value={editQuantity}
                         onChange={(e) => setEditQuantity(e.target.value)}
-                        maxLength={50}
+                        maxLength={12}
                         placeholder="Ilość (np. 2 kg)"
                         className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
                       />
@@ -582,7 +582,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
               />
               <input
                 name="quantity"
-                maxLength={50}
+                maxLength={12}
                 placeholder="Ilość (np. 2 kg)"
                 className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:flex-1"
               />
