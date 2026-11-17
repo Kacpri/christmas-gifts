@@ -15,44 +15,9 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
+import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 
 const empty: ActionResult = { ok: false };
-
-async function cropToSquare(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  try {
-    const side = Math.min(bitmap.width, bitmap.height);
-    const out = Math.min(side, 512);
-    const canvas = document.createElement("canvas");
-    canvas.width = out;
-    canvas.height = out;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("brak kontekstu canvas");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, out, out);
-    ctx.drawImage(
-      bitmap,
-      (bitmap.width - side) / 2,
-      (bitmap.height - side) / 2,
-      side,
-      side,
-      0,
-      0,
-      out,
-      out
-    );
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("kodowanie"))),
-        "image/jpeg",
-        0.85
-      )
-    );
-    return new File([blob], "avatar.jpg", { type: "image/jpeg" });
-  } finally {
-    bitmap.close();
-  }
-}
 
 export function NameForm({
   fullName,
@@ -68,24 +33,23 @@ export function NameForm({
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, startBusy] = useTransition();
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   function handleAvatarFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setAvatarError(null);
+    setCropFile(file);
+  }
+
+  function handleCropSave(cropped: File) {
     startBusy(async () => {
-      let cropped: File;
-      try {
-        cropped = await cropToSquare(file);
-      } catch {
-        setAvatarError("Nie udało się przetworzyć zdjęcia.");
-        return;
-      }
       const fd = new FormData();
       fd.append("avatar", cropped);
       const res = await uploadAvatar(empty, fd);
-      if (!res.ok) setAvatarError(res.error ?? "Nie udało się zapisać zdjęcia.");
+      if (res.ok) setCropFile(null);
+      else setAvatarError(res.error ?? "Nie udało się zapisać zdjęcia.");
     });
   }
 
@@ -109,16 +73,23 @@ export function NameForm({
             disabled={busy || pending}
             className="text-sm font-medium text-accent-deep hover:underline disabled:opacity-50"
           >
-            {busy ? "Zapisywanie…" : "Zmień zdjęcie"}
+            Zmień zdjęcie
           </button>
           {hasUpload && (
             <button
               type="button"
               onClick={handleDeleteAvatar}
               disabled={busy || pending}
-              className="text-sm text-danger hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-sm text-danger hover:underline disabled:opacity-50"
             >
-              Usuń awatar
+              {busy ? (
+                <>
+                  <SpinnerIcon />
+                  Usuwanie…
+                </>
+              ) : (
+                "Usuń zdjęcie"
+              )}
             </button>
           )}
         </div>
@@ -131,6 +102,14 @@ export function NameForm({
         />
       </div>
       {avatarError && <p className="mt-2 text-sm text-red-600">{avatarError}</p>}
+      {cropFile && (
+        <AvatarCropDialog
+          file={cropFile}
+          busy={busy}
+          onClose={() => setCropFile(null)}
+          onSave={handleCropSave}
+        />
+      )}
       <form action={formAction} className="mt-3 flex flex-col gap-3">
         <input
           name="full_name"
