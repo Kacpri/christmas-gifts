@@ -11,6 +11,8 @@ import {
 import { type ActionResult } from "@/app/actions";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { timeOf } from "@/lib/format";
+import { REACTION_EMOJIS, type ReactionGroup } from "@/lib/reactions";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 const empty: ActionResult = { ok: false };
 
@@ -21,6 +23,8 @@ export type ChatMessage = {
   createdAt: string;
   editedAt: string | null;
   deleted: boolean;
+  imageUrl: string | null;
+  reactions: ReactionGroup[];
 };
 
 export const dayKey = (iso: string) => {
@@ -89,16 +93,20 @@ function renderMessageText(text: string) {
 export function MessageBubble({
   message,
   isOwn,
+  meId,
   editAction,
   deleteAction,
+  onToggleReaction,
 }: {
   message: ChatMessage;
   isOwn: boolean;
+  meId: string;
   editAction: (
     prev: ActionResult,
     formData: FormData
   ) => Promise<ActionResult>;
   deleteAction: (formData: FormData) => Promise<ActionResult>;
+  onToggleReaction?: (messageId: number, emoji: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -107,10 +115,13 @@ export function MessageBubble({
     empty
   );
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [picker, setPicker] = useState<{ x: number; y: number } | null>(null);
+  const [lightbox, setLightbox] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const touchTimer = useRef<number | null>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (editing) editInputRef.current?.focus();
@@ -124,25 +135,40 @@ export function MessageBubble({
   }, [editState]);
 
   useEffect(() => {
-    if (!menu) return;
+    if (!menu && !picker) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenu(null);
+      if (e.key === "Escape") {
+        setMenu(null);
+        setPicker(null);
+      }
     };
-    const onScroll = () => setMenu(null);
+    const onScroll = () => {
+      setMenu(null);
+      setPicker(null);
+    };
     window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, true);
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("scroll", onScroll, true);
     };
-  }, [menu]);
+  }, [menu, picker]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
 
   const canMenu = isOwn && !message.deleted && !editing;
 
   return (
     <>
       <div
-        className={`flex max-w-[72%] select-none flex-col gap-0.5 px-3 py-2 ${
+        className={`group flex max-w-[72%] select-none flex-col gap-0.5 px-3 py-2 ${
           editing ? "min-w-48" : ""
         } ${
           isOwn
@@ -261,18 +287,82 @@ export function MessageBubble({
           </form>
         ) : (
           <>
-            <p className="whitespace-pre-wrap break-words text-[15px] leading-5">
-              {renderMessageText(message.text)}
-            </p>
-            <p
-              suppressHydrationWarning
-              className={`text-right text-[11px] tabular-nums ${
-                isOwn ? "text-white/70" : "text-faint"
-              }`}
-            >
-              {timeOf(message.createdAt)}
-              {message.editedAt ? " · edytowano" : ""}
-            </p>
+            {message.imageUrl && (
+              <button
+                type="button"
+                onClick={() => setLightbox(true)}
+                aria-label="Powiększ zdjęcie"
+                className="mb-1 block overflow-hidden rounded-lg"
+              >
+                <img
+                  src={message.imageUrl}
+                  alt=""
+                  loading="lazy"
+                  className="max-h-52 w-auto max-w-full"
+                />
+              </button>
+            )}
+            {message.text && (
+              <p className="whitespace-pre-wrap break-words text-[15px] leading-5">
+                {renderMessageText(message.text)}
+              </p>
+            )}
+            <div className="flex items-center justify-end gap-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPicker({ x: e.clientX, y: e.clientY });
+                }}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchMove={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                aria-label="Dodaj reakcję"
+                title="Dodaj reakcję"
+                className={`-my-1 flex h-6 w-6 items-center justify-center rounded ${
+                  isOwn
+                    ? "text-white/60 hover:text-white"
+                    : "text-faint hover:text-ink"
+                } ${
+                  isDesktop
+                    ? "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                    : "opacity-100"
+                }`}
+              >
+                <SmileyIcon />
+              </button>
+              <p
+                suppressHydrationWarning
+                className={`text-right text-[11px] tabular-nums ${
+                  isOwn ? "text-white/70" : "text-faint"
+                }`}
+              >
+                {timeOf(message.createdAt)}
+                {message.editedAt ? " · edytowano" : ""}
+              </p>
+            </div>
+            {message.reactions.length > 0 && (
+              <div className="mt-0.5 flex flex-wrap gap-1">
+                {message.reactions.map((r) => (
+                  <button
+                    key={r.emoji}
+                    type="button"
+                    onClick={() => onToggleReaction?.(message.id, r.emoji)}
+                    aria-label={`Reakcja ${r.emoji}: ${r.users.length}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs ${
+                      r.users.includes(meId)
+                        ? "border-accent bg-accent/10"
+                        : isOwn
+                          ? "border-white/30 bg-white/10"
+                          : "border-line bg-mist"
+                    }`}
+                  >
+                    <span aria-hidden>{r.emoji}</span>
+                    <span className="tabular-nums">{r.users.length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -328,8 +418,76 @@ export function MessageBubble({
           </div>
         </>
       )}
+      {picker && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setPicker(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setPicker(null);
+            }}
+          />
+          <div
+            className="fixed z-50 flex gap-0.5 rounded-full border border-line bg-surface p-1 shadow-lg"
+            style={{
+              left: Math.max(8, Math.min(picker.x, window.innerWidth - 224)),
+              top: Math.max(8, Math.min(picker.y, window.innerHeight - 48)),
+            }}
+          >
+            {REACTION_EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => {
+                  onToggleReaction?.(message.id, e);
+                  setPicker(null);
+                }}
+                aria-label={`Reakcja ${e}`}
+                className="grid h-8 w-8 place-items-center rounded-full text-lg hover:bg-mist"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {lightbox && message.imageUrl && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightbox(false)}
+          role="presentation"
+        >
+          <img
+            src={message.imageUrl}
+            alt=""
+            className="max-h-full max-w-full rounded-lg"
+          />
+        </div>
+      )}
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </>
+  );
+}
+
+function SmileyIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" x2="9.01" y1="9" y2="9" />
+      <line x1="15" x2="15.01" y1="9" y2="9" />
+    </svg>
   );
 }

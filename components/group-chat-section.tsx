@@ -27,7 +27,10 @@ import {
   type ChatMessage,
 } from "@/components/message-bubble";
 import { notify } from "@/lib/notify";
+import { chatPhotoUrl } from "@/lib/chat-photo";
+import { applyReaction } from "@/lib/reactions";
 import { createClient } from "@/lib/supabase/client";
+import { usePhotoAttachment } from "@/lib/use-photo-attachment";
 import { useMediaQuery } from "@/lib/use-media-query";
 
 const empty: ActionResult = { ok: false };
@@ -53,6 +56,7 @@ export function GroupChatSection({
     clearGroupChat,
     empty
   );
+  const photo = usePhotoAttachment();
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -73,6 +77,13 @@ export function GroupChatSection({
     }
   }, [state]);
 
+  const photoClearRef = useRef(photo.clear);
+  photoClearRef.current = photo.clear;
+
+  useEffect(() => {
+    if (state.ok) photoClearRef.current();
+  }, [state]);
+
   useEffect(() => {
     setLocal((prev) => {
       const prevIds = new Set(prev.map((m) => m.id));
@@ -88,12 +99,15 @@ export function GroupChatSection({
       const supabase = createClient();
       const { data } = await supabase
         .from("group_messages")
-        .select("id, sender_id, text, created_at, edited_at, deleted_at")
+        .select(
+          "id, sender_id, text, image_path, created_at, edited_at, deleted_at"
+        )
         .order("created_at");
       if (cancelled || !data) return;
       setLocal((prev) => {
         const byId = new Map(prev.map((m) => [m.id, m]));
         for (const m of data) {
+          const cur = byId.get(m.id);
           byId.set(m.id, {
             id: m.id,
             senderId: m.sender_id,
@@ -101,6 +115,8 @@ export function GroupChatSection({
             createdAt: m.created_at,
             editedAt: m.edited_at,
             deleted: m.deleted_at != null,
+            imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+            reactions: cur?.reactions ?? [],
           });
         }
         return [...byId.values()].sort((a, b) => a.id - b.id);
@@ -145,6 +161,7 @@ export function GroupChatSection({
               id: number;
               sender_id: string;
               text: string;
+              image_path: string | null;
               created_at: string;
             };
               setLocal((prev) => {
@@ -158,6 +175,8 @@ export function GroupChatSection({
                     createdAt: m.created_at,
                     editedAt: null,
                     deleted: false,
+                    imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    reactions: [],
                   },
                 ];
               });
@@ -207,6 +226,62 @@ export function GroupChatSection({
             setLocal((prev) => prev.filter((x) => x.id !== m.id));
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "group_message_reactions" },
+          (payload) => {
+            const r = payload.new as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setLocal((prev) =>
+              prev.some((x) => x.id === r.message_id)
+                ? prev.map((x) =>
+                    x.id === r.message_id
+                      ? {
+                          ...x,
+                          reactions: applyReaction(
+                            x.reactions,
+                            r.emoji,
+                            r.user_id,
+                            true
+                          ),
+                        }
+                      : x
+                  )
+                : prev
+            );
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "group_message_reactions" },
+          (payload) => {
+            const r = payload.old as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setLocal((prev) =>
+              prev.some((x) => x.id === r.message_id)
+                ? prev.map((x) =>
+                    x.id === r.message_id
+                      ? {
+                          ...x,
+                          reactions: applyReaction(
+                            x.reactions,
+                            r.emoji,
+                            r.user_id,
+                            false
+                          ),
+                        }
+                      : x
+                  )
+                : prev
+            );
+          }
+        )
         .subscribe();
     })();
 
@@ -246,6 +321,40 @@ export function GroupChatSection({
   function loadOlder() {
     anchorRef.current = document.documentElement.scrollHeight;
     setVisibleCount((c) => c + 20);
+  }
+
+  function toggleReaction(messageId: number, emoji: string) {
+    const cur = local.find((m) => m.id === messageId);
+    const add = !cur?.reactions.some(
+      (r) => r.emoji === emoji && r.users.includes(me)
+    );
+    setLocal((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, reactions: applyReaction(m.reactions, emoji, me, add) }
+          : m
+      )
+    );
+    createClient()
+      .rpc("toggle_message_reaction", {
+        p_kind: 2,
+        p_message_id: messageId,
+        p_emoji: emoji,
+      })
+      .then(({ error }) => {
+        if (error) {
+          setLocal((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? {
+                    ...m,
+                    reactions: applyReaction(m.reactions, emoji, me, !add),
+                  }
+                : m
+            )
+          );
+        }
+      });
   }
 
   useLayoutEffect(() => {
@@ -338,6 +447,8 @@ export function GroupChatSection({
                 <MessageBubble
                   message={m}
                   isOwn={m.senderId === me}
+                  meId={me}
+                  onToggleReaction={toggleReaction}
                   editAction={editGroupMessage}
                   deleteAction={deleteGroupMessage}
                 />
@@ -347,42 +458,98 @@ export function GroupChatSection({
         </div>
         <form
           action={sendAction}
-          onSubmit={() => {
+          onSubmit={(e) => {
             lastSentRef.current = value;
             setValue("");
+            if (photo.file) {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              fd.set("image", photo.file);
+              sendAction(fd);
+            }
           }}
-          className="flex items-center gap-2 border-t border-line bg-surface p-3"
+          className="flex flex-col gap-2 border-t border-line bg-surface p-3"
         >
-          <input
-            name="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            required
-            maxLength={500}
-            placeholder="Napisz wiadomość…"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
-          />
-          <button
-            type="submit"
-            disabled={pending || !value.trim()}
-            aria-label="Wyślij"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
+          {photo.previewUrl && (
+            <span className="relative inline-block">
+              <img
+                src={photo.previewUrl}
+                alt="Podgląd zdjęcia"
+                className="h-16 w-16 rounded-[10px] border border-input-line object-cover"
+              />
+              <button
+                type="button"
+                onClick={photo.clear}
+                aria-label="Usuń zdjęcie"
+                className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-[#14532d] text-xs font-bold text-white hover:bg-accent-deep dark:bg-accent"
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {photo.error && (
+            <p className="text-sm text-red-600">{photo.error}</p>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              ref={photo.inputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => photo.pick(e.target.files?.[0] ?? null)}
+            />
+            <input
+              name="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              maxLength={500}
+              placeholder="Napisz wiadomość…"
+              className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
+            />
+            <button
+              type="button"
+              onClick={() => photo.inputRef.current?.click()}
+              aria-label="Dodaj zdjęcie"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-input-line bg-input-bg text-ink hover:bg-mist"
             >
-              <path d="M22 2L11 13" />
-              <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-            </svg>
-          </button>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            </button>
+            <button
+              type="submit"
+              disabled={pending || (!value.trim() && !photo.hasPhoto)}
+              aria-label="Wyślij"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M22 2L11 13" />
+                <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+              </svg>
+            </button>
+          </div>
         </form>
       </div>
       {!state.ok && state.error && (

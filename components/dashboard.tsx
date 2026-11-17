@@ -25,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   useCallback,
   useEffect,
+  useActionState,
   useLayoutEffect,
   useRef,
   useState,
@@ -34,6 +35,7 @@ import {
   type Ref,
 } from "react";
 
+import { toggleGiftReady } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
 import {
   ChatsPanel,
@@ -124,6 +126,7 @@ export type GiftsData =
       kind: "done";
       listGift: { person: string; avatarUrl: string | null; wishes: Wish[] };
       themeGift: { person: string; avatarUrl: string | null; theme: string };
+      giftReady: boolean;
     }
   | { kind: "late" }
   | { kind: "waiting"; count: number };
@@ -442,6 +445,66 @@ function LockIcon() {
     >
       <rect x="3" y="11" width="18" height="11" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function GiftIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="8" width="18" height="4" rx="1" />
+      <path d="M12 8v13" />
+      <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+      <path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" />
+    </svg>
+  );
+}
+
+function GiftCheckIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="8" width="18" height="4" rx="1" />
+      <path d="M12 8v13" />
+      <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+      <path d="m9 19 2 2 4-4" />
+    </svg>
+  );
+}
+
+function GiftSpinnerIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      className="animate-spin"
+      aria-hidden
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
     </svg>
   );
 }
@@ -900,6 +963,10 @@ function GiftsBody({
   listBudget: number;
   themeBudget: number;
 }) {
+  const [giftState, giftAction, giftPending] = useActionState(
+    toggleGiftReady,
+    { ok: false }
+  );
   if (gifts.kind === "late") {
     return (
       <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
@@ -999,6 +1066,39 @@ function GiftsBody({
           </p>
         </div>
       </article>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const fd = new FormData();
+          fd.set("gift_ready", String(!gifts.giftReady));
+          giftAction(fd);
+        }}
+      >
+        <button
+          type="submit"
+          disabled={giftPending}
+          className={`inline-flex w-fit items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+            gifts.giftReady
+              ? "bg-accent text-white hover:bg-accent/90"
+              : "border border-accent bg-surface text-accent hover:bg-mist"
+          }`}
+        >
+          {giftPending ? (
+            <GiftSpinnerIcon />
+          ) : gifts.giftReady ? (
+            <GiftCheckIcon />
+          ) : (
+            <GiftIcon />
+          )}
+          {gifts.giftReady
+            ? "Prezent gotowy — kliknij, aby odznaczyć"
+            : "Oznacz prezent jako gotowy"}
+        </button>
+        {!giftState.ok && giftState.error && (
+          <p className="mt-2 text-sm text-red-600">{giftState.error}</p>
+        )}
+      </form>
 
       <p className="flex items-center gap-2 text-sm text-[#4a5c50] dark:text-muted">
         <LockIcon />
@@ -1191,6 +1291,7 @@ export function Dashboard({
       id: string;
       full_name: string;
       is_ready: boolean;
+      gift_ready: boolean;
       has_theme: boolean;
       wish_count: number;
       theme_text: string | null;

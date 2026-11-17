@@ -41,6 +41,7 @@ export function OrganizerPanel({
     id: string;
     full_name: string;
     is_ready: boolean;
+    gift_ready: boolean;
     has_theme: boolean;
     wish_count: number;
     theme_text: string | null;
@@ -135,6 +136,7 @@ export function OrganizerPanel({
   }
 
   const readyCount = participants.filter((p) => p.is_ready).length;
+  const giftCount = participants.filter((p) => p.gift_ready).length;
   const allReady =
     participants.length > 0 && participants.every((p) => p.is_ready);
   const notReadyNames = participants
@@ -150,6 +152,14 @@ export function OrganizerPanel({
           {readyCount} {plural(readyCount, ["gotowa", "gotowe", "gotowych"])}.
           Losowanie wymaga minimum 3 osób.
         </p>
+        {lotteryDone && (
+          <p className="mt-1 text-sm text-muted">
+            Prezenty gotowe:{" "}
+            <strong className="font-semibold text-ink">
+              {giftCount} z {participants.length}
+            </strong>
+          </p>
+        )}
       </div>
 
       <div className={lotteryDone ? "grid gap-2 md:grid-cols-3" : undefined}>
@@ -393,16 +403,25 @@ export function OrganizerPanel({
                   <span className="truncate text-sm font-medium text-ink">
                     {p.full_name}
                   </span>
-                  <span
-                    className={
-                      p.is_ready
-                        ? "shrink-0 text-xs font-medium text-accent"
-                        : "shrink-0 text-xs text-faint"
-                    }
-                  >
-                    {p.is_ready ? "gotowy" : "oczekuje"}
-                  </span>
-                </div>
+                    <span
+                      className={
+                        p.is_ready
+                          ? "shrink-0 text-xs font-medium text-accent"
+                          : "shrink-0 text-xs text-faint"
+                      }
+                    >
+                      {p.is_ready ? "gotowy" : "oczekuje"}
+                    </span>
+                    {lotteryDone && p.gift_ready && (
+                      <span
+                        className="shrink-0 text-accent"
+                        title="Prezent gotowy"
+                        aria-label="Prezent gotowy"
+                      >
+                        <GiftIcon />
+                      </span>
+                    )}
+                  </div>
                 <button
                   type="button"
                   onClick={() => setMenuParticipant(p)}
@@ -719,6 +738,27 @@ function CheckIcon() {
       aria-hidden
     >
       <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+function GiftIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="8" width="18" height="4" rx="1" />
+      <path d="M12 8v13" />
+      <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+      <path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5" />
     </svg>
   );
 }

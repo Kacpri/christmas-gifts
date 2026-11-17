@@ -13,6 +13,10 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { DISH_CATEGORY_VALUES } from "@/lib/dishes";
 import { declineName } from "@/lib/declension";
+import {
+  CHAT_PHOTO_MAX_BYTES,
+  CHAT_PHOTO_TYPES,
+} from "@/lib/chat-photo";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -352,6 +356,21 @@ export async function markReady(
   return { ok: true };
 }
 
+export async function toggleGiftReady(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const giftReady = formData.get("gift_ready") === "true";
+  const { error } = await supabase
+    .from("profiles")
+    .update({ gift_ready: giftReady })
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function saveTheme(
   _prev: ActionResult,
   formData: FormData
@@ -380,8 +399,10 @@ export async function runLottery(
   _formData: FormData
 ): Promise<ActionResult> {
   const { supabase } = await requireUser();
+  const photoPaths = await collectTablePhotoPaths(supabase, 1);
   const { error } = await supabase.rpc("run_lottery");
   if (error) return { ok: false, error: error.message };
+  await removeChatPhotos(supabase, photoPaths);
   revalidatePath("/");
   return { ok: true };
 }
@@ -405,6 +426,48 @@ async function touchThreadRead(
   );
 }
 
+async function uploadChatPhoto(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  formData: FormData
+): Promise<{ path: string | null; error?: string }> {
+  const image = formData.get("image");
+  if (!(image instanceof Blob) || image.size === 0) {
+    return { path: null };
+  }
+  const ext = CHAT_PHOTO_TYPES[image.type];
+  if (!ext) {
+    return { path: null, error: "Dozwolone formaty: JPG, PNG, WebP." };
+  }
+  if (image.size > CHAT_PHOTO_MAX_BYTES) {
+    return { path: null, error: "Zdjęcie może mieć maks. 4 MB." };
+  }
+  const path = `${userId}/${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}.${ext}`;
+  const { error } = await supabase.storage
+    .from("chat-photos")
+    .upload(path, image, { contentType: image.type });
+  if (error) return { path: null, error: error.message };
+  return { path };
+}
+
+async function collectTablePhotoPaths(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  kind: 1 | 2 | 3
+): Promise<string[]> {
+  const { data } = await supabase.rpc("chat_photo_paths", { p_kind: kind });
+  return (data ?? []) as string[];
+}
+
+async function removeChatPhotos(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  paths: string[]
+): Promise<void> {
+  if (paths.length === 0) return;
+  await supabase.storage.from("chat-photos").remove(paths);
+}
+
 export async function sendMessage(
   _prev: ActionResult,
   formData: FormData
@@ -414,8 +477,8 @@ export async function sendMessage(
   const lotteryType = Number(formData.get("lottery_type"));
   const drawerId = String(formData.get("drawer_id") ?? "");
   const draweeId = String(formData.get("drawee_id") ?? "");
-  if (!text || text.length > 500) {
-    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  if (text.length > 500) {
+    return { ok: false, error: "Wiadomość: maks. 500 znaków." };
   }
   if (!Number.isInteger(lotteryType) || !drawerId || !draweeId) {
     return { ok: false, error: "Nieprawidłowy wątek." };
@@ -431,12 +494,18 @@ export async function sendMessage(
       a.drawee_id === draweeId
   );
   if (!isMember) return { ok: false, error: "Nie masz dostępu do tego wątku." };
+  const photo = await uploadChatPhoto(supabase, user.id, formData);
+  if (photo.error) return { ok: false, error: photo.error };
+  if (!text && !photo.path) {
+    return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
+  }
   const { error } = await supabase.from("messages").insert({
     lottery_type: lotteryType,
     drawer_id: drawerId,
     drawee_id: draweeId,
     sender_id: user.id,
     text,
+    image_path: photo.path,
   });
   if (error) return { ok: false, error: error.message };
   await touchThreadRead(supabase, user.id, lotteryType, drawerId, draweeId);
@@ -489,12 +558,17 @@ export async function sendGroupMessage(
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
   const text = String(formData.get("text") ?? "").trim();
-  if (!text || text.length > 500) {
-    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  if (text.length > 500) {
+    return { ok: false, error: "Wiadomość: maks. 500 znaków." };
+  }
+  const photo = await uploadChatPhoto(supabase, user.id, formData);
+  if (photo.error) return { ok: false, error: photo.error };
+  if (!text && !photo.path) {
+    return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
   const { error } = await supabase
     .from("group_messages")
-    .insert({ sender_id: user.id, text });
+    .insert({ sender_id: user.id, text, image_path: photo.path });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
@@ -550,8 +624,10 @@ export async function clearGroupChat(
     return { ok: false, error: "Tylko organizator może czyścić czat wspólny." };
   }
   const { supabase } = org;
+  const photoPaths = await collectTablePhotoPaths(supabase, 2);
   const { error } = await supabase.rpc("clear_group_chat");
   if (error) return { ok: false, error: error.message };
+  await removeChatPhotos(supabase, photoPaths);
   revalidatePath("/");
   return { ok: true };
 }
@@ -572,15 +648,25 @@ export async function sendDm(
   const { supabase, user } = await requireUser();
   const text = String(formData.get("text") ?? "").trim();
   const recipientId = String(formData.get("recipient_id") ?? "");
-  if (!text || text.length > 500) {
-    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  if (text.length > 500) {
+    return { ok: false, error: "Wiadomość: maks. 500 znaków." };
   }
   if (!recipientId || recipientId === user.id) {
     return { ok: false, error: "Wybierz osobę." };
   }
+  const photo = await uploadChatPhoto(supabase, user.id, formData);
+  if (photo.error) return { ok: false, error: photo.error };
+  if (!text && !photo.path) {
+    return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
+  }
   const { error } = await supabase
     .from("dm_messages")
-    .insert({ sender_id: user.id, recipient_id: recipientId, text });
+    .insert({
+      sender_id: user.id,
+      recipient_id: recipientId,
+      text,
+      image_path: photo.path,
+    });
   if (error) return { ok: false, error: error.message };
   await supabase
     .from("dm_reads")
@@ -656,8 +742,10 @@ export async function cancelLottery(
   _formData: FormData
 ): Promise<ActionResult> {
   const { supabase } = await requireUser();
+  const photoPaths = await collectTablePhotoPaths(supabase, 1);
   const { error } = await supabase.rpc("cancel_lottery");
   if (error) return { ok: false, error: error.message };
+  await removeChatPhotos(supabase, photoPaths);
   revalidatePath("/");
   return { ok: true };
 }

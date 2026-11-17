@@ -9,6 +9,7 @@ import { Dashboard, type GiftsData } from "@/components/dashboard";
 import type { Wish } from "@/components/wish-form";
 import { declineName } from "@/lib/declension";
 import type { DishCategory } from "@/lib/dishes";
+import { reactionsFor, reactionRowsByMessage } from "@/lib/reactions";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
@@ -36,13 +37,13 @@ export default async function Home() {
     supabase
       .from("profiles")
       .select(
-        "id, full_name, is_organizer, is_ready, avatar_path, avatar_updated_at, oauth_avatar_url"
+        "id, full_name, is_organizer, is_ready, gift_ready, avatar_path, avatar_updated_at, oauth_avatar_url"
       )
       .eq("id", user.id)
       .single(),
     supabase
       .from("profiles")
-      .select("id, full_name, is_ready, avatar_path, avatar_updated_at, oauth_avatar_url")
+      .select("id, full_name, is_ready, gift_ready, avatar_path, avatar_updated_at, oauth_avatar_url")
       .order("full_name"),
     supabase
       .from("wishes")
@@ -61,7 +62,7 @@ export default async function Home() {
     supabase
       .from("messages")
       .select(
-        "id, lottery_type, drawer_id, drawee_id, sender_id, text, created_at, edited_at, deleted_at"
+        "id, lottery_type, drawer_id, drawee_id, sender_id, text, image_path, created_at, edited_at, deleted_at"
       )
       .or(`drawer_id.eq.${user.id},drawee_id.eq.${user.id}`)
       .order("created_at"),
@@ -82,7 +83,7 @@ export default async function Home() {
     supabase
       .from("dm_messages")
       .select(
-        "id, sender_id, recipient_id, text, created_at, edited_at, deleted_at"
+        "id, sender_id, recipient_id, text, image_path, created_at, edited_at, deleted_at"
       )
       .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order("created_at"),
@@ -146,6 +147,7 @@ export default async function Home() {
     id: string;
     full_name: string;
     is_ready: boolean;
+    gift_ready: boolean;
     has_theme: boolean;
     wish_count: number;
     theme_text: string | null;
@@ -193,6 +195,7 @@ export default async function Home() {
       profile_id: p.id,
       full_name: p.full_name,
       is_ready: p.is_ready,
+      gift_ready: p.gift_ready,
       in_lottery: lotteryActive ? (inLotteryById.get(p.id) ?? false) : true,
       has_theme: themeIds.has(p.id),
       wish_count: wishCountById.get(p.id) ?? 0,
@@ -205,6 +208,7 @@ export default async function Home() {
         id: p.profile_id,
         full_name: p.full_name,
         is_ready: p.is_ready,
+        gift_ready: p.gift_ready,
         has_theme: p.has_theme,
         wish_count: p.wish_count,
         theme_text: p.theme_text,
@@ -230,16 +234,49 @@ export default async function Home() {
 
   const { data: groupMessagesData } = await supabase
     .from("group_messages")
-    .select("id, sender_id, text, created_at, edited_at, deleted_at")
+    .select("id, sender_id, text, image_path, created_at, edited_at, deleted_at")
     .order("created_at");
   const groupMessages = (groupMessagesData ?? []) as {
     id: number;
     sender_id: string;
     text: string;
+    image_path: string | null;
     created_at: string;
     edited_at: string | null;
     deleted_at: string | null;
   }[];
+
+  const myMessageIds = (myMessages ?? []).map((m) => m.id);
+  const myDmMessageIds = (myDmMessages ?? []).map((m) => m.id);
+  const groupMessageIds = groupMessages.map((m) => m.id);
+  const [
+    { data: lotteryReactionRows },
+    { data: groupReactionRows },
+    { data: dmReactionRows },
+  ] = await Promise.all([
+    myMessageIds.length > 0
+      ? supabase
+          .from("message_reactions")
+          .select("message_id, user_id, emoji")
+          .in("message_id", myMessageIds)
+      : Promise.resolve({ data: [] as { message_id: number; user_id: string; emoji: string }[] }),
+    groupMessageIds.length > 0
+      ? supabase
+          .from("group_message_reactions")
+          .select("message_id, user_id, emoji")
+          .in("message_id", groupMessageIds)
+      : Promise.resolve({ data: [] as { message_id: number; user_id: string; emoji: string }[] }),
+    myDmMessageIds.length > 0
+      ? supabase
+          .from("dm_message_reactions")
+          .select("message_id, user_id, emoji")
+          .in("message_id", myDmMessageIds)
+      : Promise.resolve({ data: [] as { message_id: number; user_id: string; emoji: string }[] }),
+  ]);
+  const lotteryReactionsByMsg = reactionRowsByMessage(lotteryReactionRows);
+  const groupReactionsByMsg = reactionRowsByMessage(groupReactionRows);
+  const dmReactionsByMsg = reactionRowsByMessage(dmReactionRows);
+  const photoBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat-photos`;
 
   let listGift: { person: string; avatarUrl: string | null; wishes: Wish[] } | null = null;
   let themeGift: { person: string; avatarUrl: string | null; theme: string } | null = null;
@@ -317,6 +354,8 @@ export default async function Home() {
           createdAt: m.created_at,
           editedAt: m.edited_at,
           deleted: m.deleted_at != null,
+          imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+          reactions: reactionsFor(lotteryReactionsByMsg, m.id),
         })),
         unread: msgs.filter(
           (m) =>
@@ -358,6 +397,7 @@ export default async function Home() {
     sender_id: string;
     recipient_id: string;
     text: string;
+    image_path: string | null;
     created_at: string;
     edited_at: string | null;
     deleted_at: string | null;
@@ -386,6 +426,8 @@ export default async function Home() {
         createdAt: m.created_at,
         editedAt: m.edited_at,
         deleted: m.deleted_at != null,
+        imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+        reactions: reactionsFor(dmReactionsByMsg, m.id),
       })),
       unread: peerMsgs.filter(
         (m) =>
@@ -398,7 +440,7 @@ export default async function Home() {
 
   const gifts: GiftsData =
     lotteryDone && listGift && themeGift
-      ? { kind: "done", listGift, themeGift }
+      ? { kind: "done", listGift, themeGift, giftReady: profile?.gift_ready ?? false }
       : isLateJoiner
         ? { kind: "late" }
         : { kind: "waiting", count: participants?.length ?? 0 };
@@ -429,6 +471,8 @@ export default async function Home() {
           createdAt: m.created_at,
           editedAt: m.edited_at,
           deleted: m.deleted_at != null,
+          imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+          reactions: reactionsFor(groupReactionsByMsg, m.id),
         })),
       }}
       wishes={{

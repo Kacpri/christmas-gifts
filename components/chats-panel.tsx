@@ -31,7 +31,10 @@ import {
 import { Presence } from "@/components/presence";
 import { listTimeOf, plural } from "@/lib/format";
 import { notify } from "@/lib/notify";
+import { chatPhotoUrl } from "@/lib/chat-photo";
+import { applyReaction } from "@/lib/reactions";
 import { createClient } from "@/lib/supabase/client";
+import { usePhotoAttachment } from "@/lib/use-photo-attachment";
 import { useMediaQuery } from "@/lib/use-media-query";
 
 export type Thread = {
@@ -68,6 +71,20 @@ const ltKey = (t: {
 const dmKey = (peerId: string) => `dm:${peerId}`;
 const dmPeerOf = (key: string) => key.slice(3);
 
+function applyReactionToMessages(
+  list: ChatMessage[],
+  messageId: number,
+  emoji: string,
+  userId: string,
+  add: boolean
+): ChatMessage[] {
+  return list.map((m) =>
+    m.id === messageId
+      ? { ...m, reactions: applyReaction(m.reactions, emoji, userId, add) }
+      : m
+  );
+}
+
 type DbMessage = {
   id: number;
   lottery_type: number;
@@ -75,6 +92,7 @@ type DbMessage = {
   drawee_id: string;
   sender_id: string;
   text: string;
+  image_path: string | null;
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
@@ -197,6 +215,26 @@ function SendIcon() {
   );
 }
 
+function ImageIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+    </svg>
+  );
+}
+
 function PlusIcon() {
   return (
     <svg
@@ -275,6 +313,7 @@ export function ChatsPanel({
     empty
   );
   const [dmState, dmSend, dmPending] = useActionState(sendDm, empty);
+  const photo = usePhotoAttachment();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [listFade, setListFade] = useState(false);
   const [listExpanded, setListExpanded] = useState(false);
@@ -439,6 +478,7 @@ export function ChatsPanel({
               drawee_id: string;
               sender_id: string;
               text: string;
+              image_path: string | null;
               created_at: string;
             };
             const key = `lt:${m.lottery_type}-${m.drawer_id}-${m.drawee_id}`;
@@ -456,6 +496,8 @@ export function ChatsPanel({
                     createdAt: m.created_at,
                     editedAt: null,
                     deleted: false,
+                    imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    reactions: [],
                   },
                 ],
               };
@@ -526,6 +568,66 @@ export function ChatsPanel({
             }
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "message_reactions" },
+          (payload) => {
+            const r = payload.new as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setLotteryMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[key] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    true
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "message_reactions" },
+          (payload) => {
+            const r = payload.old as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setLotteryMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[key] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    false
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
         .subscribe();
     })();
 
@@ -562,6 +664,7 @@ export function ChatsPanel({
               sender_id: string;
               recipient_id: string;
               text: string;
+              image_path: string | null;
               created_at: string;
             };
             const peer = m.sender_id === me ? m.recipient_id : m.sender_id;
@@ -580,6 +683,8 @@ export function ChatsPanel({
                     createdAt: m.created_at,
                     editedAt: null,
                     deleted: false,
+                    imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    reactions: [],
                   },
                 ],
               };
@@ -634,6 +739,66 @@ export function ChatsPanel({
             });
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "dm_message_reactions" },
+          (payload) => {
+            const r = payload.new as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setDmMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [peer, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[peer] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    true
+                  );
+                  changed = true;
+                } else {
+                  next[peer] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "dm_message_reactions" },
+          (payload) => {
+            const r = payload.old as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setDmMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [peer, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[peer] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    false
+                  );
+                  changed = true;
+                } else {
+                  next[peer] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
         .subscribe();
     })();
 
@@ -653,6 +818,17 @@ export function ChatsPanel({
     if (!dmState.ok && dmState.error) {
       setValue((v) => v || lastSentRef.current);
     }
+  }, [dmState]);
+
+  const photoClearRef = useRef(photo.clear);
+  photoClearRef.current = photo.clear;
+
+  useEffect(() => {
+    if (lotteryState.ok) photoClearRef.current();
+  }, [lotteryState]);
+
+  useEffect(() => {
+    if (dmState.ok) photoClearRef.current();
   }, [dmState]);
 
   useEffect(() => {
@@ -683,7 +859,7 @@ export function ChatsPanel({
         supabase
           .from("messages")
           .select(
-            "id, lottery_type, drawer_id, drawee_id, sender_id, text, created_at, edited_at, deleted_at"
+            "id, lottery_type, drawer_id, drawee_id, sender_id, text, image_path, created_at, edited_at, deleted_at"
           )
           .or(`drawer_id.eq.${me},drawee_id.eq.${me}`)
           .order("created_at"),
@@ -706,6 +882,7 @@ export function ChatsPanel({
           for (const m of dbMsgs) {
             if (`${m.lottery_type}-${m.drawer_id}-${m.drawee_id}` !== key.slice(3))
               continue;
+            const cur = byId.get(m.id);
             const mapped: ChatMessage = {
               id: m.id,
               senderId: m.sender_id,
@@ -713,13 +890,15 @@ export function ChatsPanel({
               createdAt: m.created_at,
               editedAt: m.edited_at,
               deleted: m.deleted_at != null,
+              imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+              reactions: cur?.reactions ?? [],
             };
-            const cur = byId.get(m.id);
             if (
               !cur ||
               cur.text !== mapped.text ||
               cur.editedAt !== mapped.editedAt ||
-              cur.deleted !== mapped.deleted
+              cur.deleted !== mapped.deleted ||
+              cur.imageUrl !== mapped.imageUrl
             ) {
               byId.set(m.id, mapped);
               changed = true;
@@ -833,6 +1012,80 @@ export function ChatsPanel({
     markDmRead(fd);
   }
 
+  function toggleLotteryReaction(key: string, messageId: number, emoji: string) {
+    const cur = (lotteryMsgs[key] ?? []).find((m) => m.id === messageId);
+    const add = !cur?.reactions.some(
+      (r) => r.emoji === emoji && r.users.includes(me)
+    );
+    setLotteryMsgs((prev) => ({
+      ...prev,
+      [key]: applyReactionToMessages(
+        prev[key] ?? [],
+        messageId,
+        emoji,
+        me,
+        add
+      ),
+    }));
+    createClient()
+      .rpc("toggle_message_reaction", {
+        p_kind: 1,
+        p_message_id: messageId,
+        p_emoji: emoji,
+      })
+      .then(({ error }) => {
+        if (error) {
+          setLotteryMsgs((prev) => ({
+            ...prev,
+            [key]: applyReactionToMessages(
+              prev[key] ?? [],
+              messageId,
+              emoji,
+              me,
+              !add
+            ),
+          }));
+        }
+      });
+  }
+
+  function toggleDmReaction(peerId: string, messageId: number, emoji: string) {
+    const cur = (dmMsgs[peerId] ?? []).find((m) => m.id === messageId);
+    const add = !cur?.reactions.some(
+      (r) => r.emoji === emoji && r.users.includes(me)
+    );
+    setDmMsgs((prev) => ({
+      ...prev,
+      [peerId]: applyReactionToMessages(
+        prev[peerId] ?? [],
+        messageId,
+        emoji,
+        me,
+        add
+      ),
+    }));
+    createClient()
+      .rpc("toggle_message_reaction", {
+        p_kind: 3,
+        p_message_id: messageId,
+        p_emoji: emoji,
+      })
+      .then(({ error }) => {
+        if (error) {
+          setDmMsgs((prev) => ({
+            ...prev,
+            [peerId]: applyReactionToMessages(
+              prev[peerId] ?? [],
+              messageId,
+              emoji,
+              me,
+              !add
+            ),
+          }));
+        }
+      });
+  }
+
   if (lateJoiner) {
     return (
       <p className="mt-1 text-sm text-muted">
@@ -941,7 +1194,10 @@ export function ChatsPanel({
                     >
                       {item.last.deleted
                         ? "Wiadomość usunięta"
-                        : `${item.last.senderId === me ? "Ty: " : ""}${item.last.text}`}
+                        : `${item.last.senderId === me ? "Ty: " : ""}${
+                            item.last.text ||
+                            (item.last.imageUrl ? "Zdjęcie" : "")
+                          }`}
                     </span>
                   ) : (
                     <span className="min-w-0 flex-1 truncate text-sm text-faint">
@@ -1047,6 +1303,20 @@ export function ChatsPanel({
                       <MessageBubble
                         message={m}
                         isOwn={m.senderId === me}
+                        meId={me}
+                        onToggleReaction={(messageId, emoji) =>
+                          isDm
+                            ? toggleDmReaction(
+                                selectedItem.peerId,
+                                messageId,
+                                emoji
+                              )
+                            : toggleLotteryReaction(
+                                selectedItem.key,
+                                messageId,
+                                emoji
+                              )
+                        }
                         editAction={isDm ? editDm : editMessage}
                         deleteAction={isDm ? deleteDm : deleteMessage}
                       />
@@ -1057,12 +1327,39 @@ export function ChatsPanel({
                 </div>
                 <form
                   action={isDm ? dmSend : lotterySend}
-                  onSubmit={() => {
+                  onSubmit={(e) => {
                     lastSentRef.current = value;
                     setValue("");
+                    if (photo.file) {
+                      e.preventDefault();
+                      const fd = new FormData(e.currentTarget);
+                      fd.set("image", photo.file);
+                      (isDm ? dmSend : lotterySend)(fd);
+                    }
                   }}
-                  className="flex gap-3"
+                  className="flex flex-col gap-2"
                 >
+                {photo.previewUrl && (
+                  <span className="relative inline-block">
+                    <img
+                      src={photo.previewUrl}
+                      alt="Podgląd zdjęcia"
+                      className="h-20 w-20 rounded-[10px] border border-input-line object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={photo.clear}
+                      aria-label="Usuń zdjęcie"
+                      className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-[#14532d] text-xs font-bold text-white hover:bg-accent-deep dark:bg-accent"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {photo.error && (
+                  <p className="text-sm text-red-600">{photo.error}</p>
+                )}
+                <div className="flex gap-3">
                 {isDm ? (
                   <input
                     type="hidden"
@@ -1089,22 +1386,37 @@ export function ChatsPanel({
                   </>
                 )}
                 <input
+                  ref={photo.inputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => photo.pick(e.target.files?.[0] ?? null)}
+                />
+                <input
                   name="text"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  required
                   maxLength={500}
                   placeholder="Napisz wiadomość…"
                   className="h-[54px] min-w-0 flex-1 rounded-[14px] border border-input-line bg-mist px-[18px] text-base text-ink placeholder:text-faint"
                 />
                 <button
+                  type="button"
+                  onClick={() => photo.inputRef.current?.click()}
+                  aria-label="Dodaj zdjęcie"
+                  className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-[14px] border border-input-line bg-mist text-ink hover:bg-sage-50"
+                >
+                  <ImageIcon />
+                </button>
+                <button
                   type="submit"
-                  disabled={pending || !value.trim()}
+                  disabled={pending || (!value.trim() && !photo.hasPhoto)}
                   aria-label="Wyślij wiadomość"
                   className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-[14px] bg-[#14532d] text-white hover:bg-accent-deep disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150 dark:bg-accent dark:hover:bg-accent/90"
                 >
                   <SendIcon />
                 </button>
+                </div>
               </form>
             </>
           ) : (
