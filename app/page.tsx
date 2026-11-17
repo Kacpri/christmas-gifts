@@ -35,12 +35,14 @@ export default async function Home() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, is_organizer, is_ready, avatar_path, oauth_avatar_url")
+      .select(
+        "id, full_name, is_organizer, is_ready, avatar_path, avatar_updated_at, oauth_avatar_url"
+      )
       .eq("id", user.id)
       .single(),
     supabase
       .from("profiles")
-      .select("id, full_name, is_ready, avatar_path, oauth_avatar_url")
+      .select("id, full_name, is_ready, avatar_path, avatar_updated_at, oauth_avatar_url")
       .order("full_name"),
     supabase
       .from("wishes")
@@ -103,11 +105,19 @@ export default async function Home() {
   const avatarBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars`;
   const avatarUrlOf = (
     p:
-      | { avatar_path: string | null; oauth_avatar_url: string | null }
+      | {
+          avatar_path: string | null;
+          avatar_updated_at: string | null;
+          oauth_avatar_url: string | null;
+        }
       | null
       | undefined
   ): string | null =>
-    p?.avatar_path ? `${avatarBase}/${p.avatar_path}` : (p?.oauth_avatar_url ?? null);
+    p?.avatar_path
+      ? `${avatarBase}/${p.avatar_path}${
+          p.avatar_updated_at ? `?v=${encodeURIComponent(p.avatar_updated_at)}` : ""
+        }`
+      : (p?.oauth_avatar_url ?? null);
   const avatarById = new Map(
     (participants ?? []).map((p) => [p.id, avatarUrlOf(p)])
   );
@@ -247,7 +257,7 @@ export default async function Home() {
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name, avatar_path, oauth_avatar_url")
+        .select("id, full_name, avatar_path, avatar_updated_at, oauth_avatar_url")
         .in("id", draweeIds),
       supabase
         .from("wishes")

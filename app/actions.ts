@@ -282,7 +282,7 @@ export async function uploadAvatar(
   if (uploadError) return { ok: false, error: uploadError.message };
   const { error } = await supabase
     .from("profiles")
-    .update({ avatar_path: path })
+    .update({ avatar_path: path, avatar_updated_at: new Date().toISOString() })
     .eq("id", user.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
@@ -304,7 +304,7 @@ export async function deleteAvatar(
   }
   const { error } = await supabase
     .from("profiles")
-    .update({ avatar_path: null })
+    .update({ avatar_path: null, avatar_updated_at: null })
     .eq("id", user.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
