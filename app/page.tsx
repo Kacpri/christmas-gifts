@@ -164,12 +164,12 @@ export default async function Home() {
     const [
       { data: themesData },
       { data: wishRows },
-      { data: assignmentRows },
+      { data: statusRows },
       { data: reportRows },
     ] = await Promise.all([
       supabase.from("themes").select("user_id, theme"),
       supabase.from("wishes").select("user_id"),
-      supabase.from("assignments").select("drawer_id, drawee_id"),
+      supabase.rpc("participant_status"),
       supabase
         .from("error_reports")
         .select("id, description, created_at, user_id, screenshot_path")
@@ -183,17 +183,17 @@ export default async function Home() {
     for (const w of wishRows ?? []) {
       wishCountById.set(w.user_id, (wishCountById.get(w.user_id) ?? 0) + 1);
     }
-    const inLotteryIds = new Set<string>();
-    for (const a of assignmentRows ?? []) {
-      inLotteryIds.add(a.drawer_id);
-      inLotteryIds.add(a.drawee_id);
+    const inLotteryById = new Map<string, boolean>();
+    let lotteryActive = false;
+    for (const s of statusRows ?? []) {
+      inLotteryById.set(s.profile_id, s.in_lottery);
+      if (s.in_lottery) lotteryActive = true;
     }
-    const lotteryActive = (assignmentRows ?? []).length > 0;
     const status = (participants ?? []).map((p) => ({
       profile_id: p.id,
       full_name: p.full_name,
       is_ready: p.is_ready,
-      in_lottery: lotteryActive ? inLotteryIds.has(p.id) : true,
+      in_lottery: lotteryActive ? (inLotteryById.get(p.id) ?? false) : true,
       has_theme: themeIds.has(p.id),
       wish_count: wishCountById.get(p.id) ?? 0,
       theme_text: themeTextById.get(p.id) ?? null,
