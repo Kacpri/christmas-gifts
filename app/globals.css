@@ -173,9 +173,6 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb {
   gap: 6px;
   width: fit-content;
   max-width: 100%;
-  background: var(--chat-reactions-bg);
-  border-radius: 12px;
-  padding: 3px 6px;
 }
 
 .reactions-received {

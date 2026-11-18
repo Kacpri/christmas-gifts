@@ -391,7 +391,7 @@ export function MessageBubble({
               type="button"
               onClick={() => onToggleReaction?.(message.id, r.emoji)}
               aria-label={`Reakcja ${r.emoji}: ${r.users.length}`}
-              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] leading-5 ${
+                className={`inline-flex min-w-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] leading-5 ${
                 r.users.includes(meId)
                   ? "border-accent bg-surface text-accent"
                   : "border-[var(--chat-chip-border)] bg-[var(--chat-chip-bg)] text-[var(--chat-chip-ink)]"
