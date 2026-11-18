@@ -368,7 +368,9 @@ export function MessageBubble({
               <span aria-hidden className="text-[15px] leading-none">
                 {r.emoji}
               </span>
-              <span className="tabular-nums">{r.users.length}</span>
+              {r.users.length > 1 && (
+                <span className="tabular-nums">{r.users.length}</span>
+              )}
             </button>
           ))}
         </div>

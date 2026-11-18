@@ -105,6 +105,7 @@ html[data-theme="dark"] {
   --chat-header-sub: #a8b8ab;
   --chat-clear-hover: rgba(224, 104, 92, 0.15);
   --chat-scrollbar: rgba(124, 201, 154, 0.3);
+  scrollbar-color: #46584c transparent;
 }
 
 html[data-theme="dark"] body {
@@ -113,6 +114,11 @@ html[data-theme="dark"] body {
 
 html[data-theme="dark"] .app-shell {
   background: linear-gradient(180deg, #061a13 0%, #0d3524 100%);
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #bcd9c6 transparent;
 }
 
 .no-scrollbar {
@@ -145,9 +151,12 @@ html[data-theme="dark"] .app-shell {
 }
 
 .reactions-own {
-  margin-left: auto;
   margin-right: 10px;
   justify-content: flex-end;
+}
+
+.reactions button:focus-visible {
+  outline: none;
 }
 
 input::-webkit-calendar-picker-indicator {

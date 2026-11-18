@@ -455,7 +455,7 @@ export function GroupChatSection({
                         ? "mt-2"
                         : "mt-3"
                       : ""
-                  } ${m.reactions.length > 0 ? "mb-3.5" : ""}`}
+                  }`}
                 >
                   <MessageBubble
                     message={m}
