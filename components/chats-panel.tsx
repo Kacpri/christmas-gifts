@@ -1279,16 +1279,16 @@ export function ChatsPanel({
                 </div>
                 {selectedItem.kind === "lottery" &&
                   selectedItem.name === "Tajemniczy Mikołaj" && (
-                    <p className="text-sm text-[#4a5c50] dark:text-muted">
+                    <p className="text-sm text-[var(--chat-header-sub)]">
                       Ta osoba kupuje Ci prezent. Nie wiesz, kim jest.
                     </p>
                   )}
               </div>
               <div
                 ref={boxRef}
-                className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] p-4 dark:bg-sage-100"
+                className="chat-scroll chat-fade chat-area-lottery flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] px-3 py-4 dark:bg-sage-100"
               >
-                <div className="mt-auto flex flex-col gap-2">
+                <div className="mt-auto flex flex-col">
                   {selectedItem.messages.length === 0 && (
                     <p className="text-sm text-faint">
                       Brak wiadomości. Napisz pierwszą!
@@ -1296,32 +1296,45 @@ export function ChatsPanel({
                   )}
                 {selectedItem.messages.map((m, i) => {
                   const prev = selectedItem.messages[i - 1];
+                  const sameDay =
+                    prev != null && dayKey(prev.createdAt) === dayKey(m.createdAt);
                   return (
                     <Fragment key={m.id}>
-                      {(!prev ||
-                        dayKey(prev.createdAt) !== dayKey(m.createdAt)) && (
+                      {(!prev || !sameDay) && (
                         <DateSeparator createdAt={m.createdAt} />
                       )}
-                      <MessageBubble
-                        message={m}
-                        isOwn={m.senderId === me}
-                        meId={me}
-                        onToggleReaction={(messageId, emoji) =>
-                          isDm
-                            ? toggleDmReaction(
-                                selectedItem.peerId,
-                                messageId,
-                                emoji
-                              )
-                            : toggleLotteryReaction(
-                                selectedItem.key,
-                                messageId,
-                                emoji
-                              )
-                        }
-                        editAction={isDm ? editDm : editMessage}
-                        deleteAction={isDm ? deleteDm : deleteMessage}
-                      />
+                      <div
+                        className={`flex ${
+                          m.senderId === me ? "justify-end" : "justify-start"
+                        } ${
+                          prev && sameDay
+                            ? prev.senderId === m.senderId
+                              ? "mt-2"
+                              : "mt-3"
+                            : ""
+                        } ${m.reactions.length > 0 ? "mb-3.5" : ""}`}
+                      >
+                        <MessageBubble
+                          message={m}
+                          isOwn={m.senderId === me}
+                          meId={me}
+                          onToggleReaction={(messageId, emoji) =>
+                            isDm
+                              ? toggleDmReaction(
+                                  selectedItem.peerId,
+                                  messageId,
+                                  emoji
+                                )
+                              : toggleLotteryReaction(
+                                  selectedItem.key,
+                                  messageId,
+                                  emoji
+                                )
+                          }
+                          editAction={isDm ? editDm : editMessage}
+                          deleteAction={isDm ? deleteDm : deleteMessage}
+                        />
+                      </div>
                     </Fragment>
                   );
                 })}
@@ -1400,13 +1413,13 @@ export function ChatsPanel({
                   onChange={(e) => setValue(e.target.value)}
                   maxLength={500}
                   placeholder="Napisz wiadomość…"
-                  className="h-[54px] min-w-0 flex-1 rounded-[14px] border border-input-line bg-mist px-[18px] text-base text-ink placeholder:text-faint"
+                  className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--chat-composer-line)] bg-surface px-[18px] text-base text-ink placeholder:text-[var(--chat-placeholder)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
                 />
                 <button
                   type="button"
                   onClick={() => photo.inputRef.current?.click()}
                   aria-label="Dodaj zdjęcie"
-                  className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-[14px] border border-input-line bg-mist text-ink hover:bg-sage-50"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[var(--chat-composer-line)] bg-surface text-ink hover:bg-sage-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
                 >
                   <ImageIcon />
                 </button>
@@ -1414,7 +1427,7 @@ export function ChatsPanel({
                   type="submit"
                   disabled={pending || (!value.trim() && !photo.hasPhoto)}
                   aria-label="Wyślij wiadomość"
-                  className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-[14px] bg-[#14532d] text-white hover:bg-accent-deep disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150 dark:bg-accent dark:hover:bg-accent/90"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#14532d] text-white hover:bg-accent-deep disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150 dark:bg-accent dark:hover:bg-accent/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
                 >
                   <SendIcon />
                 </button>

@@ -369,7 +369,7 @@ export function GroupChatSection({
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-faint">
+        <p className="text-sm text-[var(--chat-header-sub)]">
           Anonimowy — nikt nie wie, kto co napisał.
         </p>
         {isOrganizer && (
@@ -389,7 +389,7 @@ export function GroupChatSection({
                 },
               })
             }
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-danger hover:bg-[var(--chat-clear-hover)] disabled:opacity-50"
           >
             <svg
               width="14"
@@ -419,7 +419,7 @@ export function GroupChatSection({
       >
         <div
           ref={boxRef}
-          className={`flex flex-col gap-1.5 p-4 ${
+          className={`chat-scroll chat-fade chat-area-group flex flex-col px-3 py-4 ${
             isDesktop ? "flex-1 overflow-y-auto" : ""
           }`}
         >
@@ -427,7 +427,7 @@ export function GroupChatSection({
             <button
               type="button"
               onClick={loadOlder}
-              className="mx-auto flex h-11 items-center justify-center rounded-full border border-input-line bg-surface px-4 text-sm font-medium text-muted hover:bg-mist"
+              className="mx-auto mb-3 flex h-11 items-center justify-center rounded-full border border-input-line bg-surface px-4 text-sm font-medium text-muted hover:bg-mist"
             >
               Załaduj starsze
             </button>
@@ -439,20 +439,33 @@ export function GroupChatSection({
           )}
           {visible.map((m, i) => {
             const prev = visible[i - 1];
+            const sameDay =
+              prev != null && dayKey(prev.createdAt) === dayKey(m.createdAt);
             return (
               <Fragment key={m.id}>
-                {(!prev ||
-                  dayKey(prev.createdAt) !== dayKey(m.createdAt)) && (
+                {(!prev || !sameDay) && (
                   <DateSeparator createdAt={m.createdAt} />
                 )}
-                <MessageBubble
-                  message={m}
-                  isOwn={m.senderId === me}
-                  meId={me}
-                  onToggleReaction={toggleReaction}
-                  editAction={editGroupMessage}
-                  deleteAction={deleteGroupMessage}
-                />
+                <div
+                  className={`flex ${
+                    m.senderId === me ? "justify-end" : "justify-start"
+                  } ${
+                    prev && sameDay
+                      ? prev.senderId === m.senderId
+                        ? "mt-2"
+                        : "mt-3"
+                      : ""
+                  } ${m.reactions.length > 0 ? "mb-3.5" : ""}`}
+                >
+                  <MessageBubble
+                    message={m}
+                    isOwn={m.senderId === me}
+                    meId={me}
+                    onToggleReaction={toggleReaction}
+                    editAction={editGroupMessage}
+                    deleteAction={deleteGroupMessage}
+                  />
+                </div>
               </Fragment>
             );
           })}
@@ -505,13 +518,13 @@ export function GroupChatSection({
               onChange={(e) => setValue(e.target.value)}
               maxLength={500}
               placeholder="Napisz wiadomość…"
-              className="h-11 min-w-0 flex-1 rounded-xl border border-input-line bg-input-bg px-3.5 text-sm text-ink placeholder:text-faint"
+              className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--chat-composer-line)] bg-surface px-3.5 text-sm text-ink placeholder:text-[var(--chat-placeholder)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
             />
             <button
               type="button"
               onClick={() => photo.inputRef.current?.click()}
               aria-label="Dodaj zdjęcie"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-input-line bg-input-bg text-ink hover:bg-mist"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[var(--chat-composer-line)] bg-surface text-ink hover:bg-mist focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
             >
               <svg
                 width="18"
@@ -533,7 +546,7 @@ export function GroupChatSection({
               type="submit"
               disabled={pending || (!value.trim() && !photo.hasPhoto)}
               aria-label="Wyślij"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#14532d] text-white hover:bg-accent-deep disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150 dark:bg-accent dark:hover:bg-accent/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
             >
               <svg
                 width="18"

@@ -57,8 +57,8 @@ export function DateSeparator({ createdAt }: { createdAt: string }) {
   }, [createdAt]);
   if (!label) return null;
   return (
-    <div className="flex justify-center py-1" aria-hidden>
-      <span className="rounded-full bg-[#dcebe1] px-2.5 py-1 text-[11px] font-medium leading-4 text-[#4a5c50] dark:bg-sage-200 dark:text-muted">
+    <div className="flex justify-center pt-2 pb-3" aria-hidden>
+      <span className="rounded-full bg-[#dcebe1] px-2.5 py-1 text-xs font-medium leading-4 text-[#4a5c50] dark:bg-sage-200 dark:text-muted">
         {label}
       </span>
     </div>
@@ -168,12 +168,15 @@ export function MessageBubble({
   return (
     <>
       <div
-        className={`group flex max-w-[72%] select-none flex-col gap-0.5 px-3 py-2 ${
-          editing ? "min-w-48" : ""
-        } ${
+        className={`flex max-w-[78%] flex-col ${
+          isOwn ? "items-end" : "items-start"
+        } ${editing ? "min-w-48" : ""}`}
+      >
+      <div
+        className={`group w-full select-none px-[14px] pt-2.5 pb-2 ${
           isOwn
-            ? "self-end rounded-[16px_16px_4px_16px] bg-accent text-white"
-            : "self-start rounded-[16px_16px_16px_4px] bg-surface"
+            ? "rounded-[16px_16px_6px_16px] bg-accent text-white"
+            : "rounded-[16px_16px_16px_6px] border border-[var(--chat-bubble-border)] bg-surface"
         }`}
         onContextMenu={
           canMenu
@@ -244,8 +247,8 @@ export function MessageBubble({
             </p>
             <p
               suppressHydrationWarning
-              className={`text-right text-[11px] tabular-nums ${
-                isOwn ? "text-white/70" : "text-faint"
+              className={`mt-1 text-right text-xs tabular-nums ${
+                isOwn ? "text-white/80" : "text-[var(--chat-time)]"
               }`}
             >
               {timeOf(message.createdAt)}
@@ -307,7 +310,7 @@ export function MessageBubble({
                 {renderMessageText(message.text)}
               </p>
             )}
-            <div className="flex items-center justify-end gap-1">
+            <div className="mt-1 flex items-center justify-end gap-1">
               <button
                 type="button"
                 onClick={(e) => {
@@ -333,38 +336,43 @@ export function MessageBubble({
               </button>
               <p
                 suppressHydrationWarning
-                className={`text-right text-[11px] tabular-nums ${
-                  isOwn ? "text-white/70" : "text-faint"
+                className={`text-right text-xs tabular-nums ${
+                  isOwn ? "text-white/80" : "text-[var(--chat-time)]"
                 }`}
               >
                 {timeOf(message.createdAt)}
                 {message.editedAt ? " · edytowano" : ""}
               </p>
             </div>
-            {message.reactions.length > 0 && (
-              <div className="mt-0.5 flex flex-wrap gap-1">
-                {message.reactions.map((r) => (
-                  <button
-                    key={r.emoji}
-                    type="button"
-                    onClick={() => onToggleReaction?.(message.id, r.emoji)}
-                    aria-label={`Reakcja ${r.emoji}: ${r.users.length}`}
-                    className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs ${
-                      r.users.includes(meId)
-                        ? "border-accent bg-accent/10"
-                        : isOwn
-                          ? "border-white/30 bg-white/10"
-                          : "border-line bg-mist"
-                    }`}
-                  >
-                    <span aria-hidden>{r.emoji}</span>
-                    <span className="tabular-nums">{r.users.length}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </>
         )}
+      </div>
+      {!message.deleted && !editing && message.reactions.length > 0 && (
+        <div
+          className={`-mt-2 flex flex-wrap gap-1.5 ${
+            isOwn ? "mr-2.5" : "ml-2.5"
+          }`}
+        >
+          {message.reactions.map((r) => (
+            <button
+              key={r.emoji}
+              type="button"
+              onClick={() => onToggleReaction?.(message.id, r.emoji)}
+              aria-label={`Reakcja ${r.emoji}: ${r.users.length}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] leading-5 ${
+                r.users.includes(meId)
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-[var(--chat-chip-border)] bg-[var(--chat-chip-bg)] text-[var(--chat-chip-ink)]"
+              }`}
+            >
+              <span aria-hidden className="text-[15px] leading-none">
+                {r.emoji}
+              </span>
+              <span className="tabular-nums">{r.users.length}</span>
+            </button>
+          ))}
+        </div>
+      )}
       </div>
       {menu && (
         <>

@@ -5,6 +5,16 @@
 :root {
   --background: #0d4024;
   --foreground: #1c2a22;
+  --chat-bubble-border: rgba(20, 83, 45, 0.12);
+  --chat-time: #5f6b76;
+  --chat-chip-border: rgba(20, 83, 45, 0.35);
+  --chat-chip-bg: #ffffff;
+  --chat-chip-ink: #14532d;
+  --chat-composer-line: rgba(20, 83, 45, 0.25);
+  --chat-placeholder: #6b7780;
+  --chat-header-sub: #4b5a52;
+  --chat-clear-hover: rgba(185, 28, 28, 0.08);
+  --chat-scrollbar: rgba(20, 83, 45, 0.35);
 }
 
 @theme {
@@ -85,6 +95,16 @@ html[data-theme="dark"] {
   --color-danger-deep: #c24a40;
   --color-danger-soft: #3a211d;
   --color-icon-hover: #2a332c;
+  --chat-bubble-border: rgba(124, 201, 154, 0.18);
+  --chat-time: #8fa096;
+  --chat-chip-border: rgba(124, 201, 154, 0.35);
+  --chat-chip-bg: #1e2320;
+  --chat-chip-ink: #a6d8bc;
+  --chat-composer-line: rgba(124, 201, 154, 0.3);
+  --chat-placeholder: #7f8f84;
+  --chat-header-sub: #a8b8ab;
+  --chat-clear-hover: rgba(224, 104, 92, 0.15);
+  --chat-scrollbar: rgba(124, 201, 154, 0.3);
 }
 
 html[data-theme="dark"] body {
@@ -126,6 +146,52 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.chat-area-lottery {
+  --chat-fade: #eef5f0;
+}
+
+.chat-area-group {
+  --chat-fade: #f4f8f5;
+}
+
+html[data-theme="dark"] .chat-area-lottery {
+  --chat-fade: #1c211d;
+}
+
+html[data-theme="dark"] .chat-area-group {
+  --chat-fade: #161a17;
+}
+
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--chat-scrollbar) transparent;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: var(--chat-scrollbar);
+}
+
+.chat-fade::after {
+  content: "";
+  position: sticky;
+  bottom: 0;
+  display: block;
+  height: 28px;
+  margin-top: -28px;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--chat-fade), transparent);
 }
 
 input::-webkit-calendar-picker-indicator {
