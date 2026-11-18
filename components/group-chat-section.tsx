@@ -419,7 +419,7 @@ export function GroupChatSection({
       >
         <div
           ref={boxRef}
-          className={`chat-scroll chat-fade chat-area-group relative z-1 flex flex-col px-3 py-4 ${
+          className={`chat-scroll chat-fade relative z-1 flex flex-col px-3 py-4 ${
             isDesktop ? "flex-1 overflow-y-auto" : ""
           }`}
         >

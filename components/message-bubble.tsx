@@ -169,8 +169,8 @@ export function MessageBubble({
     <>
       <div
         className={`relative z-1 flex max-w-[min(75%,30rem)] flex-col ${
-          isOwn ? "items-end" : "items-start"
-        } ${editing ? "min-w-48" : ""}`}
+          editing ? "min-w-48" : ""
+        }`}
       >
       <div
         className={`group w-full select-none px-[14px] pt-2.5 pb-2 ${
@@ -349,9 +349,9 @@ export function MessageBubble({
       </div>
       {!message.deleted && !editing && message.reactions.length > 0 && (
         <div
-          className={`relative z-1 -mt-2 flex flex-wrap gap-1.5 ${
-            isOwn ? "ml-auto mr-2.5" : "ml-2.5"
-          }`}
+          className={`reactions ${
+            isOwn ? "reactions-own" : "reactions-received"
+          } flex flex-wrap gap-1.5`}
         >
           {message.reactions.map((r) => (
             <button

@@ -115,30 +115,6 @@ html[data-theme="dark"] .app-shell {
   background: linear-gradient(180deg, #061a13 0%, #0d3524 100%);
 }
 
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-button {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  background: #bcd9c6;
-}
-
-html[data-theme="dark"] *::-webkit-scrollbar-thumb {
-  background: #46584c;
-}
-
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -148,55 +124,30 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb {
   display: none;
 }
 
-.chat-area-lottery {
-  --chat-fade: #eef5f0;
-}
-
-.chat-area-group {
-  --chat-fade: #f0f5f1;
-}
-
-html[data-theme="dark"] .chat-area-lottery {
-  --chat-fade: #1c211d;
-}
-
-html[data-theme="dark"] .chat-area-group {
-  --chat-fade: #161a17;
-}
-
 .chat-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--chat-scrollbar) transparent;
 }
 
-.chat-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.chat-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chat-scroll::-webkit-scrollbar-thumb {
-  border-radius: 3px;
-  background: var(--chat-scrollbar);
-}
-
 .chat-fade {
-  position: relative;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
 }
 
-.chat-fade::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 24px;
-  background: linear-gradient(to top, var(--chat-fade), transparent);
-  pointer-events: none;
-  z-index: 2;
+.reactions {
+  margin-top: -8px;
+  position: relative;
+  z-index: 1;
+}
+
+.reactions-received {
+  margin-left: 10px;
+}
+
+.reactions-own {
+  margin-left: auto;
+  margin-right: 10px;
+  justify-content: flex-end;
 }
 
 input::-webkit-calendar-picker-indicator {
