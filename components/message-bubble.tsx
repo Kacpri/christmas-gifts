@@ -169,7 +169,11 @@ export function MessageBubble({
     <>
       <div
         className={`relative z-1 flex max-w-[min(75%,30rem)] flex-col ${
-          editing ? "min-w-48" : ""
+          editing
+            ? "min-w-48"
+            : message.reactions.length > 0
+              ? "pb-6"
+              : ""
         }`}
       >
       <div
@@ -379,7 +383,7 @@ export function MessageBubble({
         <div
           className={`reactions ${
             isOwn ? "reactions-own" : "reactions-received"
-          } flex flex-wrap gap-1.5`}
+          }`}
         >
           {message.reactions.map((r) => (
             <button

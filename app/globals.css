@@ -165,21 +165,25 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb {
 }
 
 .reactions {
-  margin-top: -8px;
-  position: relative;
+  position: absolute;
+  bottom: 2px;
   z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
   background: var(--chat-reactions-bg);
   border-radius: 12px;
   padding: 3px 6px;
 }
 
 .reactions-received {
-  margin-left: 10px;
+  left: 10px;
 }
 
 .reactions-own {
-  margin-right: 10px;
-  justify-content: flex-end;
+  right: 10px;
 }
 
 .reactions button:focus-visible {
