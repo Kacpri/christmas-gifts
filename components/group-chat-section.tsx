@@ -419,7 +419,7 @@ export function GroupChatSection({
       >
         <div
           ref={boxRef}
-          className={`chat-scroll chat-fade chat-area-group flex flex-col px-3 py-4 ${
+          className={`chat-scroll chat-fade chat-area-group relative z-1 flex flex-col px-3 py-4 ${
             isDesktop ? "flex-1 overflow-y-auto" : ""
           }`}
         >
@@ -482,7 +482,7 @@ export function GroupChatSection({
               sendAction(fd);
             }
           }}
-          className="flex flex-col gap-2 border-t border-line bg-surface p-3"
+          className="flex flex-col gap-2 bg-surface p-3"
         >
           {photo.previewUrl && (
             <span className="relative inline-block">

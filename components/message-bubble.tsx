@@ -168,7 +168,7 @@ export function MessageBubble({
   return (
     <>
       <div
-        className={`flex max-w-[78%] flex-col ${
+        className={`relative z-1 flex max-w-[min(75%,30rem)] flex-col ${
           isOwn ? "items-end" : "items-start"
         } ${editing ? "min-w-48" : ""}`}
       >
@@ -349,8 +349,8 @@ export function MessageBubble({
       </div>
       {!message.deleted && !editing && message.reactions.length > 0 && (
         <div
-          className={`-mt-2 flex flex-wrap gap-1.5 ${
-            isOwn ? "mr-2.5" : "ml-2.5"
+          className={`relative z-1 -mt-2 flex flex-wrap gap-1.5 ${
+            isOwn ? "ml-auto mr-2.5" : "ml-2.5"
           }`}
         >
           {message.reactions.map((r) => (

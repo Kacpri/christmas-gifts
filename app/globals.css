@@ -153,7 +153,7 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb {
 }
 
 .chat-area-group {
-  --chat-fade: #f4f8f5;
+  --chat-fade: #f0f5f1;
 }
 
 html[data-theme="dark"] .chat-area-lottery {
@@ -179,19 +179,24 @@ html[data-theme="dark"] .chat-area-group {
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
+  border-radius: 3px;
   background: var(--chat-scrollbar);
+}
+
+.chat-fade {
+  position: relative;
 }
 
 .chat-fade::after {
   content: "";
-  position: sticky;
+  position: absolute;
+  left: 0;
+  right: 0;
   bottom: 0;
-  display: block;
-  height: 28px;
-  margin-top: -28px;
-  pointer-events: none;
+  height: 24px;
   background: linear-gradient(to top, var(--chat-fade), transparent);
+  pointer-events: none;
+  z-index: 2;
 }
 
 input::-webkit-calendar-picker-indicator {
@@ -230,7 +235,7 @@ a:focus-visible {
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: 50;
+  z-index: 0;
 }
 
 .snowflake {
