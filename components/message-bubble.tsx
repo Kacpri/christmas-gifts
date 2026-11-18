@@ -115,7 +115,7 @@ export function MessageBubble({
     empty
   );
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [picker, setPicker] = useState<{ x: number; y: number } | null>(null);
+  const [picker, setPicker] = useState<{ left: number; top: number } | null>(null);
   const [lightbox, setLightbox] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const touchTimer = useRef<number | null>(null);
@@ -315,7 +315,35 @@ export function MessageBubble({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setPicker({ x: e.clientX, y: e.clientY });
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const W = 212;
+                  const H = 42;
+                  const c = e.currentTarget.closest(".chat-scroll");
+                  const cRect = c
+                    ? c.getBoundingClientRect()
+                    : {
+                        left: 0,
+                        right: window.innerWidth,
+                        top: 0,
+                        bottom: window.innerHeight,
+                      };
+                  const clamp = (v: number, min: number, max: number) =>
+                    Math.max(min, Math.min(v, max));
+                  let left = isOwn ? rect.right - W : rect.left;
+                  left = clamp(
+                    left,
+                    cRect.left + 4,
+                    Math.max(cRect.left + 4, cRect.right - W - 4)
+                  );
+                  let top = rect.bottom + 6;
+                  if (top + H > cRect.bottom - 4) {
+                    top = clamp(
+                      rect.top - H - 6,
+                      cRect.top + 4,
+                      Math.max(cRect.top + 4, cRect.bottom - H - 4)
+                    );
+                  }
+                  setPicker({ left, top });
                 }}
                 onTouchStart={(e) => e.stopPropagation()}
                 onTouchMove={(e) => e.stopPropagation()}
@@ -361,7 +389,7 @@ export function MessageBubble({
               aria-label={`Reakcja ${r.emoji}: ${r.users.length}`}
               className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] leading-5 ${
                 r.users.includes(meId)
-                  ? "border-accent bg-accent/10 text-accent"
+                  ? "border-accent bg-surface text-accent"
                   : "border-[var(--chat-chip-border)] bg-[var(--chat-chip-bg)] text-[var(--chat-chip-ink)]"
               }`}
             >
@@ -440,10 +468,7 @@ export function MessageBubble({
           />
           <div
             className="fixed z-50 flex gap-0.5 rounded-full border border-line bg-surface p-1 shadow-lg"
-            style={{
-              left: Math.max(8, Math.min(picker.x, window.innerWidth - 224)),
-              top: Math.max(8, Math.min(picker.y, window.innerHeight - 48)),
-            }}
+            style={{ left: picker.left, top: picker.top }}
           >
             {REACTION_EMOJIS.map((e) => (
               <button

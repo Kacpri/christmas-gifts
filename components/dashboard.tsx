@@ -1722,7 +1722,7 @@ export function Dashboard({
     },
     potrawy: {
       title: "Potrawy",
-      body: <DishForm dishes={dishes} />,
+      body: <DishForm dishes={dishes} narrow={isTwoCol} />,
     },
     ready: {
       title: "Gotowość",

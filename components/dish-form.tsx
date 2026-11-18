@@ -86,7 +86,13 @@ function compareDishes(a: Dish, b: Dish, field: SortField): number {
   }
 }
 
-export function DishForm({ dishes }: { dishes: Dish[] }) {
+export function DishForm({
+  dishes,
+  narrow = false,
+}: {
+  dishes: Dish[];
+  narrow?: boolean;
+}) {
   const [addState, addAction, adding] = useActionState(addDish, empty);
   const [editState, editAction, editing] = useActionState(editDish, empty);
   const [query, setQuery] = useState("");
@@ -307,7 +313,7 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                   setPage(1);
                 }}
                 options={personOptions}
-                className="w-full sm:w-44"
+                className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
               />
               <Select
                 leadingIcon={<TagIcon />}
@@ -318,9 +324,15 @@ export function DishForm({ dishes }: { dishes: Dish[] }) {
                 }}
                 options={categoryFilterOptions}
                 scrollable={false}
-                className="w-full sm:w-44"
+                className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
               />
-              <div className="flex w-full items-center gap-1.5 sm:w-auto sm:min-w-[200px] sm:flex-1">
+              <div
+                className={
+                  narrow
+                    ? "flex w-full items-center gap-1.5"
+                    : "flex w-full items-center gap-1.5 sm:w-auto sm:min-w-[200px] sm:flex-1"
+                }
+              >
                 <Select
                   leadingIcon={<SortFieldIcon field={sortField} />}
                   value={sortField}

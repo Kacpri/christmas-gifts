@@ -315,8 +315,9 @@ export function GroupChatSection({
     firstRunRef.current = false;
   }, [local.length, collapsed, isDesktop, me]);
 
-  const visible = isDesktop ? local : local.slice(-visibleCount);
-  const hasOlder = !isDesktop && local.length > visibleCount;
+  const nonDeleted = local.filter((m) => !m.deleted);
+  const visible = isDesktop ? nonDeleted : nonDeleted.slice(-visibleCount);
+  const hasOlder = !isDesktop && nonDeleted.length > visibleCount;
 
   function loadOlder() {
     anchorRef.current = document.documentElement.scrollHeight;
@@ -432,7 +433,7 @@ export function GroupChatSection({
               Załaduj starsze
             </button>
           )}
-          {local.length === 0 && (
+          {visible.length === 0 && (
             <p className="text-sm text-faint">
               Brak wiadomości. Napisz pierwszą!
             </p>
