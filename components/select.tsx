@@ -17,6 +17,7 @@ export function Select({
   direction = "down",
   scrollable = true,
   leadingIcon,
+  placeholder,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -26,6 +27,7 @@ export function Select({
   direction?: "down" | "up";
   scrollable?: boolean;
   leadingIcon?: ReactNode;
+  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -64,7 +66,13 @@ export function Select({
             {selected?.icon ?? leadingIcon}
           </span>
         )}
-        <span className="min-w-0 flex-1 truncate">{selected?.label ?? ""}</span>
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selected ? "" : "text-placeholder"
+          }`}
+        >
+          {selected?.label ?? placeholder ?? ""}
+        </span>
         <svg
           width="14"
           height="14"

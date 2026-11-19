@@ -98,7 +98,7 @@ export function DishForm({
   const [query, setQuery] = useState("");
   const [personFilter, setPersonFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [addCategory, setAddCategory] = useState<DishCategory>("glowne");
+  const [addCategory, setAddCategory] = useState<DishCategory | "">("");
   const [sortField, setSortField] = useState<SortField>("time");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
@@ -165,7 +165,7 @@ export function DishForm({
 
   useEffect(() => {
     if (addState.ok) {
-      setAddCategory("glowne");
+      setAddCategory("");
       addFormRef.current?.reset();
     }
   }, [addState]);
@@ -590,6 +590,7 @@ export function DishForm({
                 direction="up"
                 scrollable={false}
                 leadingIcon={<TagIcon />}
+                placeholder="Wybierz kategorię"
                 className="flex-1"
               />
               <input
@@ -601,7 +602,7 @@ export function DishForm({
             </div>
             <button
               type="submit"
-              disabled={adding}
+              disabled={adding || addCategory === ""}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
             >
               {adding ? (
