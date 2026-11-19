@@ -44,6 +44,7 @@ import { Avatar } from "@/components/avatar";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
+import { Select } from "@/components/select";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 
@@ -99,7 +100,7 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
         jako kupiony.
       </p>
       {kids.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {kids.map((k) => (
             <button
               key={k.id}
@@ -116,26 +117,35 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
               {k.name}
             </button>
           ))}
+          {!addOpen && (
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-dashed border-input-line bg-surface py-1.5 pl-3.5 pr-4 text-sm font-semibold text-ink hover:bg-mist"
+            >
+              <PlusCircleIcon />
+              Dodaj dziecko
+            </button>
+          )}
         </div>
       ) : (
-        <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
+        <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
           Nikt nie dodał jeszcze żadnego dziecka.
+          {!addOpen && (
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
+            >
+              <PlusCircleIcon />
+              Dodaj dziecko
+            </button>
+          )}
         </div>
       )}
+      {addOpen && <AddChildForm onDone={() => setAddOpen(false)} />}
       {selected && (
         <ChildDetail key={selected.id} me={me} child={selected} users={users} />
-      )}
-      {addOpen ? (
-        <AddChildForm onDone={() => setAddOpen(false)} />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAddOpen(true)}
-          className="inline-flex w-fit items-center gap-2 rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
-        >
-          <PlusCircleIcon />
-          Dodaj dziecko
-        </button>
       )}
     </div>
   );
@@ -148,17 +158,13 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const submittedRef = useRef(false);
 
   useEffect(() => {
     if (state.ok) {
-      submittedRef.current = false;
       setName("");
       setPhoto(null);
       setPhotoUrl(null);
       onDone();
-    } else if (state.error) {
-      submittedRef.current = false;
     }
   }, [state, onDone]);
 
@@ -188,19 +194,15 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (submittedRef.current) return;
-        submittedRef.current = true;
-        const fd = new FormData();
-        fd.set("name", name);
-        if (photo) fd.set("photo", photo);
-        action(fd);
+      action={(formData) => {
+        if (photo) formData.append("photo", photo);
+        action(formData);
       }}
       className="flex flex-col gap-3 rounded-[10px] border border-line bg-mist p-3.5"
     >
       <h4 className="text-sm font-semibold text-ink">Nowe dziecko</h4>
       <input
+        name="name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
@@ -500,36 +502,33 @@ function ChildDetail({
           ))}
           {child.parents.length < 2 && (
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!parentPick) return;
-                const fd = new FormData();
-                fd.set("child_id", String(child.id));
-                fd.set("user_id", parentPick);
-                addParentAction(fd);
+              action={(formData) => {
+                formData.set("child_id", String(child.id));
+                formData.set("user_id", parentPick);
+                addParentAction(formData);
                 setParentPick("");
               }}
               className="flex flex-wrap items-center gap-2"
             >
-              <select
+              <Select
                 value={parentPick}
-                onChange={(e) => setParentPick(e.target.value)}
-                aria-label="Wybierz drugiego rodzica"
-                className="min-w-0 flex-1 rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink"
-              >
-                <option value="">Wybierz osobę…</option>
-                {availableUsers.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setParentPick(v)}
+                options={availableUsers.map((u) => ({
+                  value: u.id,
+                  label: u.fullName,
+                }))}
+                direction="up"
+                scrollable={false}
+                placeholder="Wybierz osobę…"
+                className="min-w-0 flex-1"
+              />
               <button
                 type="submit"
                 disabled={!parentPick || addParentPending}
-                className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep"
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep"
               >
-                Dodaj rodzica
+                {addParentPending ? <SpinnerIcon /> : null}
+                {addParentPending ? "Dodawanie…" : "Dodaj rodzica"}
               </button>
             </form>
           )}
@@ -1030,19 +1029,15 @@ function AddChildWishForm({ childId }: { childId: number }) {
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const fd = new FormData();
-        fd.set("child_id", String(childId));
-        fd.set("text", text);
-        fd.set("link", link);
-        fd.set("price", price);
-        action(fd);
+      action={(formData) => {
+        formData.set("child_id", String(childId));
+        action(formData);
       }}
       className="flex flex-col gap-3 rounded-[10px] border border-line bg-mist p-3.5"
     >
       <h4 className="text-sm font-semibold text-ink">Dodaj życzenie</h4>
       <input
+        name="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         required
@@ -1052,6 +1047,7 @@ function AddChildWishForm({ childId }: { childId: number }) {
       />
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
+          name="link"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           type="url"
@@ -1059,6 +1055,7 @@ function AddChildWishForm({ childId }: { childId: number }) {
           className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
         <input
+          name="price"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           type="text"
@@ -1104,18 +1101,14 @@ function EditChildWishForm({
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const fd = new FormData();
-        fd.set("id", String(wish.id));
-        fd.set("text", text);
-        fd.set("link", link);
-        fd.set("price", price);
-        action(fd);
+      action={(formData) => {
+        formData.set("id", String(wish.id));
+        action(formData);
       }}
       className="flex flex-col gap-3 rounded-[10px] bg-mist p-3"
     >
       <input
+        name="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         required
@@ -1124,6 +1117,7 @@ function EditChildWishForm({
       />
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
+          name="link"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           type="url"
@@ -1131,6 +1125,7 @@ function EditChildWishForm({
           className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
         <input
+          name="price"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           type="text"
