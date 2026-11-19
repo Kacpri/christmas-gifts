@@ -1352,10 +1352,9 @@ export async function cancelChildWishReservation(
   if (!Number.isInteger(wishId)) {
     return { ok: false, error: "Nieprawidłowy prezent." };
   }
-  const { error } = await supabase
-    .from("child_wish_reservations")
-    .delete()
-    .eq("child_wish_id", wishId);
+  const { error } = await supabase.rpc("cancel_child_wish_reservation", {
+    p_wish_id: wishId,
+  });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
@@ -1370,10 +1369,10 @@ export async function markChildWishPurchased(
   if (!Number.isInteger(wishId)) {
     return { ok: false, error: "Nieprawidłowy prezent." };
   }
-  const { error } = await supabase
-    .from("child_wish_reservations")
-    .update({ state: "purchased", purchased_at: new Date().toISOString() })
-    .eq("child_wish_id", wishId);
+  const { error } = await supabase.rpc("set_child_wish_purchased", {
+    p_wish_id: wishId,
+    p_purchased: true,
+  });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
@@ -1388,10 +1387,10 @@ export async function unmarkChildWishPurchased(
   if (!Number.isInteger(wishId)) {
     return { ok: false, error: "Nieprawidłowy prezent." };
   }
-  const { error } = await supabase
-    .from("child_wish_reservations")
-    .update({ state: "reserved", purchased_at: null })
-    .eq("child_wish_id", wishId);
+  const { error } = await supabase.rpc("set_child_wish_purchased", {
+    p_wish_id: wishId,
+    p_purchased: false,
+  });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };

@@ -569,8 +569,16 @@ function ChildDetail({
 }
 
 function ChildWishRow({ wish, index }: { wish: ChildWish; index: number }) {
+  const link = wish.link;
   return (
-    <li className="flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3">
+    <li
+      className={`flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3 ${
+        link
+          ? "cursor-pointer transition-colors hover:bg-[#f3f8f4] dark:hover:bg-sage-150"
+          : ""
+      }`}
+      onClick={link ? () => window.open(link, "_blank", "noopener") : undefined}
+    >
       <div className="flex min-h-[36px] items-center justify-between gap-3">
         <span className="min-w-0 text-[15px] leading-snug">
           <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
@@ -586,6 +594,7 @@ function ChildWishRow({ wish, index }: { wish: ChildWish; index: number }) {
             href={wish.link}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-1 text-[13px] font-semibold text-[#14532d] dark:text-list-ink"
           >
             Zobacz w sklepie
@@ -632,19 +641,26 @@ function SortableChildWishRow({
     );
   }
 
+  const link = wish.link;
   return (
     <li
       ref={setNodeRef}
       style={style}
       className={`flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3 ${
         isDragging ? "relative z-10 opacity-50" : ""
+      } ${
+        link
+          ? "cursor-pointer transition-colors hover:bg-[#f3f8f4] dark:hover:bg-sage-150"
+          : ""
       }`}
+      onClick={link ? () => window.open(link, "_blank", "noopener") : undefined}
     >
       <div className="flex min-h-[36px] items-center gap-2">
         <button
           type="button"
           {...attributes}
           {...listeners}
+          onClick={(e) => e.stopPropagation()}
           aria-label={`Przesuń życzenie: ${wish.text}`}
           title="Przesuń"
           className="flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:bg-icon-hover active:cursor-grabbing"
@@ -660,7 +676,10 @@ function SortableChildWishRow({
         <WishPrice price={wish.price} />
         <button
           type="button"
-          onClick={() => onMenu(wish)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMenu(wish);
+          }}
           aria-label={`Opcje życzenia: ${wish.text}`}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
         >
@@ -673,6 +692,7 @@ function SortableChildWishRow({
             href={wish.link}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="flex items-center gap-1 text-[13px] font-semibold text-[#14532d] dark:text-list-ink"
           >
             Zobacz w sklepie
@@ -724,7 +744,10 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
 
   if (!r) {
     return (
-      <span className="flex flex-wrap items-center gap-2">
+      <span
+        className="flex flex-wrap items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           onClick={() => reserveAction(fd())}
@@ -743,7 +766,10 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
 
   if (r.isMine && r.state === "reserved") {
     return (
-      <span className="flex flex-wrap items-center gap-2">
+      <span
+        className="flex flex-wrap items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           onClick={() => buyAction(fd())}
@@ -774,7 +800,10 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
 
   if (r.isMine && r.state === "purchased") {
     return (
-      <span className="flex flex-wrap items-center gap-2">
+      <span
+        className="flex flex-wrap items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-200 px-2.5 py-1 text-xs font-bold text-list-ink">
           <CheckIcon />
           Kupiony
