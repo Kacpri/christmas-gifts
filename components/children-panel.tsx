@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useActionState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useActionState,
+  type ChangeEvent,
+} from "react";
 
 import {
   DndContext,
@@ -35,6 +41,7 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
+import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { Presence } from "@/components/presence";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
@@ -137,14 +144,42 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
   const [state, action, pending] = useActionState(addChild, empty);
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.ok) {
       setName("");
       setPhoto(null);
+      setPhotoUrl(null);
       onDone();
     }
   }, [state, onDone]);
+
+  useEffect(() => {
+    return () => {
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+    };
+  }, [photoUrl]);
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setCropFile(file);
+  }
+
+  function handleCropSave(cropped: File) {
+    setPhoto(cropped);
+    setPhotoUrl(URL.createObjectURL(cropped));
+    setCropFile(null);
+  }
+
+  function removePhoto() {
+    setPhoto(null);
+    setPhotoUrl(null);
+  }
 
   return (
     <form
@@ -166,12 +201,36 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
         placeholder="Imię dziecka"
         className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
       />
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-        className="text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-sage-150 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-accent"
-      />
+      <div className="flex items-center gap-3">
+        <Avatar name={name || "?"} src={photoUrl} size={48} />
+        <div className="flex flex-col items-start gap-0.5">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={pending}
+            className="text-sm font-medium text-accent-deep hover:underline disabled:opacity-50"
+          >
+            {photo ? "Zmień zdjęcie" : "Dodaj zdjęcie"}
+          </button>
+          {photo && (
+            <button
+              type="button"
+              onClick={removePhoto}
+              disabled={pending}
+              className="text-sm text-danger hover:underline disabled:opacity-50"
+            >
+              Usuń zdjęcie
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFile}
+        />
+      </div>
       <div className="flex items-center gap-3">
         <button
           type="submit"
@@ -192,6 +251,14 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
       </div>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
+      )}
+      {cropFile && (
+        <AvatarCropDialog
+          file={cropFile}
+          busy={false}
+          onClose={() => setCropFile(null)}
+          onSave={handleCropSave}
+        />
       )}
     </form>
   );
