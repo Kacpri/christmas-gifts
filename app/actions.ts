@@ -1099,3 +1099,300 @@ export async function deleteErrorReport(
   revalidatePath("/");
   return { ok: true };
 }
+
+export async function addChild(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name || name.length > 100) {
+    return { ok: false, error: "Imię dziecka: 1–100 znaków." };
+  }
+  const { data: childId, error } = await supabase.rpc("create_child", {
+    p_name: name,
+  });
+  if (error) return { ok: false, error: error.message };
+  const file = formData.get("photo");
+  if (file instanceof Blob && file.size > 0) {
+    const ext = AVATAR_TYPES[file.type];
+    if (!ext) {
+      return { ok: false, error: "Dozwolone formaty: JPG, PNG, WebP." };
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      return { ok: false, error: "Zdjęcie może mieć maks. 4 MB." };
+    }
+    const path = `${user.id}/child-${childId}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (uploadError) return { ok: false, error: uploadError.message };
+    const { error: updateError } = await supabase
+      .from("children")
+      .update({
+        avatar_path: path,
+        avatar_updated_at: new Date().toISOString(),
+      })
+      .eq("id", childId);
+    if (updateError) return { ok: false, error: updateError.message };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function addChildParent(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const childId = Number(formData.get("child_id"));
+  const userId = String(formData.get("user_id") ?? "");
+  if (!Number.isInteger(childId) || !userId) {
+    return { ok: false, error: "Nieprawidłowe dane." };
+  }
+  const { error } = await supabase
+    .from("child_parents")
+    .insert({ child_id: childId, user_id: userId, is_creator: false });
+  if (error) {
+    return {
+      ok: false,
+      error:
+        error.code === "23505"
+          ? "Ta osoba jest już rodzicem tego dziecka."
+          : error.message,
+    };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function removeChildParent(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const childId = Number(formData.get("child_id"));
+  const userId = String(formData.get("user_id") ?? "");
+  if (!Number.isInteger(childId) || !userId) {
+    return { ok: false, error: "Nieprawidłowe dane." };
+  }
+  const { error } = await supabase
+    .from("child_parents")
+    .delete()
+    .eq("child_id", childId)
+    .eq("user_id", userId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteChild(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const childId = Number(formData.get("child_id"));
+  if (!Number.isInteger(childId)) {
+    return { ok: false, error: "Nieprawidłowe dziecko." };
+  }
+  const { data: wishRows } = await supabase
+    .from("child_wishes")
+    .select("id")
+    .eq("child_id", childId);
+  const wishIds = (wishRows ?? []).map((w) => w.id);
+  if (wishIds.length > 0) {
+    const { data: reservationRows, error: reservationError } = await supabase.rpc(
+      "child_reservation_data"
+    );
+    if (reservationError) return { ok: false, error: reservationError.message };
+    const reservations = (reservationRows ?? []) as {
+      child_wish_id: number;
+    }[];
+    const wishIdSet = new Set(wishIds);
+    if (reservations.some((r) => wishIdSet.has(r.child_wish_id))) {
+      return {
+        ok: false,
+        error:
+          "Nie można usunąć dziecka z zarezerwowanymi lub kupionymi prezentami.",
+      };
+    }
+  }
+  const { data: deleted, error } = await supabase
+    .from("children")
+    .delete()
+    .eq("id", childId)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!deleted || deleted.length === 0) {
+    return {
+      ok: false,
+      error:
+        "Nie można usunąć dziecka z zarezerwowanymi lub kupionymi prezentami.",
+    };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function addChildWish(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const childId = Number(formData.get("child_id"));
+  const text = String(formData.get("text") ?? "").trim();
+  const link = String(formData.get("link") ?? "").trim();
+  const priceRaw = String(formData.get("price") ?? "").trim();
+  if (!Number.isInteger(childId)) {
+    return { ok: false, error: "Nieprawidłowe dziecko." };
+  }
+  if (!text) return { ok: false, error: "Wpisz, czego dziecko sobie życzy." };
+  if (link && !/^https?:\/\/\S+$/i.test(link)) {
+    return { ok: false, error: "Link musi zaczynać się od http:// lub https://" };
+  }
+  const parsedPrice = parsePrice(priceRaw);
+  if (parsedPrice.kind === "invalid") {
+    return { ok: false, error: "Cena musi być dodatnią liczbą." };
+  }
+  const price = parsedPrice.kind === "value" ? parsedPrice.grosze / 100 : null;
+  const { data: top } = await supabase
+    .from("child_wishes")
+    .select("pos")
+    .eq("child_id", childId)
+    .order("pos", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const { error } = await supabase.from("child_wishes").insert({
+    child_id: childId,
+    text,
+    link: link || null,
+    price,
+    pos: (top?.pos ?? 0) + 1,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function editChildWish(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const id = Number(formData.get("id"));
+  const text = String(formData.get("text") ?? "").trim();
+  const link = String(formData.get("link") ?? "").trim();
+  const priceRaw = String(formData.get("price") ?? "").trim();
+  if (!Number.isInteger(id)) {
+    return { ok: false, error: "Nieprawidłowe życzenie." };
+  }
+  if (!text) return { ok: false, error: "Wpisz, czego dziecko sobie życzy." };
+  if (link && !/^https?:\/\/\S+$/i.test(link)) {
+    return { ok: false, error: "Link musi zaczynać się od http:// lub https://" };
+  }
+  const parsedPrice = parsePrice(priceRaw);
+  if (parsedPrice.kind === "invalid") {
+    return { ok: false, error: "Cena musi być dodatnią liczbą." };
+  }
+  const price = parsedPrice.kind === "value" ? parsedPrice.grosze / 100 : null;
+  const { error } = await supabase
+    .from("child_wishes")
+    .update({ text, link: link || null, price })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function removeChildWish(
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) {
+    return { ok: false, error: "Nieprawidłowe życzenie." };
+  }
+  const { error } = await supabase.from("child_wishes").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function reserveChildWish(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const wishId = Number(formData.get("wish_id"));
+  if (!Number.isInteger(wishId)) {
+    return { ok: false, error: "Nieprawidłowy prezent." };
+  }
+  const { error } = await supabase
+    .from("child_wish_reservations")
+    .insert({ child_wish_id: wishId, user_id: user.id });
+  if (error) {
+    return {
+      ok: false,
+      error:
+        error.code === "23505"
+          ? "Ten prezent jest już zarezerwowany."
+          : error.message,
+    };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function cancelChildWishReservation(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const wishId = Number(formData.get("wish_id"));
+  if (!Number.isInteger(wishId)) {
+    return { ok: false, error: "Nieprawidłowy prezent." };
+  }
+  const { error } = await supabase
+    .from("child_wish_reservations")
+    .delete()
+    .eq("child_wish_id", wishId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function markChildWishPurchased(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const wishId = Number(formData.get("wish_id"));
+  if (!Number.isInteger(wishId)) {
+    return { ok: false, error: "Nieprawidłowy prezent." };
+  }
+  const { error } = await supabase
+    .from("child_wish_reservations")
+    .update({ state: "purchased", purchased_at: new Date().toISOString() })
+    .eq("child_wish_id", wishId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function unmarkChildWishPurchased(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const wishId = Number(formData.get("wish_id"));
+  if (!Number.isInteger(wishId)) {
+    return { ok: false, error: "Nieprawidłowy prezent." };
+  }
+  const { error } = await supabase
+    .from("child_wish_reservations")
+    .update({ state: "reserved", purchased_at: null })
+    .eq("child_wish_id", wishId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}

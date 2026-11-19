@@ -43,6 +43,7 @@ import {
   type DmThread,
   type Thread,
 } from "@/components/chats-panel";
+import { ChildrenPanel, type ChildrenData } from "@/components/children-panel";
 import { Countdown } from "@/components/countdown";
 import { ErrorReportForm } from "@/components/error-report-form";
 import {
@@ -76,6 +77,7 @@ export type PanelId =
   | "group-chat"
   | "wishes"
   | "potrawy"
+  | "children"
   | "ready"
   | "impreza"
   | "organizer";
@@ -89,6 +91,7 @@ const ALL_PANELS: PanelId[] = [
   "group-chat",
   "wishes",
   "potrawy",
+  "children",
   "organizer",
 ];
 
@@ -104,6 +107,7 @@ const DEFAULT_LAYOUT: Layout = {
     "wishes",
     "chats",
     "potrawy",
+    "children",
     "group-chat",
     "impreza",
     "organizer",
@@ -618,6 +622,17 @@ function OrganizerIcon() {
   );
 }
 
+function ChildrenIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M9 12h.01" />
+      <path d="M15 12h.01" />
+      <path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5" />
+      <path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1" />
+    </PanelIconSvg>
+  );
+}
+
 const PANEL_ICONS: Record<PanelId, ReactNode> = {
   profile: <ProfileIcon />,
   ready: <ReadyIcon />,
@@ -627,6 +642,7 @@ const PANEL_ICONS: Record<PanelId, ReactNode> = {
   "group-chat": <GroupChatIcon />,
   wishes: <WishesIcon />,
   potrawy: <PotrawyIcon />,
+  children: <ChildrenIcon />,
   organizer: <OrganizerIcon />,
 };
 
@@ -1247,6 +1263,7 @@ export function Dashboard({
   groupChat,
   wishes,
   dishes,
+  kids,
   party,
   ready,
   organizer,
@@ -1270,6 +1287,7 @@ export function Dashboard({
     themeLockReason: string | null;
   };
   dishes: Dish[];
+  kids: ChildrenData;
   party: {
     startsAt: string | null;
     location: string | null;
@@ -1723,6 +1741,10 @@ export function Dashboard({
     potrawy: {
       title: "Potrawy",
       body: <DishForm dishes={dishes} narrow={isTwoCol} />,
+    },
+    children: {
+      title: "Dzieci",
+      body: <ChildrenPanel {...kids} />,
     },
     ready: {
       title: "Gotowość",

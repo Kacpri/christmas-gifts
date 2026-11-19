@@ -33,6 +33,10 @@ export default async function Home() {
     { data: partyRow },
     { data: myDmMessages },
     { data: myDmReads },
+    { data: childRows },
+    { data: childParentRows },
+    { data: childWishRows },
+    { data: childReservationRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -91,6 +95,18 @@ export default async function Home() {
       .from("dm_reads")
       .select("peer_id, last_read_at")
       .eq("user_id", user.id),
+    supabase
+      .from("children")
+      .select("id, name, avatar_path, avatar_updated_at")
+      .order("created_at"),
+    supabase
+      .from("child_parents")
+      .select("child_id, user_id, is_creator"),
+    supabase
+      .from("child_wishes")
+      .select("id, child_id, text, link, price")
+      .order("pos"),
+    supabase.rpc("child_reservation_data"),
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
@@ -138,6 +154,53 @@ export default async function Home() {
     likeCount: likeCountByDish.get(d.id) ?? 0,
     likedByMe: myLikedDishIds.has(d.id),
   }));
+
+  const reservations = (childReservationRows ?? []) as {
+    child_wish_id: number;
+    state: string;
+    is_mine: boolean;
+    reserver_name: string | null;
+  }[];
+  const kids = (childRows ?? []).map((c) => {
+    const parents = (childParentRows ?? [])
+      .filter((p) => p.child_id === c.id)
+      .map((p) => ({
+        id: p.user_id,
+        name: nameById.get(p.user_id) ?? "??",
+        isCreator: p.is_creator,
+      }));
+    return {
+      id: c.id,
+      name: c.name,
+      avatarUrl: c.avatar_path
+        ? `${avatarBase}/${c.avatar_path}${
+            c.avatar_updated_at
+              ? `?v=${encodeURIComponent(c.avatar_updated_at)}`
+              : ""
+          }`
+        : null,
+      isMyChild: parents.some((p) => p.id === user.id),
+      parents,
+      wishes: (childWishRows ?? [])
+        .filter((w) => w.child_id === c.id)
+        .map((w) => {
+          const r = reservations.find((x) => x.child_wish_id === w.id);
+          return {
+            id: w.id,
+            text: w.text,
+            link: w.link,
+            price: w.price,
+            reservation: r
+              ? {
+                  state: r.state as "reserved" | "purchased",
+                  isMine: r.is_mine,
+                  reserverName: r.reserver_name,
+                }
+              : null,
+          };
+        }),
+    };
+  });
 
   const { data: lotteryActiveData } = await supabase.rpc("lottery_active");
   const lotteryActive = lotteryActiveData === true;
@@ -482,6 +545,14 @@ export default async function Home() {
         themeLockReason: themeLockReason,
       }}
       dishes={dishes}
+      kids={{
+        me: user.id,
+        kids,
+        users: (participants ?? []).map((p) => ({
+          id: p.id,
+          fullName: p.full_name,
+        })),
+      }}
       party={{
         startsAt: partyRow?.starts_at ?? null,
         location: partyRow?.location ?? null,
