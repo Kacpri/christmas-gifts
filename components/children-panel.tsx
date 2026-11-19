@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useActionState } from "react";
+import { useEffect, useRef, useState, useActionState } from "react";
 
 import {
   DndContext,
@@ -271,6 +271,25 @@ function ChildDetail({
     applyOrder(arrayMove(localWishes, index, target));
   }
 
+  function applyOptimistic(wishId: number, reservation: ChildReservation | null) {
+    setLocalWishes((prev) => {
+      const target = prev.find((w) => w.id === wishId);
+      if (!target) return prev;
+      const cur = target.reservation;
+      if (
+        cur === reservation ||
+        (cur != null &&
+          reservation != null &&
+          cur.state === reservation.state &&
+          cur.isMine === reservation.isMine &&
+          cur.reserverName === reservation.reserverName)
+      ) {
+        return prev;
+      }
+      return prev.map((w) => (w.id === wishId ? { ...w, reservation } : w));
+    });
+  }
+
   function detachParent(userId: string, userName: string) {
     if (
       !window.confirm(
@@ -345,6 +364,7 @@ function ChildDetail({
                       index={index}
                       isEditing={editingId === wish.id}
                       onMenu={setMenuWish}
+                      onOptimistic={(r) => applyOptimistic(wish.id, r)}
                       onCancelEdit={() => setEditingId(null)}
                     />
                   ))}
@@ -354,7 +374,12 @@ function ChildDetail({
           ) : (
             <ul className="flex flex-col gap-2">
               {localWishes.map((wish, index) => (
-                <ChildWishRow key={wish.id} wish={wish} index={index} />
+                <ChildWishRow
+                  key={wish.id}
+                  wish={wish}
+                  index={index}
+                  onOptimistic={(r) => applyOptimistic(wish.id, r)}
+                />
               ))}
             </ul>
           )
@@ -568,8 +593,17 @@ function ChildDetail({
   );
 }
 
-function ChildWishRow({ wish, index }: { wish: ChildWish; index: number }) {
+function ChildWishRow({
+  wish,
+  index,
+  onOptimistic,
+}: {
+  wish: ChildWish;
+  index: number;
+  onOptimistic: (r: ChildReservation | null) => void;
+}) {
   const link = wish.link;
+  const purchased = wish.reservation?.state === "purchased";
   return (
     <li
       className={`flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3 ${
@@ -584,9 +618,15 @@ function ChildWishRow({ wish, index }: { wish: ChildWish; index: number }) {
           <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
             {index + 1}.
           </span>{" "}
-          <span className="font-semibold text-ink">{wish.text}</span>
+          <span
+            className={`font-semibold ${
+              purchased ? "text-muted line-through" : "text-ink"
+            }`}
+          >
+            {wish.text}
+          </span>
         </span>
-        <WishPrice price={wish.price} />
+        <WishPrice price={wish.price} purchased={purchased} />
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         {wish.link && (
@@ -601,7 +641,7 @@ function ChildWishRow({ wish, index }: { wish: ChildWish; index: number }) {
             <ExternalLinkIcon />
           </a>
         )}
-        <ReservationControls wish={wish} />
+        <ReservationControls wish={wish} onOptimistic={onOptimistic} />
       </div>
     </li>
   );
@@ -612,12 +652,14 @@ function SortableChildWishRow({
   index,
   isEditing,
   onMenu,
+  onOptimistic,
   onCancelEdit,
 }: {
   wish: ChildWish;
   index: number;
   isEditing: boolean;
   onMenu: (wish: ChildWish) => void;
+  onOptimistic: (r: ChildReservation | null) => void;
   onCancelEdit: () => void;
 }) {
   const {
@@ -642,6 +684,7 @@ function SortableChildWishRow({
   }
 
   const link = wish.link;
+  const purchased = wish.reservation?.state === "purchased";
   return (
     <li
       ref={setNodeRef}
@@ -671,9 +714,15 @@ function SortableChildWishRow({
           <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
             {index + 1}.
           </span>{" "}
-          <span className="font-semibold text-ink">{wish.text}</span>
+          <span
+            className={`font-semibold ${
+              purchased ? "text-muted line-through" : "text-ink"
+            }`}
+          >
+            {wish.text}
+          </span>
         </span>
-        <WishPrice price={wish.price} />
+        <WishPrice price={wish.price} purchased={purchased} />
         <button
           type="button"
           onClick={(e) => {
@@ -699,15 +748,25 @@ function SortableChildWishRow({
             <ExternalLinkIcon />
           </a>
         )}
-        <ReservationControls wish={wish} />
+        <ReservationControls wish={wish} onOptimistic={onOptimistic} />
       </div>
     </li>
   );
 }
 
-function WishPrice({ price }: { price: number | null }) {
+function WishPrice({
+  price,
+  purchased,
+}: {
+  price: number | null;
+  purchased?: boolean;
+}) {
   return price != null ? (
-    <span className="shrink-0 whitespace-nowrap text-base font-semibold tabular-nums text-[#15251b] dark:text-ink">
+    <span
+      className={`shrink-0 whitespace-nowrap text-base font-semibold tabular-nums ${
+        purchased ? "text-muted line-through" : "text-[#15251b] dark:text-ink"
+      }`}
+    >
       {formatPrice(price)}
     </span>
   ) : (
@@ -717,7 +776,13 @@ function WishPrice({ price }: { price: number | null }) {
   );
 }
 
-function ReservationControls({ wish }: { wish: ChildWish }) {
+function ReservationControls({
+  wish,
+  onOptimistic,
+}: {
+  wish: ChildWish;
+  onOptimistic: (r: ChildReservation | null) => void;
+}) {
   const [reserveState, reserveAction, reservePending] = useActionState(
     reserveChildWish,
     empty
@@ -736,6 +801,19 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
   );
 
   const r = wish.reservation;
+  const prevRef = useRef<ChildReservation | null>(null);
+
+  useEffect(() => {
+    if (
+      reserveState.error ||
+      cancelState.error ||
+      buyState.error ||
+      unbuyState.error
+    ) {
+      onOptimistic(prevRef.current);
+    }
+  }, [reserveState, cancelState, buyState, unbuyState, onOptimistic]);
+
   const fd = () => {
     const f = new FormData();
     f.set("wish_id", String(wish.id));
@@ -745,12 +823,16 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
   if (!r) {
     return (
       <span
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center gap-2 md:ml-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
-          onClick={() => reserveAction(fd())}
+          onClick={() => {
+            prevRef.current = r;
+            onOptimistic({ state: "reserved", isMine: true, reserverName: null });
+            reserveAction(fd());
+          }}
           disabled={reservePending}
           className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep"
         >
@@ -767,12 +849,16 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
   if (r.isMine && r.state === "reserved") {
     return (
       <span
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center gap-2 md:ml-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
-          onClick={() => buyAction(fd())}
+          onClick={() => {
+            prevRef.current = r;
+            onOptimistic({ ...r, state: "purchased" });
+            buyAction(fd());
+          }}
           disabled={buyPending}
           className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep"
         >
@@ -781,7 +867,11 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
         </button>
         <button
           type="button"
-          onClick={() => cancelAction(fd())}
+          onClick={() => {
+            prevRef.current = r;
+            onOptimistic(null);
+            cancelAction(fd());
+          }}
           disabled={cancelPending}
           className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-mist disabled:opacity-50"
         >
@@ -801,7 +891,7 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
   if (r.isMine && r.state === "purchased") {
     return (
       <span
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center gap-2 md:ml-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-200 px-2.5 py-1 text-xs font-bold text-list-ink">
@@ -810,7 +900,11 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
         </span>
         <button
           type="button"
-          onClick={() => unbuyAction(fd())}
+          onClick={() => {
+            prevRef.current = r;
+            onOptimistic({ ...r, state: "reserved" });
+            unbuyAction(fd());
+          }}
           disabled={unbuyPending}
           className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-mist disabled:opacity-50"
         >
@@ -825,7 +919,13 @@ function ReservationControls({ wish }: { wish: ChildWish }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-honey-200 px-2.5 py-1 text-xs font-bold text-honey-800">
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold md:ml-auto ${
+        r.state === "purchased"
+          ? "bg-sage-200 text-list-ink"
+          : "bg-honey-200 text-honey-800"
+      }`}
+    >
       {r.state === "purchased" ? <CheckIcon /> : <LockIcon />}
       {r.state === "purchased" ? "Kupiony" : "Zarezerwowany"}
       {r.reserverName ? ` przez ${r.reserverName}` : ""}
