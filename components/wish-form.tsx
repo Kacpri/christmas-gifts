@@ -31,7 +31,9 @@ import { budgetError, parsePrice } from "@/lib/budget";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { THEME_IDEAS } from "@/lib/theme-ideas";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { Presence } from "@/components/presence";
+import { BottomSheet } from "@/components/bottom-sheet";
 
 export type Wish = {
   id: number;
@@ -64,7 +66,7 @@ export function WishForm({
     saveTheme,
     empty
   );
-  const [editState, editWishAction, editingWish] = useActionState(
+  const [editState, editWishAction, editPending] = useActionState(
     editWish,
     empty
   );
@@ -79,7 +81,9 @@ export function WishForm({
   const [justDrew, setJustDrew] = useState(false);
   const [menuWish, setMenuWish] = useState<Wish | null>(null);
   const [addPrice, setAddPrice] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
   const addPriceRef = useRef<HTMLInputElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const addParsed = parsePrice(addPrice);
   const addOverBudget =
@@ -103,7 +107,10 @@ export function WishForm({
   }, [editState]);
 
   useEffect(() => {
-    if (wishState.ok) setAddPrice("");
+    if (wishState.ok) {
+      setAddPrice("");
+      setAddOpen(false);
+    }
   }, [wishState]);
 
   useEffect(() => {
@@ -211,6 +218,138 @@ export function WishForm({
     ? localWishes.findIndex((w) => w.id === menuWish.id)
     : -1;
 
+  const editingWish =
+    editingId != null
+      ? localWishes.find((w) => w.id === editingId) ?? null
+      : null;
+
+  const addButton = (
+    <button
+      type="button"
+      onClick={() => setAddOpen(true)}
+      className="flex w-full items-center gap-2 rounded-[10px] border border-dashed border-input-line bg-surface px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
+    >
+      <PlusCircleIcon />
+      Dodaj życzenie
+    </button>
+  );
+
+  const addForm = (
+    <form
+      action={addWishAction}
+      onSubmit={(e) => {
+        if (addOverBudget) {
+          e.preventDefault();
+          addPriceRef.current?.focus();
+        }
+      }}
+      className="flex flex-col gap-3 rounded-[10px] border border-line bg-mist p-3.5"
+    >
+      <h4 className="text-sm font-semibold text-ink">Dodaj życzenie</h4>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="wish-add-text"
+          className="text-[13px] font-medium text-faint"
+        >
+          Życzenie
+        </label>
+        <input
+          id="wish-add-text"
+          name="text"
+          required
+          maxLength={500}
+          placeholder="Czego sobie życzysz?"
+          className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+        />
+        <p className="text-sm text-muted">np. kubek, książka, voucher</p>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <label
+            htmlFor="wish-add-link"
+            className="text-[13px] font-medium text-faint"
+          >
+            Link (opcjonalnie)
+          </label>
+          <input
+            id="wish-add-link"
+            name="link"
+            type="url"
+            placeholder="Link (opcjonalnie)"
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+          />
+        </div>
+        <div className="flex w-full flex-col gap-1.5 sm:w-[140px]">
+          <label
+            htmlFor="wish-add-price"
+            className="text-[13px] font-medium text-faint"
+          >
+            Cena (zł)
+          </label>
+          <input
+            id="wish-add-price"
+            ref={addPriceRef}
+            name="price"
+            type="text"
+            inputMode="decimal"
+            value={addPrice}
+            onChange={(e) => setAddPrice(e.target.value)}
+            placeholder="Cena (zł)"
+            aria-invalid={addOverBudget || undefined}
+            aria-describedby={
+              addOverBudget
+                ? "wish-price-error wish-budget-hint"
+                : "wish-budget-hint"
+            }
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+          />
+        </div>
+      </div>
+      <p id="wish-budget-hint" className="text-sm text-muted">
+        Budżet na prezent z listy: do {listBudget} zł
+      </p>
+      {addOverBudget && (
+        <p
+          id="wish-price-error"
+          role="alert"
+          className="text-sm font-medium text-danger"
+        >
+          {budgetError(listBudget)}
+        </p>
+      )}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={addingWish}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+        >
+          {addingWish ? (
+            <>
+              <SpinnerIcon />
+              Dodawanie…
+            </>
+          ) : (
+            <>
+              <PlusCircleIcon />
+              Dodaj życzenie
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setAddOpen(false)}
+          disabled={addingWish}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+        >
+          Anuluj
+        </button>
+      </div>
+      {!wishState.ok && wishState.error && (
+        <p className="text-sm text-red-600">{wishState.error}</p>
+      )}
+    </form>
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -239,7 +378,7 @@ export function WishForm({
                   key={wish.id}
                   wish={wish}
                   index={index}
-                  isEditing={editingId === wish.id}
+                  isEditing={editingId === wish.id && isDesktop}
                   editText={editText}
                   editLink={editLink}
                   editPrice={editPrice}
@@ -247,13 +386,17 @@ export function WishForm({
                   setEditLink={setEditLink}
                   setEditPrice={setEditPrice}
                   editWishAction={editWishAction}
-                  editingWish={editingWish}
+                  editingWish={editPending}
                    editState={editState}
                    cancelEdit={() => setEditingId(null)}
                    onMenu={setMenuWish}
                    listBudget={listBudget}
-                 />
+                />
               ))}
+              {localWishes.length < 5 && !addOpen && <li>{addButton}</li>}
+              {localWishes.length < 5 && addOpen && isDesktop && (
+                <li>{addForm}</li>
+              )}
             </ul>
           </SortableContext>
         </DndContext>
@@ -267,81 +410,19 @@ export function WishForm({
           Osiągnięto limit — usuń któreś życzenie, aby dodać nowe
         </p>
       ) : (
-        <form
-          action={addWishAction}
-          onSubmit={(e) => {
-            if (addOverBudget) {
-              e.preventDefault();
-              addPriceRef.current?.focus();
-            }
-          }}
-          className="flex flex-col gap-3"
-        >
-          <input
-            name="text"
-            required
-            maxLength={500}
-            placeholder="Czego sobie życzysz?"
-            className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-          />
-          <p className="text-sm text-muted">np. kubek, książka, voucher</p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              name="link"
-              type="url"
-              placeholder="Link (opcjonalnie)"
-              className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-            />
-            <input
-              ref={addPriceRef}
-              name="price"
-              type="text"
-              inputMode="decimal"
-              value={addPrice}
-              onChange={(e) => setAddPrice(e.target.value)}
-              placeholder="Cena (zł)"
-              aria-invalid={addOverBudget || undefined}
-              aria-describedby={
-                addOverBudget
-                  ? "wish-price-error wish-budget-hint"
-                  : "wish-budget-hint"
-              }
-              className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
-            />
-          </div>
-          <p id="wish-budget-hint" className="text-sm text-muted">
-            Budżet na prezent z listy: do {listBudget} zł
-          </p>
-          {addOverBudget && (
-            <p
-              id="wish-price-error"
-              role="alert"
-              className="text-sm font-medium text-danger"
-            >
-              {budgetError(listBudget)}
-            </p>
+        <>
+          {localWishes.length === 0 && (
+            <div className="flex flex-col gap-2">
+              {!addOpen && addButton}
+              {addOpen && isDesktop && addForm}
+            </div>
           )}
-          <button
-            type="submit"
-            disabled={addingWish}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-          >
-            {addingWish ? (
-              <>
-                <SpinnerIcon />
-                Dodawanie…
-              </>
-            ) : (
-              <>
-                <PlusCircleIcon />
-                Dodaj życzenie
-              </>
-            )}
-          </button>
-          {!wishState.ok && wishState.error && (
-            <p className="text-sm text-red-600">{wishState.error}</p>
+          {addOpen && !isDesktop && (
+            <BottomSheet open={addOpen} onClose={() => setAddOpen(false)}>
+              {addForm}
+            </BottomSheet>
           )}
-        </form>
+        </>
       )}
 
       <hr className="border-line" />
@@ -356,10 +437,18 @@ export function WishForm({
       </div>
 
       <form action={saveThemeAction} className="flex flex-col gap-3">
-        <div className="relative">
-          <input
-            name="theme"
-            value={themeValue}
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="theme-input"
+            className="text-[13px] font-medium text-faint"
+          >
+            Temat
+          </label>
+          <div className="relative">
+            <input
+              id="theme-input"
+              name="theme"
+              value={themeValue}
             onChange={(e) => setThemeValue(e.target.value)}
             required
             maxLength={300}
@@ -372,15 +461,16 @@ export function WishForm({
                 ? "Temat zablokowany"
                 : "np. coś ciepłego na zimowe wieczory"
             }
-            className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
-              themeLocked ? "bg-mist pr-10 text-faint" : "bg-surface text-ink"
-            }`}
-          />
-          {themeLocked && (
-            <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-faint">
-              <LockIcon />
-            </span>
-          )}
+              className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
+                themeLocked ? "bg-mist pr-10 text-faint" : "bg-surface text-ink"
+              }`}
+            />
+            {themeLocked && (
+              <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-faint">
+                <LockIcon />
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-sm text-muted">
           Budżet na prezent tematyczny: do {themeBudget} zł
@@ -440,6 +530,25 @@ export function WishForm({
           </div>
         )}
       </div>
+
+      {!isDesktop && editingWish && (
+        <BottomSheet open onClose={() => setEditingId(null)}>
+          <EditWishForm
+            wish={editingWish}
+            editText={editText}
+            editLink={editLink}
+            editPrice={editPrice}
+            setEditText={setEditText}
+            setEditLink={setEditLink}
+            setEditPrice={setEditPrice}
+            editWishAction={editWishAction}
+            pending={editPending}
+            editState={editState}
+            cancelEdit={() => setEditingId(null)}
+            listBudget={listBudget}
+          />
+        </BottomSheet>
+      )}
 
       <Presence
         open={!!menuWish}
@@ -591,14 +700,6 @@ function SortableWishItem({
     transform: CSS.Transform.toString(transform),
     transition,
   };
-  const editPriceRef = useRef<HTMLInputElement>(null);
-  const editParsed = parsePrice(editPrice);
-  const oldGrosze = wish.price != null ? Math.round(wish.price * 100) : null;
-  const editOverBudget =
-    isEditing &&
-    editParsed.kind === "value" &&
-    editParsed.grosze !== oldGrosze &&
-    editParsed.grosze > listBudget * 100;
 
   if (isEditing) {
     return (
@@ -607,96 +708,20 @@ function SortableWishItem({
         style={style}
         className="flex flex-col gap-3 rounded-[10px] bg-mist p-3"
       >
-        <form
-          action={(formData) => {
-            formData.set("id", String(wish.id));
-            editWishAction(formData);
-          }}
-          onSubmit={(e) => {
-            if (editOverBudget) {
-              e.preventDefault();
-              editPriceRef.current?.focus();
-            }
-          }}
-          className="flex flex-col gap-3"
-        >
-          <input
-            name="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            required
-            maxLength={500}
-            className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-          />
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              name="link"
-              type="url"
-              value={editLink}
-              onChange={(e) => setEditLink(e.target.value)}
-              placeholder="Link (opcjonalnie)"
-              className="flex-1 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-            />
-            <input
-              ref={editPriceRef}
-              name="price"
-              type="text"
-              inputMode="decimal"
-              value={editPrice}
-              onChange={(e) => setEditPrice(e.target.value)}
-              placeholder="Cena (zł)"
-              aria-invalid={editOverBudget || undefined}
-              aria-describedby={
-                editOverBudget
-                  ? `wish-price-error-${wish.id} wish-budget-hint-${wish.id}`
-                  : `wish-budget-hint-${wish.id}`
-              }
-              className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:w-[140px]"
-            />
-          </div>
-          <p
-            id={`wish-budget-hint-${wish.id}`}
-            className="text-sm text-muted"
-          >
-            Budżet na prezent z listy: do {listBudget} zł
-          </p>
-          {editOverBudget && (
-            <p
-              id={`wish-price-error-${wish.id}`}
-              role="alert"
-              className="text-sm font-medium text-danger"
-            >
-              {budgetError(listBudget)}
-            </p>
-          )}
-          <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={editingWish}
-              className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-            >
-              {editingWish ? (
-                <>
-                  <SpinnerIcon />
-                  Zapisywanie…
-                </>
-              ) : (
-                "Zapisz zmiany"
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              disabled={editingWish}
-              className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
-            >
-              Anuluj
-            </button>
-          </div>
-          {!editState.ok && editState.error && (
-            <p className="text-sm text-red-600">{editState.error}</p>
-          )}
-        </form>
+        <EditWishForm
+          wish={wish}
+          editText={editText}
+          editLink={editLink}
+          editPrice={editPrice}
+          setEditText={setEditText}
+          setEditLink={setEditLink}
+          setEditPrice={setEditPrice}
+          editWishAction={editWishAction}
+          pending={editingWish}
+          editState={editState}
+          cancelEdit={cancelEdit}
+          listBudget={listBudget}
+        />
       </li>
     );
   }
@@ -756,6 +781,163 @@ function SortableWishItem({
         <MoreIcon />
       </button>
     </li>
+  );
+}
+
+function EditWishForm({
+  wish,
+  editText,
+  editLink,
+  editPrice,
+  setEditText,
+  setEditLink,
+  setEditPrice,
+  editWishAction,
+  pending,
+  editState,
+  cancelEdit,
+  listBudget,
+}: {
+  wish: Wish;
+  editText: string;
+  editLink: string;
+  editPrice: string;
+  setEditText: (v: string) => void;
+  setEditLink: (v: string) => void;
+  setEditPrice: (v: string) => void;
+  editWishAction: (formData: FormData) => void;
+  pending: boolean;
+  editState: ActionResult;
+  cancelEdit: () => void;
+  listBudget: number;
+}) {
+  const editPriceRef = useRef<HTMLInputElement>(null);
+  const editParsed = parsePrice(editPrice);
+  const oldGrosze = wish.price != null ? Math.round(wish.price * 100) : null;
+  const editOverBudget =
+    editParsed.kind === "value" &&
+    editParsed.grosze !== oldGrosze &&
+    editParsed.grosze > listBudget * 100;
+
+  return (
+    <form
+      action={(formData) => {
+        formData.set("id", String(wish.id));
+        editWishAction(formData);
+      }}
+      onSubmit={(e) => {
+        if (editOverBudget) {
+          e.preventDefault();
+          editPriceRef.current?.focus();
+        }
+      }}
+      className="flex flex-col gap-3"
+    >
+      <h4 className="text-sm font-semibold text-ink">Edytuj życzenie</h4>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor={`wish-edit-text-${wish.id}`}
+          className="text-[13px] font-medium text-faint"
+        >
+          Życzenie
+        </label>
+        <input
+          id={`wish-edit-text-${wish.id}`}
+          name="text"
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          required
+          maxLength={500}
+          className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+        />
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <label
+            htmlFor={`wish-edit-link-${wish.id}`}
+            className="text-[13px] font-medium text-faint"
+          >
+            Link (opcjonalnie)
+          </label>
+          <input
+            id={`wish-edit-link-${wish.id}`}
+            name="link"
+            type="url"
+            value={editLink}
+            onChange={(e) => setEditLink(e.target.value)}
+            placeholder="Link (opcjonalnie)"
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+          />
+        </div>
+        <div className="flex w-full flex-col gap-1.5 sm:w-[140px]">
+          <label
+            htmlFor={`wish-edit-price-${wish.id}`}
+            className="text-[13px] font-medium text-faint"
+          >
+            Cena (zł)
+          </label>
+          <input
+            id={`wish-edit-price-${wish.id}`}
+            ref={editPriceRef}
+            name="price"
+            type="text"
+            inputMode="decimal"
+            value={editPrice}
+            onChange={(e) => setEditPrice(e.target.value)}
+            placeholder="Cena (zł)"
+            aria-invalid={editOverBudget || undefined}
+            aria-describedby={
+              editOverBudget
+                ? `wish-price-error-${wish.id} wish-budget-hint-${wish.id}`
+                : `wish-budget-hint-${wish.id}`
+            }
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+          />
+        </div>
+      </div>
+      <p
+        id={`wish-budget-hint-${wish.id}`}
+        className="text-sm text-muted"
+      >
+        Budżet na prezent z listy: do {listBudget} zł
+      </p>
+      {editOverBudget && (
+        <p
+          id={`wish-price-error-${wish.id}`}
+          role="alert"
+          className="text-sm font-medium text-danger"
+        >
+          {budgetError(listBudget)}
+        </p>
+      )}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+        >
+          {pending ? (
+            <>
+              <SpinnerIcon />
+              Zapisywanie…
+            </>
+          ) : (
+            "Zapisz zmiany"
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={cancelEdit}
+          disabled={pending}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+        >
+          Anuluj
+        </button>
+      </div>
+      {!editState.ok && editState.error && (
+        <p className="text-sm text-red-600">{editState.error}</p>
+      )}
+    </form>
   );
 }
 

@@ -17,8 +17,10 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { Select } from "@/components/select";
 import { Presence } from "@/components/presence";
+import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import {
   DISH_CATEGORIES,
@@ -110,6 +112,7 @@ export function DishForm({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const addFormRef = useRef<HTMLFormElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
@@ -167,14 +170,15 @@ export function DishForm({
     if (addState.ok) {
       setAddCategory("");
       addFormRef.current?.reset();
+      setAddOpen(false);
     }
   }, [addState]);
 
   useEffect(() => {
-    if (addOpen) {
+    if (addOpen && isDesktop) {
       addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [addOpen]);
+  }, [addOpen, isDesktop]);
 
   const authors = useMemo(
     () =>
@@ -257,6 +261,206 @@ export function DishForm({
     setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     setPage(1);
   }
+
+  const editingDish =
+    editingId != null ? dishes.find((d) => d.id === editingId) ?? null : null;
+
+  const addButton = (
+    <button
+      type="button"
+      onClick={() => setAddOpen(true)}
+      aria-expanded={false}
+      className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-input-line bg-surface px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
+    >
+      <PlusCircleIcon />
+      Dodaj potrawę
+    </button>
+  );
+
+  const addForm = (
+    <form
+      ref={addFormRef}
+      action={addAction}
+      className="flex flex-col gap-3 rounded-[10px] bg-mist p-3 scroll-mt-[80px] md:scroll-mt-[76px]"
+    >
+      <h4 className="text-sm font-semibold text-ink">Dodaj potrawę</h4>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="dish-add-name"
+          className="text-[13px] font-medium text-faint"
+        >
+          Nazwa
+        </label>
+        <input
+          id="dish-add-name"
+          name="name"
+          required
+          maxLength={120}
+          placeholder="Co przynosisz? (np. szarlotka)"
+          className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+        />
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <label
+            htmlFor="dish-add-category"
+            className="text-[13px] font-medium text-faint"
+          >
+            Kategoria
+          </label>
+          <Select
+            id="dish-add-category"
+            name="category"
+            value={addCategory}
+            onChange={(v) => setAddCategory(v as DishCategory)}
+            options={CATEGORY_OPTIONS}
+            direction="up"
+            scrollable={false}
+            leadingIcon={<TagIcon />}
+            placeholder="Wybierz kategorię"
+            className="w-full"
+          />
+        </div>
+        <div className="flex w-full flex-col gap-1.5 sm:w-[180px]">
+          <label
+            htmlFor="dish-add-quantity"
+            className="text-[13px] font-medium text-faint"
+          >
+            Ilość
+          </label>
+          <input
+            id="dish-add-quantity"
+            name="quantity"
+            maxLength={12}
+            placeholder="Ilość (np. 2 kg)"
+            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={adding || addCategory === ""}
+          className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+        >
+          {adding ? (
+            <>
+              <SpinnerIcon />
+              Dodawanie…
+            </>
+          ) : (
+            <>
+              <PlusCircleIcon />
+              Dodaj potrawę
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setAddOpen(false)}
+          disabled={adding}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+        >
+          Anuluj
+        </button>
+      </div>
+      {!addState.ok && addState.error && (
+        <p className="text-sm text-red-600">{addState.error}</p>
+      )}
+    </form>
+  );
+
+  const editForm = editingDish ? (
+    <form
+      action={(formData) => {
+        formData.set("id", String(editingDish.id));
+        editAction(formData);
+      }}
+      className="flex flex-col gap-3"
+    >
+      <h4 className="text-sm font-semibold text-ink">Edytuj potrawę</h4>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="dish-edit-name"
+          className="text-[13px] font-medium text-faint"
+        >
+          Nazwa
+        </label>
+        <input
+          id="dish-edit-name"
+          name="name"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          required
+          maxLength={120}
+          className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink"
+        />
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex w-full flex-col gap-1.5 sm:w-[150px]">
+          <label
+            htmlFor="dish-edit-quantity"
+            className="text-[13px] font-medium text-faint"
+          >
+            Ilość
+          </label>
+          <input
+            id="dish-edit-quantity"
+            name="quantity"
+            value={editQuantity}
+            onChange={(e) => setEditQuantity(e.target.value)}
+            maxLength={12}
+            placeholder="Ilość (np. 2 kg)"
+            className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder"
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-1.5">
+          <label
+            htmlFor="dish-edit-category"
+            className="text-[13px] font-medium text-faint"
+          >
+            Kategoria
+          </label>
+          <Select
+            id="dish-edit-category"
+            name="category"
+            value={editCategory}
+            onChange={(v) => setEditCategory(v as DishCategory)}
+            options={CATEGORY_OPTIONS}
+            scrollable={false}
+            className="w-full"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={editing}
+          className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+        >
+          {editing ? (
+            <>
+              <SpinnerIcon />
+              Zapisywanie…
+            </>
+          ) : (
+            "Zapisz"
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditingId(null)}
+          disabled={editing}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+        >
+          Anuluj
+        </button>
+      </div>
+      {!editState.ok && editState.error && (
+        <p className="text-sm text-red-600">{editState.error}</p>
+      )}
+    </form>
+  ) : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -362,21 +566,25 @@ export function DishForm({
       )}
 
       {pageItems.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
-          {dishes.length === 0 ? (
-            <p>Nikt jeszcze nie dodał potraw.</p>
-          ) : (
-            <div className="flex flex-col items-center gap-3">
-              <p>Nic nie znaleziono.</p>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
-              >
-                Wyczyść filtry
-              </button>
-            </div>
-          )}
+        <div className="flex flex-col gap-1.5">
+          <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
+            {dishes.length === 0 ? (
+              <p>Nikt jeszcze nie dodał potraw.</p>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <p>Nic nie znaleziono.</p>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
+                >
+                  Wyczyść filtry
+                </button>
+              </div>
+            )}
+          </div>
+          {!addOpen && addButton}
+          {addOpen && isDesktop && addForm}
         </div>
       ) : (
         <>
@@ -387,72 +595,12 @@ export function DishForm({
                   likedByMe: dish.likedByMe,
                   likeCount: dish.likeCount,
                 };
-              return editingId === dish.id ? (
+              return editingId === dish.id && isDesktop ? (
                 <li
                   key={dish.id}
                   className="flex flex-col gap-2 rounded-[10px] bg-mist p-3"
                 >
-                  <form
-                    action={(formData) => {
-                      formData.set("id", String(dish.id));
-                      editAction(formData);
-                    }}
-                    className="flex flex-col gap-2"
-                  >
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        name="name"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        required
-                        maxLength={120}
-                        className="flex-1 rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink"
-                      />
-                      <input
-                        name="quantity"
-                        value={editQuantity}
-                        onChange={(e) => setEditQuantity(e.target.value)}
-                        maxLength={12}
-                        placeholder="Ilość (np. 2 kg)"
-                        className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder sm:w-[150px]"
-                      />
-                      <Select
-                        name="category"
-                        value={editCategory}
-                        onChange={(v) => setEditCategory(v as DishCategory)}
-                        options={CATEGORY_OPTIONS}
-                        scrollable={false}
-                        className="sm:w-[180px]"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="submit"
-                        disabled={editing}
-                        className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-                      >
-                        {editing ? (
-                          <>
-                            <SpinnerIcon />
-                            Zapisywanie…
-                          </>
-                        ) : (
-                          "Zapisz"
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(null)}
-                        disabled={editing}
-                        className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
-                      >
-                        Anuluj
-                      </button>
-                    </div>
-                    {!editState.ok && editState.error && (
-                      <p className="text-sm text-red-600">{editState.error}</p>
-                    )}
-                  </form>
+                  {editForm}
                 </li>
               ) : (
               <li
@@ -536,6 +684,8 @@ export function DishForm({
                 </li>
               );
             })}
+            {!addOpen && <li>{addButton}</li>}
+            {addOpen && isDesktop && <li>{addForm}</li>}
           </ul>
 
           {totalPages > 1 && (
@@ -565,82 +715,15 @@ export function DishForm({
         </>
       )}
 
-      {addOpen ? (
-        <>
-          <hr className="border-line" />
-
-          <form
-            ref={addFormRef}
-            action={addAction}
-            className="flex flex-col gap-3 scroll-mt-[80px] md:scroll-mt-[76px]"
-          >
-            <input
-              name="name"
-              required
-              maxLength={120}
-              placeholder="Co przynosisz? (np. szarlotka)"
-              className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-            />
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Select
-                name="category"
-                value={addCategory}
-                onChange={(v) => setAddCategory(v as DishCategory)}
-                options={CATEGORY_OPTIONS}
-                direction="up"
-                scrollable={false}
-                leadingIcon={<TagIcon />}
-                placeholder="Wybierz kategorię"
-                className="flex-1"
-              />
-              <input
-                name="quantity"
-                maxLength={12}
-                placeholder="Ilość (np. 2 kg)"
-                className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder sm:flex-1"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={adding || addCategory === ""}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
-            >
-              {adding ? (
-                <>
-                  <SpinnerIcon />
-                  Dodawanie…
-                </>
-              ) : (
-                <>
-                  <PlusCircleIcon />
-                  Dodaj potrawę
-                </>
-              )}
-            </button>
-            {!addState.ok && addState.error && (
-              <p className="text-sm text-red-600">{addState.error}</p>
-            )}
-          </form>
-          <button
-            type="button"
-            onClick={() => setAddOpen(false)}
-            aria-expanded={true}
-            className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-input-line bg-surface text-sm font-medium text-ink hover:bg-mist"
-          >
-            <ChevronDownIcon className="rotate-180" />
-            Zwiń
-          </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAddOpen(true)}
-          aria-expanded={false}
-          className="flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-accent text-sm font-medium text-white hover:bg-accent/90"
-        >
-          <PlusCircleIcon />
-          Dodaj potrawę
-        </button>
+      {!isDesktop && addOpen && (
+        <BottomSheet open onClose={() => setAddOpen(false)}>
+          {addForm}
+        </BottomSheet>
+      )}
+      {!isDesktop && editingDish && (
+        <BottomSheet open onClose={() => setEditingId(null)}>
+          {editForm}
+        </BottomSheet>
       )}
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
@@ -885,25 +968,6 @@ function FunnelIcon() {
       aria-hidden
     >
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className={className}
-    >
-      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }

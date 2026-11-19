@@ -2087,47 +2087,51 @@ export function Dashboard({
 
       <Presence
         open={mobileMenuOpen && !editMode}
-        className="fixed inset-0 z-50 md:hidden"
+        className="fixed inset-0 z-50 flex items-end justify-center md:hidden"
         onClick={() => setMobileMenuOpen(false)}
-        sheetClassName="absolute right-4 top-[52px] w-60"
-        sheetFrom="-translate-y-2 opacity-0"
-        sheetTo="translate-y-0 opacity-100"
+        backdrop
+        sheetClassName="relative w-full"
         sheetOnClick={(e) => e.stopPropagation()}
       >
-        <div className="rounded-2xl border border-cream/20 bg-background p-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-          <div className="flex items-center gap-2.5 px-2 py-1.5">
-            <Avatar name={userName} src={profile.avatarUrl} size={32} />
-            <span className="truncate font-medium text-cream">{userName}</span>
+        <div className="flex max-h-[60vh] flex-col rounded-t-2xl bg-surface shadow-lg">
+          <div className="flex shrink-0 justify-center pb-2 pt-3" aria-hidden>
+            <div className="h-1 w-10 rounded-full bg-line" />
           </div>
-          <div className="mx-1 border-t border-cream/20" />
-          <button
-            type="button"
-            onClick={() => {
-              setEditMode(true);
-              setMobileMenuOpen(false);
-            }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
-          >
-            <SlidersIcon />
-            Dostosuj układ
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setReportOpen(true);
-              setMobileMenuOpen(false);
-            }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-cream hover:bg-white/10"
-          >
-            <ReportIcon />
-            Zgłoś błąd
-          </button>
-          <div className="mt-1 flex flex-col">
-            <NotificationToggle variant="row" />
-            <ThemeToggle variant="row" />
-          </div>
-          <div className="mt-1 border-t border-cream/20 pt-1">
-            <LogoutButton variant="row" />
+          <div className="flex min-h-0 flex-col gap-1 overflow-y-auto p-2">
+            <div className="flex items-center gap-2.5 px-2 py-1.5">
+              <Avatar name={userName} src={profile.avatarUrl} size={32} />
+              <span className="truncate font-medium text-ink">{userName}</span>
+            </div>
+            <div className="mx-1 border-t border-line" />
+            <button
+              type="button"
+              onClick={() => {
+                setEditMode(true);
+                setMobileMenuOpen(false);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
+            >
+              <SlidersIcon />
+              Dostosuj układ
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReportOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
+            >
+              <ReportIcon />
+              Zgłoś błąd
+            </button>
+            <div className="flex flex-col">
+              <NotificationToggle variant="row" tone="light" />
+              <ThemeToggle variant="row" tone="light" />
+            </div>
+            <div className="border-t border-line pt-1">
+              <LogoutButton variant="row" tone="light" />
+            </div>
           </div>
         </div>
       </Presence>

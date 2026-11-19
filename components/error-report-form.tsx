@@ -109,14 +109,23 @@ export function ErrorReportForm({
             }}
             className="flex flex-col gap-3"
           >
-            <textarea
-              name="description"
-              required
-              maxLength={500}
-              rows={4}
-              placeholder="Co się stało? (np. coś nie działa, nie wyświetla się)"
-              className="w-full resize-none rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="error-report-description"
+                className="text-[13px] font-medium text-faint"
+              >
+                Opis problemu
+              </label>
+              <textarea
+                id="error-report-description"
+                name="description"
+                required
+                maxLength={500}
+                rows={4}
+                placeholder="Co się stało? (np. coś nie działa, nie wyświetla się)"
+                className="w-full resize-none rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+              />
+            </div>
             {screenshot && previewUrl ? (
               <div className="flex items-center gap-3">
                 <img

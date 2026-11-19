@@ -112,14 +112,23 @@ export function NameForm({
         />
       )}
       <form action={formAction} className="mt-3 flex flex-col gap-3">
-        <input
-          name="full_name"
-          value={nameValue}
-          onChange={(e) => setNameValue(e.target.value)}
-          required
-          maxLength={100}
-          className="w-full rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
-        />
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="name-form-input"
+            className="text-[13px] font-medium text-faint"
+          >
+            Imię i nazwisko
+          </label>
+          <input
+            id="name-form-input"
+            name="full_name"
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            required
+            maxLength={100}
+            className="w-full rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+          />
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="submit"

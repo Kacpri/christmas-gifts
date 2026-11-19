@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Presence } from "./presence";
 
@@ -20,6 +21,7 @@ export function Select({
   scrollable = true,
   leadingIcon,
   placeholder,
+  id,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -30,9 +32,11 @@ export function Select({
   scrollable?: boolean;
   leadingIcon?: ReactNode;
   placeholder?: string;
+  id?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -40,7 +44,12 @@ export function Select({
   useEffect(() => {
     if (!open) return;
     function onDocClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        ref.current &&
+        !ref.current.contains(target) &&
+        (!sheetRef.current || !sheetRef.current.contains(target))
+      ) {
         setOpen(false);
       }
     }
@@ -105,6 +114,7 @@ export function Select({
     <div ref={ref} className={`relative ${className ?? ""}`}>
       <button
         type="button"
+        id={id}
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -156,25 +166,30 @@ export function Select({
           {optionItems}
         </ul>
       )}
-      {open && !isDesktop && (
-        <Presence
-          open={open}
-          className="fixed inset-0 z-50 flex items-end justify-center"
-          onClick={() => setOpen(false)}
-          backdrop
-          sheetClassName="relative w-full"
-          sheetOnClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex max-h-[60vh] flex-col rounded-t-2xl bg-surface shadow-lg">
-            <div className="flex shrink-0 justify-center pb-2 pt-3" aria-hidden>
-              <div className="h-1 w-10 rounded-full bg-line" />
-            </div>
-            <ul role="listbox" ref={listRef} className="min-h-0 overflow-y-auto py-1">
-              {optionItems}
-            </ul>
-          </div>
-        </Presence>
-      )}
+      {open &&
+        !isDesktop &&
+        createPortal(
+          <div ref={sheetRef}>
+            <Presence
+              open={open}
+              className="fixed inset-0 z-50 flex items-end justify-center"
+              onClick={() => setOpen(false)}
+              backdrop
+              sheetClassName="relative w-full"
+              sheetOnClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex max-h-[60vh] flex-col rounded-t-2xl bg-surface shadow-lg">
+                <div className="flex shrink-0 justify-center pb-2 pt-3" aria-hidden>
+                  <div className="h-1 w-10 rounded-full bg-line" />
+                </div>
+                <ul role="listbox" ref={listRef} className="min-h-0 overflow-y-auto py-1">
+                  {optionItems}
+                </ul>
+              </div>
+            </Presence>
+          </div>,
+          document.body
+        )}
       {name && <input type="hidden" name={name} value={value} />}
     </div>
   );

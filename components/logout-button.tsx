@@ -4,8 +4,10 @@ import { signOut } from "@/app/actions";
 
 export function LogoutButton({
   variant = "icon",
+  tone = "dark",
 }: {
   variant?: "icon" | "row";
+  tone?: "dark" | "light";
 }) {
   if (variant === "row") {
     return (
@@ -14,7 +16,11 @@ export function LogoutButton({
           type="submit"
           aria-label="Wyloguj się"
           onClick={(e) => e.stopPropagation()}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#e0685c] hover:bg-[#e0685c]/15"
+          className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold ${
+            tone === "light"
+              ? "text-danger hover:bg-danger-soft"
+              : "text-[#e0685c] hover:bg-[#e0685c]/15"
+          }`}
         >
           <LogoutIcon />
           Wyloguj

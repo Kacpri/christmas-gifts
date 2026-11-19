@@ -14,8 +14,10 @@ type Perm = NotificationPermission | "unsupported";
 
 export function NotificationToggle({
   variant = "icon",
+  tone = "dark",
 }: {
   variant?: "icon" | "row";
+  tone?: "dark" | "light";
 }) {
   const [perm, setPerm] = useState<Perm>("default");
   const [muted, setMuted] = useState(false);
@@ -63,14 +65,24 @@ export function NotificationToggle({
         aria-pressed={active}
         aria-label={label}
         className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left ${
-          denied ? "text-cream/50" : "text-cream hover:bg-white/10"
+          tone === "light"
+            ? denied
+              ? "text-muted"
+              : "text-ink hover:bg-mist"
+            : denied
+              ? "text-cream/50"
+              : "text-cream hover:bg-white/10"
         }`}
       >
         <BellIcon muted={muted || denied} />
         <span className="flex-1">
           <span className="block text-sm font-medium">Powiadomienia</span>
           {denied && (
-            <span className="block text-xs text-cream/50">
+            <span
+              className={`block text-xs ${
+                tone === "light" ? "text-muted" : "text-cream/50"
+              }`}
+            >
               zablokowane w przeglądarce
             </span>
           )}

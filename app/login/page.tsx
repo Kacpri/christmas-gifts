@@ -110,21 +110,39 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={sendMagicLink} className="flex flex-col gap-3">
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Imię i nazwisko"
-            required
-            className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
-          />
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            placeholder="Adres e-mail"
-            required
-            className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
-          />
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="login-name"
+              className="text-[13px] font-medium text-faint"
+            >
+              Imię i nazwisko
+            </label>
+            <input
+              id="login-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Imię i nazwisko"
+              required
+              className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="login-email"
+              className="text-[13px] font-medium text-faint"
+            >
+              Adres e-mail
+            </label>
+            <input
+              id="login-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              placeholder="Adres e-mail"
+              required
+              className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+            />
+          </div>
           <button
             type="submit"
             disabled={pending}
