@@ -148,13 +148,17 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     if (state.ok) {
+      submittedRef.current = false;
       setName("");
       setPhoto(null);
       setPhotoUrl(null);
       onDone();
+    } else if (state.error) {
+      submittedRef.current = false;
     }
   }, [state, onDone]);
 
@@ -186,6 +190,8 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        if (submittedRef.current) return;
+        submittedRef.current = true;
         const fd = new FormData();
         fd.set("name", name);
         if (photo) fd.set("photo", photo);
