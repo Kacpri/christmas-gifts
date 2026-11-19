@@ -42,6 +42,7 @@ import {
 } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
+import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
@@ -291,6 +292,9 @@ function ChildDetail({
     addChildParent,
     empty
   );
+  const [deleteConfirm, setDeleteConfirm] = useState<ConfirmState | null>(
+    null
+  );
 
   useEffect(() => {
     setLocalWishes(child.wishes);
@@ -372,16 +376,16 @@ function ChildDetail({
   }
 
   function handleDelete() {
-    if (
-      !window.confirm(
-        `Usunąć dziecko ${child.name} wraz z listą życzeń? Tej operacji nie można cofnąć.`
-      )
-    ) {
-      return;
-    }
-    const fd = new FormData();
-    fd.set("child_id", String(child.id));
-    deleteAction(fd);
+    setDeleteConfirm({
+      message: `Usunąć dziecko ${child.name} wraz z listą życzeń? Tej operacji nie można cofnąć.`,
+      confirmLabel: "Usuń dziecko",
+      tone: "danger",
+      onConfirm: () => {
+        const fd = new FormData();
+        fd.set("child_id", String(child.id));
+        deleteAction(fd);
+      },
+    });
   }
 
   const availableUsers = users.filter(
@@ -656,6 +660,10 @@ function ChildDetail({
           </div>
         )}
       </Presence>
+      <ConfirmDialog
+        state={deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

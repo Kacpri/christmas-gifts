@@ -47,11 +47,13 @@ export function DateSeparator({ createdAt }: { createdAt: string }) {
       text = "Wczoraj";
     } else {
       const opts: Intl.DateTimeFormatOptions = {
+        weekday: "long",
         day: "numeric",
         month: "long",
       };
       if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
       text = d.toLocaleDateString("pl-PL", opts);
+      text = text.charAt(0).toUpperCase() + text.slice(1);
     }
     setLabel(text);
   }, [createdAt]);
