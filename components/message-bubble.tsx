@@ -393,11 +393,11 @@ export function MessageBubble({
               aria-label={`Reakcja ${r.emoji}: ${r.users.length}`}
                 className={`inline-flex min-w-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] leading-5 ${
                 r.users.includes(meId)
-                  ? "border-accent bg-surface text-accent"
+                  ? "border-accent bg-surface text-accent-deep"
                   : "border-[var(--chat-chip-border)] bg-[var(--chat-chip-bg)] text-[var(--chat-chip-ink)]"
               }`}
             >
-              <span aria-hidden className="text-[15px] leading-none">
+              <span aria-hidden className="text-[15px]">
                 {r.emoji}
               </span>
               {r.users.length > 1 && (

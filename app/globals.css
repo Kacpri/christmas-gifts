@@ -166,7 +166,7 @@ html[data-theme="dark"] ::-webkit-scrollbar-thumb {
 
 .reactions {
   position: absolute;
-  bottom: 2px;
+  bottom: 6px;
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
