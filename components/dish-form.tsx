@@ -302,7 +302,6 @@ export function DishForm({
           onChange={(e) => setAddName(e.target.value)}
           required
           maxLength={120}
-          placeholder="Co przynosisz? (np. szarlotka)"
           className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -340,7 +339,6 @@ export function DishForm({
             value={addQuantity}
             onChange={(e) => setAddQuantity(e.target.value)}
             maxLength={12}
-            placeholder="np. 2 kg"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -440,7 +438,6 @@ export function DishForm({
             value={editQuantity}
             onChange={(e) => setEditQuantity(e.target.value)}
             maxLength={12}
-            placeholder="np. 2 kg"
             className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder"
           />
         </div>

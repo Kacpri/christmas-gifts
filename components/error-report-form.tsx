@@ -122,7 +122,6 @@ export function ErrorReportForm({
                 required
                 maxLength={500}
                 rows={4}
-                placeholder="Co się stało? (np. coś nie działa, nie wyświetla się)"
                 className="w-full resize-none rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
               />
             </div>

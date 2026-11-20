@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Świąteczne Losowanie</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Lobster&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid #e0a800;outline-offset:2px}
+.thread{transition:background .15s,border-color .15s}
+.thread:not([aria-current="true"]):hover{background:#f1f8f3 !important;border-color:#bcd9c6 !important}
+.hbtn:hover{background:rgba(255,255,255,.18) !important}
+.ghost:hover{text-decoration:underline}
+@keyframes drift{from{transform:translateY(0)}to{transform:translateY(34px)}}
+@media (prefers-reduced-motion: reduce){.snow{animation:none !important}}
+</style>
+</helmet>
+<div style="position: relative; min-height: 1380px; box-sizing: border-box; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; color: #1c2a22; background: linear-gradient(180deg, #0d4024 0%, {{accent}} 100%)">
+
+<div aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none">
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="10">
+<div class="snow" style="position: absolute; left: {{d.x}}%; top: {{d.y}}%; width: {{d.s}}px; height: {{d.s}}px; border-radius: 50%; background: #ffffff; opacity: {{d.o}}; animation: drift {{d.dur}}s ease-in-out {{d.delay}}s infinite alternate"></div>
+</sc-for>
+</div>
+
+<div style="position: relative; max-width: 680px; margin: 0 auto; padding: 28px 20px 64px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px">
+<h1 style="margin: 0; font-family: 'Lobster', cursive; font-weight: 400; font-size: 38px; line-height: 1.1; color: #fff3c4; letter-spacing: 0.3px">Świąteczne Losowanie</h1>
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px; margin-right: 6px">
+<div aria-hidden="true" style="width: 32px; height: 32px; border-radius: 50%; background: #fff3c4; color: #0d4024; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">K</div>
+<span style="color: #fff3c4; font-size: 14px; font-weight: 500">Kacper</span>
+</div>
+<button class="hbtn" type="button" style="display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,243,196,0.55); background: rgba(255,255,255,0.1); color: #fff3c4; font-size: 14px; font-weight: 600">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+Układ
+</button>
+<button class="ghost" type="button" style="display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid transparent; background: transparent; color: #fff3c4; font-size: 14px; font-weight: 500">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+Wyloguj
+</button>
+</div>
+</header>
+
+<main style="display: flex; flex-direction: column; gap: 20px">
+
+<section aria-labelledby="h-dane" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 14px 20px; display: flex; align-items: center; gap: 14px">
+<div aria-hidden="true" style="flex: none; width: 40px; height: 40px; border-radius: 50%; background: #e6f2ea; color: {{accent}}; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+</div>
+<div style="flex: 1; min-width: 0">
+<h2 id="h-dane" style="margin: 0; font-family: 'Lobster', cursive; font-weight: 400; font-size: 22px; line-height: 1.2; color: {{accent}}">Twoje dane</h2>
+<p style="margin: 2px 0 0; font-size: 14px; color: #4f5c54">Kacper · imię i nazwisko są zablokowane</p>
+</div>
+<button type="button" aria-label="Rozwiń sekcję Twoje dane" style="flex: none; width: 44px; height: 44px; border-radius: 10px; border: none; background: transparent; color: #4f5c54; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</section>
+
+<section aria-labelledby="h-prezenty" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 id="h-prezenty" style="margin: 0; font-family: 'Lobster', cursive; font-weight: 400; font-size: 26px; line-height: 1.2; color: {{accent}}">Prezenty</h2>
+<button type="button" aria-label="Zwiń sekcję Prezenty" style="width: 44px; height: 44px; margin: -8px -10px -8px 0; border-radius: 10px; border: none; background: transparent; color: #4f5c54; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg>
+</button>
+</div>
+
+<article style="background: #f4f8f5; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: #d9eee2; color: #0f4a29; font-size: 12px; font-weight: 700">
+<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"></path><path d="M9 12h11"></path><path d="M9 18h11"></path><path d="M4 6h.01"></path><path d="M4 12h.01"></path><path d="M4 18h.01"></path></svg>
+Z listy
+</span>
+<span style="font-size: 14px; color: #4f5c54">Kupujesz prezent dla</span>
+</div>
+<p style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: {{accent}}">Julia Stasińska</p>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #ffffff; border-radius: 10px; padding: 12px 14px">
+<span style="font-size: 15px; font-weight: 600">Święty spokój</span>
+<span style="font-size: 13px; color: #5b665f; font-style: italic">bez ceny</span>
+</div>
+</article>
+
+<article style="background: #fbf5e6; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: #f8e6b8; color: #6b4200; font-size: 12px; font-weight: 700">
+<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"></path><path d="M7.5 7.5h.01"></path></svg>
+Tematyczny
+</span>
+<span style="font-size: 14px; color: #4f5c54">Kupujesz prezent dla</span>
+</div>
+<p style="margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: {{accent}}">Alicja Piotrowicz</p>
+<div style="display: flex; align-items: center; gap: 10px; background: #ffffff; border-radius: 10px; padding: 12px 14px">
+<span style="font-size: 13px; color: #5b665f">Temat</span>
+<span style="font-size: 15px; font-weight: 600; font-style: italic">Lapdance</span>
+</div>
+</article>
+</section>
+
+<section aria-labelledby="h-czaty" style="background: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<h2 id="h-czaty" style="margin: 0; font-family: 'Lobster', cursive; font-weight: 400; font-size: 26px; line-height: 1.2; color: {{accent}}">Czaty</h2>
+<button type="button" aria-label="Zwiń sekcję Czaty" style="width: 44px; height: 44px; margin: -8px -10px -8px 0; border-radius: 10px; border: none; background: transparent; color: #4f5c54; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"></path></svg>
+</button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+<div style="flex: 1 1 250px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{threads}}" as="t" hint-placeholder-count="4">
+<button class="thread" type="button" onClick="{{t.pick}}" aria-current="{{t.current}}" style="display: flex; flex-direction: column; gap: 5px; width: 100%; box-sizing: border-box; text-align: left; padding: 11px 14px; border-radius: 12px; background: {{t.bg}}; border: 1px solid {{t.border}}; border-left: 4px solid {{t.edge}}; color: #1c2a22">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{t.who}}</span>
+<span style="flex: none; display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; background: {{t.badgeBg}}; color: {{t.badgeFg}}; font-size: 11px; font-weight: 700">{{t.kind}}</span>
+</span>
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<span style="display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 13px; color: #5b665f">
+<svg role="img" aria-label="Ty:" style="flex: none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"></path><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{t.preview}}</span>
+</span>
+<span style="flex: none; font-size: 12px; color: #5b665f">{{t.time}}</span>
+</span>
+</button>
+</sc-for>
+</div>
+
+<div style="flex: 2 1 300px; min-width: 0; min-height: 300px; border-radius: 14px; background: #f4f8f5; display: flex; flex-direction: column; overflow: hidden">
+
+<sc-if value="{{hasSelected}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; flex: 1; min-height: 0">
+<div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: #ffffff; border-bottom: 1px solid #e3ebe6">
+<span style="font-size: 15px; font-weight: 700; color: {{accent}}">{{sel.who}}</span>
+<span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; background: {{sel.badgeBg}}; color: {{sel.badgeFg}}; font-size: 11px; font-weight: 700">{{sel.kind}}</span>
+</div>
+<div style="flex: 1; padding: 18px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; gap: 6px">
+<div style="max-width: 80%; box-sizing: border-box; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: {{accent}}; color: #ffffff; font-size: 14px; line-height: 1.4; word-break: break-word">{{sel.text}}</div>
+<span style="font-size: 12px; color: #5b665f">{{sel.time}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #ffffff; border-top: 1px solid #e3ebe6">
+<label for="msg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Napisz wiadomość</label>
+<input id="msg" type="text" placeholder="Napisz wiadomość…" style="flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border-radius: 12px; border: 1px solid #cfdcd3; background: #f9fbfa; font-family: inherit; font-size: 14px; color: #1c2a22">
+<button type="button" aria-label="Wyślij" style="flex: none; width: 44px; height: 44px; border-radius: 12px; border: none; background: {{accent}}; color: #ffffff; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{noSelected}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center">
+<div aria-hidden="true" style="width: 56px; height: 56px; border-radius: 50%; background: #e0eee5; color: {{accent}}; display: flex; align-items: center; justify-content: center">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>
+</div>
+<p style="margin: 0; font-size: 14px; color: #4f5c54; max-width: 220px; line-height: 1.45">Wybierz wątek, aby rozpocząć rozmowę.</p>
+</div>
+</sc-if>
+
+</div>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#165a32","options":["#165a32","#7a1f2b","#1f4e79","#3b3b3b"]},"showEmpty":{"editor":"boolean","default":false},"$preview":{"width":1280,"height":1380}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#165a32';
+    const showEmpty = this.props.showEmpty ?? false;
+    const st = this.state || {};
+    const selectedId = ('selected' in st) ? st.selected : (showEmpty ? null : 't1');
+
+    const raw = [
+      { id: 't1', who: 'Anonimowy Mikołaj', kind: 'lista', preview: 'halo kto tam?', text: 'halo kto tam?', time: '09:13' },
+      { id: 't2', who: 'Dla Julia Stasińska', kind: 'lista', preview: 'https://www.pepper.pl/promocje/k…', text: 'https://www.pepper.pl/promocje/k…', time: '10:55' },
+      { id: 't3', who: 'Anonimowy Mikołaj', kind: 'temat', preview: 'kto tam?', text: 'kto tam?', time: '11:59' },
+      { id: 't4', who: 'Dla Alicja Piotrowicz', kind: 'temat', preview: ':o', text: ':o', time: '12:00' }
+    ];
+
+    const threads = raw.map((t) => {
+      const active = t.id === selectedId;
+      const isList = t.kind === 'lista';
+      return {
+        ...t,
+        current: active ? 'true' : 'false',
+        bg: active ? '#e6f2ea' : '#ffffff',
+        border: active ? '#bcd9c6' : '#e3ebe6',
+        edge: active ? accent : 'transparent',
+        badgeBg: isList ? '#d9eee2' : '#f8e6b8',
+        badgeFg: isList ? '#0f4a29' : '#6b4200',
+        pick: () => this.setState({ selected: t.id })
+      };
+    });
+
+    const sel = threads.find((t) => t.id === selectedId) || threads[0];
+
+    let seed = 7;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const dots = [];
+    for (let i = 0; i < 48; i++) {
+      dots.push({
+        x: (rnd() * 100).toFixed(1),
+        y: (rnd() * 96).toFixed(1),
+        s: (2 + rnd() * 3).toFixed(1),
+        o: (0.25 + rnd() * 0.5).toFixed(2),
+        dur: (7 + rnd() * 9).toFixed(1),
+        delay: (-rnd() * 12).toFixed(1)
+      });
+    }
+
+    return {
+      accent,
+      dots,
+      threads,
+      sel,
+      hasSelected: selectedId !== null,
+      noSelected: selectedId === null
+    };
+  }
+}
+</script>
+</body>
+</html>

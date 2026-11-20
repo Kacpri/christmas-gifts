@@ -338,7 +338,6 @@ export function OrganizerPanel({
                 max={10000}
                 step={1}
                 defaultValue={listBudget ?? ""}
-                placeholder="np. 150"
                 onChange={() => setBudgetSaved(false)}
                 className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
               />
@@ -358,7 +357,6 @@ export function OrganizerPanel({
                 max={10000}
                 step={1}
                 defaultValue={themeBudget ?? ""}
-                placeholder="np. 100"
                 onChange={() => setBudgetSaved(false)}
                 className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
               />

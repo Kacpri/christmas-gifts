@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Czaty – rozmowa</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Lobster&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button.chat:focus-visible,button.fold:focus-visible,input.msg:focus-visible,button.new:focus-visible,button.send:focus-visible{outline:3px solid #1d6b3d;outline-offset:2px}
+input.msg::placeholder{color:#5b665f;opacity:1}
+</style>
+</helmet>
+<div style="width: 860px; height: 680px; box-sizing: border-box; padding: 24px; background: #0f3d24; font-family: 'Inter', system-ui, sans-serif; color: #15251b">
+<div style="background: #ffffff; border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+
+<!-- Nagłówek sekcji -->
+<div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px">
+<div style="display: flex; align-items: center; gap: 10px">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b42318" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+<h1 style="margin: 0; font-family: 'Lobster', cursive; font-weight: 400; font-size: 34px; line-height: 1; color: #14532d">Czaty</h1>
+</div>
+<button class="fold" type="button" aria-label="Zwiń sekcję Czaty" style="width: 44px; height: 44px; border: 0; background: transparent; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #15251b">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg>
+</button>
+</div>
+
+<div style="display: flex; gap: 24px; height: 494px">
+
+<!-- Lewa kolumna: lista rozmów -->
+<div style="width: 320px; flex: none; display: flex; flex-direction: column; gap: 12px">
+<div style="position: relative; height: 428px; overflow: hidden">
+<div style="display: flex; flex-direction: column; gap: 8px; padding-right: 14px">
+
+<!-- 1. Zaznaczony, dziś: godzina -->
+<button class="chat" type="button" aria-current="true" style="box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; background: #e3efe7; border: 1px solid #b9d4c1; box-shadow: inset 3px 0 0 #14532d; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; line-height: 20px">
+<span style="font-size: 16px; font-weight: 600; color: #15251b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Tajemniczy Mikołaj</span>
+<span style="font-size: 12px; color: #4a5c50; font-variant-numeric: tabular-nums; flex: none">13:55</span>
+</span>
+<span style="display: flex; align-items: center; gap: 8px; min-height: 24px">
+<span style="flex: none; display: inline-flex; align-items: center; gap: 4px; background: #f6dfa8; color: #5a3a00; font-size: 12px; font-weight: 700; line-height: 16px; padding: 4px 8px; border-radius: 999px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path><path d="M7.5 7.5h.01"></path></svg>
+tematyczny
+</span>
+<span style="flex: 1; min-width: 0; font-size: 14px; color: #4a5c50; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Ty: Super, dzięki!</span>
+</span>
+</button>
+
+<!-- 2. Wczoraj + wiadomość usunięta -->
+<button class="chat" type="button" style="box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; background: #ffffff; border: 1px solid #dfe9e2; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; line-height: 20px">
+<span style="font-size: 16px; font-weight: 500; color: #15251b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Mamcia</span>
+<span style="font-size: 12px; color: #4a5c50; flex: none">Wczoraj</span>
+</span>
+<span style="display: flex; align-items: center; gap: 8px; min-height: 24px">
+<span style="flex: none; display: inline-flex; align-items: center; gap: 4px; background: #dbe5f5; color: #1f3a6b; font-size: 12px; font-weight: 700; line-height: 16px; padding: 4px 8px; border-radius: 999px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+prywatny
+</span>
+<span style="flex: 1; min-width: 0; font-size: 14px; font-style: italic; color: #5b665f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Wiadomość usunięta</span>
+</span>
+</button>
+
+<!-- 3. Nieprzeczytany, starsza data -->
+<button class="chat" type="button" style="box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; background: #ffffff; border: 1px solid #dfe9e2; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; line-height: 20px">
+<span style="font-size: 16px; font-weight: 700; color: #15251b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">test user</span>
+<span style="font-size: 12px; color: #4a5c50; flex: none">9 lis</span>
+</span>
+<span style="display: flex; align-items: center; gap: 8px; min-height: 24px">
+<span style="flex: none; display: inline-flex; align-items: center; gap: 4px; background: #dbe5f5; color: #1f3a6b; font-size: 12px; font-weight: 700; line-height: 16px; padding: 4px 8px; border-radius: 999px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+prywatny
+</span>
+<span style="flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: #15251b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Cześć! Masz chwilę?</span>
+<span aria-label="2 nieprzeczytane wiadomości" style="flex: none; min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; background: #14532d; color: #ffffff; font-size: 12px; font-weight: 700; border-radius: 999px">2</span>
+</span>
+</button>
+
+<!-- 4. Bez wiadomości -->
+<button class="chat" type="button" style="box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; background: #ffffff; border: 1px solid #dfe9e2; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; line-height: 20px">
+<span style="font-size: 16px; font-weight: 500; color: #15251b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Dla Mamcia</span>
+</span>
+<span style="display: flex; align-items: center; gap: 8px; min-height: 24px">
+<span style="flex: none; display: inline-flex; align-items: center; gap: 4px; background: #f6dfa8; color: #5a3a00; font-size: 12px; font-weight: 700; line-height: 16px; padding: 4px 8px; border-radius: 999px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path><path d="M7.5 7.5h.01"></path></svg>
+tematyczny
+</span>
+<span style="flex: 1; min-width: 0; font-size: 14px; color: #5b665f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Brak wiadomości</span>
+</span>
+</button>
+
+<!-- 5. Starsza data, Twoja wiadomość -->
+<button class="chat" type="button" style="box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; background: #ffffff; border: 1px solid #dfe9e2; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; line-height: 20px">
+<span style="font-size: 16px; font-weight: 500; color: #15251b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Dla test user</span>
+<span style="font-size: 12px; color: #4a5c50; flex: none">5 lis</span>
+</span>
+<span style="display: flex; align-items: center; gap: 8px; min-height: 24px">
+<span style="flex: none; display: inline-flex; align-items: center; gap: 4px; background: #cfe8d8; color: #0f3d24; font-size: 12px; font-weight: 700; line-height: 16px; padding: 4px 8px; border-radius: 999px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"></path><path d="M3 6h.01M3 12h.01M3 18h.01"></path></svg>
+z listy
+</span>
+<span style="flex: 1; min-width: 0; font-size: 14px; color: #4a5c50; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Ty: Dziękuję!</span>
+</span>
+</button>
+
+</div>
+<div aria-hidden="true" style="position: absolute; top: 4px; bottom: 28px; right: 2px; width: 6px; border-radius: 999px; background: #e3efe7">
+<div style="width: 6px; height: 86%; border-radius: 999px; background: #9bbba6"></div>
+</div>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 24px; pointer-events: none; background: linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)"></div>
+</div>
+
+<button class="new" type="button" style="box-sizing: border-box; height: 54px; width: 100%; background: #ffffff; border: 1.5px solid #14532d; color: #14532d; border-radius: 14px; font: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+Nowy czat
+</button>
+</div>
+
+<!-- Prawa kolumna: rozmowa -->
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 0 4px; min-height: 44px; justify-content: center">
+<div style="display: flex; align-items: center; gap: 10px">
+<h2 style="margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700; color: #0f3d24">Tajemniczy Mikołaj</h2>
+<span style="display: inline-flex; align-items: center; gap: 4px; background: #f6dfa8; color: #5a3a00; font-size: 12px; font-weight: 700; line-height: 16px; padding: 4px 8px; border-radius: 999px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path><path d="M7.5 7.5h.01"></path></svg>
+tematyczny
+</span>
+</div>
+<p style="margin: 0; font-size: 13px; color: #4a5c50">Ta osoba kupuje Ci prezent. Nie wiesz, kim jest.</p>
+</div>
+
+<!-- Rozmowa z separatorami dat -->
+<div style="flex: 1; min-height: 0; overflow: hidden; background: #eef5f0; border-radius: 14px; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px">
+
+<div style="align-self: center; background: #dcebe1; color: #4a5c50; font-size: 11px; font-weight: 500; line-height: 16px; padding: 4px 10px; border-radius: 999px">Wczoraj</div>
+
+<div style="align-self: flex-start; max-width: 72%; background: #ffffff; border-radius: 16px 16px 16px 4px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; line-height: 20px; color: #15251b">Jaki rozmiar rękawic nosisz?</span>
+<span style="align-self: flex-end; font-size: 11px; color: #5b665f; font-variant-numeric: tabular-nums">18:25</span>
+</div>
+
+<div style="align-self: flex-end; max-width: 72%; background: #165a32; border-radius: 16px 16px 4px 16px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; line-height: 20px; color: #ffffff">M, w razie czego może być L.</span>
+<span style="align-self: flex-end; font-size: 11px; color: rgba(255,255,255,0.7); font-variant-numeric: tabular-nums">18:31</span>
+</div>
+
+<div style="align-self: center; background: #dcebe1; color: #4a5c50; font-size: 11px; font-weight: 500; line-height: 16px; padding: 4px 10px; border-radius: 999px">Dziś</div>
+
+<div style="align-self: flex-start; max-width: 72%; background: #ffffff; border-radius: 16px 16px 16px 4px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; line-height: 20px; font-style: italic; color: #5b665f">Wiadomość usunięta</span>
+<span style="align-self: flex-end; font-size: 11px; color: #5b665f; font-variant-numeric: tabular-nums">09:40</span>
+</div>
+
+<div style="align-self: flex-end; max-width: 72%; background: #165a32; border-radius: 16px 16px 4px 16px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; line-height: 20px; color: #ffffff">Super, dzięki!</span>
+<span style="align-self: flex-end; font-size: 11px; color: rgba(255,255,255,0.7); font-variant-numeric: tabular-nums">13:55</span>
+</div>
+
+</div>
+
+<!-- Pole wiadomości z aktywnym przyciskiem wysyłania -->
+<div style="display: flex; gap: 12px; height: 54px">
+<input class="msg" type="text" aria-label="Napisz wiadomość" value="Jeszcze jedno pytanie…" style="box-sizing: border-box; flex: 1; min-width: 0; height: 54px; background: #f4f8f5; border: 1px solid #cfe0d4; border-radius: 14px; padding: 0 18px; font: inherit; font-size: 16px; color: #15251b">
+<button class="send" type="button" aria-label="Wyślij wiadomość" style="box-sizing: border-box; flex: none; width: 54px; height: 54px; background: #14532d; border: 0; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+</button>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":860,"height":680}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

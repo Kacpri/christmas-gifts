@@ -17,11 +17,13 @@ function useVisualViewportRect(active: boolean) {
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      setRect((prev) =>
-        prev && prev.top === vv.offsetTop && prev.height === vv.height
+      setRect((prev) => {
+        const top = -vv.offsetTop;
+        const height = vv.height;
+        return prev && prev.top === top && prev.height === height
           ? prev
-          : { top: vv.offsetTop, height: vv.height }
-      );
+          : { top, height };
+      });
     };
     update();
     vv.addEventListener("resize", update);
@@ -65,7 +67,7 @@ export function BottomSheet({
           type="button"
           onClick={onClose}
           aria-label="Zamknij"
-          className="flex shrink-0 justify-center pb-2 pt-3"
+          className="flex shrink-0 justify-center pb-2 pt-3 transition-colors active:bg-mist"
         >
           <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
         </button>

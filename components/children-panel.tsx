@@ -275,7 +275,6 @@ function AddChildForm({
           onChange={(e) => setName(e.target.value)}
           required
           maxLength={100}
-          placeholder="Imię dziecka"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -1240,6 +1239,7 @@ function AddChildWishForm({
   onClose: () => void;
 }) {
   const [state, action, pending] = useActionState(addChildWish, empty);
+  const [linkFocused, setLinkFocused] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
@@ -1274,7 +1274,6 @@ function AddChildWishForm({
           onChange={(e) => setText(e.target.value)}
           required
           maxLength={500}
-          placeholder="Czego dziecko sobie życzy?"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -1292,6 +1291,9 @@ function AddChildWishForm({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             type="url"
+            placeholder={linkFocused ? "wklej" : undefined}
+            onFocus={() => setLinkFocused(true)}
+            onBlur={() => setLinkFocused(false)}
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1309,7 +1311,6 @@ function AddChildWishForm({
             onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
-            placeholder="np. 49,99"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1357,6 +1358,7 @@ function EditChildWishForm({
   onCancel: () => void;
 }) {
   const [state, action, pending] = useActionState(editChildWish, empty);
+  const [linkFocused, setLinkFocused] = useState(false);
   const [text, setText] = useState(wish.text);
   const [link, setLink] = useState(wish.link ?? "");
   const [price, setPrice] = useState(
@@ -1407,6 +1409,9 @@ function EditChildWishForm({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             type="url"
+            placeholder={linkFocused ? "wklej" : undefined}
+            onFocus={() => setLinkFocused(true)}
+            onBlur={() => setLinkFocused(false)}
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1424,7 +1429,6 @@ function EditChildWishForm({
             onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
-            placeholder="np. 49,99"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>

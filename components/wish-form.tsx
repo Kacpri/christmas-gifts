@@ -84,6 +84,7 @@ export function WishForm({
   const [addPrice, setAddPrice] = useState("");
   const [addText, setAddText] = useState("");
   const [addLink, setAddLink] = useState("");
+  const [addLinkFocused, setAddLinkFocused] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(
     null
@@ -268,10 +269,8 @@ export function WishForm({
           onChange={(e) => setAddText(e.target.value)}
           required
           maxLength={500}
-          placeholder="Czego sobie życzysz?"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
-        <p className="text-sm text-muted">np. kubek, książka, voucher</p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex flex-1 flex-col gap-1.5">
@@ -287,6 +286,9 @@ export function WishForm({
             value={addLink}
             onChange={(e) => setAddLink(e.target.value)}
             type="url"
+            placeholder={addLinkFocused ? "wklej" : undefined}
+            onFocus={() => setAddLinkFocused(true)}
+            onBlur={() => setAddLinkFocused(false)}
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -305,7 +307,6 @@ export function WishForm({
             inputMode="decimal"
             value={addPrice}
             onChange={(e) => setAddPrice(e.target.value)}
-            placeholder="np. 49,99"
             aria-invalid={addOverBudget || undefined}
             aria-describedby={
               addOverBudget
@@ -487,11 +488,7 @@ export function WishForm({
             onKeyDown={(e) => {
               if (themeLocked && e.key === "Enter") e.preventDefault();
             }}
-            placeholder={
-              themeLocked
-                ? "Temat zablokowany"
-                : "np. coś ciepłego na zimowe wieczory"
-            }
+            placeholder={themeLocked ? "Temat zablokowany" : undefined}
               className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
                 themeLocked ? "bg-mist pr-10 text-faint" : "bg-surface text-ink"
               }`}
@@ -845,6 +842,7 @@ function EditWishForm({
   listBudget: number;
 }) {
   const editPriceRef = useRef<HTMLInputElement>(null);
+  const [editLinkFocused, setEditLinkFocused] = useState(false);
   const editParsed = parsePrice(editPrice);
   const oldGrosze = wish.price != null ? Math.round(wish.price * 100) : null;
   const editOverBudget =
@@ -898,6 +896,9 @@ function EditWishForm({
             type="url"
             value={editLink}
             onChange={(e) => setEditLink(e.target.value)}
+            placeholder={editLinkFocused ? "wklej" : undefined}
+            onFocus={() => setEditLinkFocused(true)}
+            onBlur={() => setEditLinkFocused(false)}
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -916,7 +917,6 @@ function EditWishForm({
             inputMode="decimal"
             value={editPrice}
             onChange={(e) => setEditPrice(e.target.value)}
-            placeholder="np. 49,99"
             aria-invalid={editOverBudget || undefined}
             aria-describedby={
               editOverBudget

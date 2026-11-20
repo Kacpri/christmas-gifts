@@ -135,7 +135,6 @@ export function PartyPanel({
           type="text"
           defaultValue={label}
           maxLength={100}
-          placeholder="np. sylwester, urodziny"
           onChange={() => setSaved(false)}
           className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
         />
@@ -171,7 +170,6 @@ export function PartyPanel({
           type="text"
           defaultValue={location ?? ""}
           maxLength={200}
-          placeholder="np. u Ani, ul. Świerkowa 12"
           onChange={() => setSaved(false)}
           className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
         />
@@ -186,7 +184,6 @@ export function PartyPanel({
           defaultValue={notes ?? ""}
           maxLength={1000}
           rows={3}
-          placeholder="np. strój świąteczny, weź coś do picia"
           onChange={() => setSaved(false)}
           className="resize-y rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
         />

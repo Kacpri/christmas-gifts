@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wizualizacja układu 2-kolumnowego</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; padding: 24px; background: #eef1ee; color: #1a1a1a; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { font-size: 14px; color: #555; margin: 0 0 20px; max-width: 900px; line-height: 1.4; }
+  .container { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .variant { flex: 1; min-width: 340px; background: #fff; border: 1px solid #d8ded8; border-radius: 14px; padding: 18px; }
+  .variant h2 { font-size: 17px; margin: 0 0 4px; }
+  .variant .desc { font-size: 13px; color: #666; margin: 0 0 14px; line-height: 1.45; }
+  .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .panel { border: 2px solid #c9d6cc; border-radius: 10px; padding: 10px 12px; min-height: 58px; background: #f7faf7; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; transition: background 0.15s, border-color 0.15s; }
+  .panel .label { font-weight: 600; font-size: 14px; }
+  .panel .toggle { font-size: 12px; border: 1px solid #b5c4b8; background: #fff; border-radius: 6px; padding: 4px 9px; cursor: pointer; align-self: flex-start; }
+  .panel .toggle:hover { background: #eef4ef; }
+  .panel.wide { background: #eaf3fb; border-color: #7fb0e0; }
+  .panel.always { background: #f3eefb; border-color: #b39ddb; }
+  .panel .badge { font-size: 11px; color: #7a6a9a; }
+  .b-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .b-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .b-col { display: flex; flex-direction: column; gap: 10px; min-height: 40px; }
+  .b-col:empty::after { content: "(pusto)"; font-size: 12px; color: #aaa; border: 1px dashed #ccc; border-radius: 10px; padding: 12px; text-align: center; }
+  .b-wide-zone { display: flex; flex-direction: column; gap: 10px; }
+  .b-wide-zone:empty::after { content: "strefa pełna (pusto)"; font-size: 12px; color: #9aa; border: 1px dashed #bcd; border-radius: 10px; padding: 12px; text-align: center; }
+  .note { font-size: 12px; color: #888; margin-top: 12px; line-height: 1.45; }
+  .coltag { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+  <h1>Szerokość panelu w widoku 2-kolumnowym</h1>
+  <p class="subtitle">Klikaj przycisk na panelu, żeby przełączyć go na wąski/szeroki i zobaczyć, jak zmienia się układ. <b>Czat</b> jest zawsze szeroki. Porównaj, jak ten sam zestaw paneli układa się w wariantach A i B.</p>
+  <div class="container">
+    <div class="variant">
+      <h2>Wariant A — płynąca siatka</h2>
+      <p class="desc">Jedna siatka 2-kolumnowa. Panele płyną w kolejności ułożenia. <b>Wąski</b> = 1 kolumna, <b>szeroki</b> = pełna szerokość (cały rząd). Kolejne panele płyną dalej.</p>
+      <div id="gridA" class="grid-2col"></div>
+      <p class="note">Kolejność: Profil → Prezenty → Życzenia → Potrawy → Czat. Gdy panel jest szeroki, zajmuje cały rząd i reszta „spada" w dół.</p>
+    </div>
+    <div class="variant">
+      <h2>Wariant B — strefy lewa / prawa / pełna</h2>
+      <p class="desc">Dwie kolumny (lewa, prawa) + strefa pełna na dole. <b>Wąski</b> = panel w kolumnie (nad innymi w tej kolumnie), <b>szeroki</b> = panel w strefie pełnej (cała szerokość, pod kolumnami).</p>
+      <div id="gridB" class="b-wrap"></div>
+      <p class="note">Panele w kolumnach układają się nad sobą. Szeroki panel schodzi do strefy pełnej pod kolumnami.</p>
+    </div>
+  </div>
+  <script>
+    const panelsA = [
+      { id: 'profil', name: 'Profil', wide: false },
+      { id: 'prezenty', name: 'Prezenty', wide: false },
+      { id: 'zyczenia', name: 'Życzenia', wide: false },
+      { id: 'potrawy', name: 'Potrawy', wide: false },
+      { id: 'czat', name: 'Czat', wide: true, always: true },
+    ];
+
+    function makePanel(p, onToggle) {
+      const div = document.createElement('div');
+      div.className = 'panel' + (p.wide ? ' wide' : '') + (p.always ? ' always' : '');
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = p.name;
+      div.appendChild(label);
+      if (p.always) {
+        const badge = document.createElement('div');
+        badge.className = 'badge';
+        badge.textContent = 'zawsze szeroki';
+        div.appendChild(badge);
+      } else {
+        const btn = document.createElement('button');
+        btn.className = 'toggle';
+        btn.textContent = p.wide ? 'szeroki → na wąski' : 'wąski → na szeroki';
+        btn.onclick = onToggle;
+        div.appendChild(btn);
+      }
+      return div;
+    }
+
+    function renderA() {
+      const grid = document.getElementById('gridA');
+      grid.innerHTML = '';
+      panelsA.forEach(p => {
+        grid.appendChild(makePanel(p, () => { p.wide = !p.wide; renderA(); }));
+      });
+    }
+
+    const panelsB = [
+      { id: 'profil', name: 'Profil', home: 'left', wide: false },
+      { id: 'prezenty', name: 'Prezenty', home: 'right', wide: false },
+      { id: 'zyczenia', name: 'Życzenia', home: 'left', wide: false },
+      { id: 'potrawy', name: 'Potrawy', home: 'right', wide: false },
+      { id: 'czat', name: 'Czat', home: 'wide', wide: true, always: true },
+    ];
+
+    function renderB() {
+      const wrap = document.getElementById('gridB');
+      wrap.innerHTML = '';
+      const cols = document.createElement('div');
+      cols.className = 'b-cols';
+      const leftTag = document.createElement('div');
+      leftTag.className = 'coltag'; leftTag.textContent = 'lewa kolumna';
+      const rightTag = document.createElement('div');
+      rightTag.className = 'coltag'; rightTag.textContent = 'prawa kolumna';
+      const leftCol = document.createElement('div');
+      leftCol.className = 'b-col';
+      const rightCol = document.createElement('div');
+      rightCol.className = 'b-col';
+      cols.appendChild(leftCol);
+      cols.appendChild(rightCol);
+      wrap.appendChild(cols);
+      const wideTag = document.createElement('div');
+      wideTag.className = 'coltag'; wideTag.textContent = 'strefa pełna';
+      const wideZone = document.createElement('div');
+      wideZone.className = 'b-wide-zone';
+      wrap.appendChild(wideTag);
+      wrap.appendChild(wideZone);
+
+      panelsB.forEach(p => {
+        const el = makePanel(p, () => { p.wide = !p.wide; renderB(); });
+        if (p.wide) wideZone.appendChild(el);
+        else (p.home === 'left' ? leftCol : rightCol).appendChild(el);
+      });
+    }
+
+    renderA();
+    renderB();
+  </script>
+</body>
+</html>

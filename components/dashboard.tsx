@@ -2098,7 +2098,7 @@ export function Dashboard({
             type="button"
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Zamknij"
-            className="flex shrink-0 justify-center pb-2 pt-3"
+            className="flex shrink-0 justify-center pb-2 pt-3 transition-colors active:bg-mist"
           >
             <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
           </button>
