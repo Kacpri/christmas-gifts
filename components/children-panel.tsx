@@ -87,6 +87,18 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
   );
   const [addOpen, setAddOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [childName, setChildName] = useState("");
+  const [childPhoto, setChildPhoto] = useState<File | null>(null);
+  const [childPhotoUrl, setChildPhotoUrl] = useState<string | null>(null);
+  const [childClearConfirm, setChildClearConfirm] = useState<ConfirmState | null>(
+    null
+  );
+
+  useEffect(() => {
+    return () => {
+      if (childPhotoUrl) URL.revokeObjectURL(childPhotoUrl);
+    };
+  }, [childPhotoUrl]);
 
   useEffect(() => {
     if (selectedId != null && !kids.some((k) => k.id === selectedId)) {
@@ -95,6 +107,30 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
   }, [kids, selectedId]);
 
   const selected = kids.find((k) => k.id === selectedId) ?? null;
+
+  const childForm = (
+    <AddChildForm
+      onDone={() => setAddOpen(false)}
+      name={childName}
+      setName={setChildName}
+      photo={childPhoto}
+      setPhoto={setChildPhoto}
+      photoUrl={childPhotoUrl}
+      setPhotoUrl={setChildPhotoUrl}
+      canClear={!!(childName || childPhoto)}
+      onClearRequest={() =>
+        setChildClearConfirm({
+          message: "Wyczyścić wprowadzone dane?",
+          confirmLabel: "Wyczyść",
+          onConfirm: () => {
+            setChildName("");
+            setChildPhoto(null);
+            setChildPhotoUrl(null);
+          },
+        })
+      }
+    />
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -146,28 +182,48 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
           )}
         </div>
       )}
-      {addOpen && isDesktop && (
-        <AddChildForm onDone={() => setAddOpen(false)} />
-      )}
+      {addOpen && isDesktop && childForm}
       {addOpen && !isDesktop && (
         <BottomSheet open onClose={() => setAddOpen(false)}>
-          <AddChildForm onDone={() => setAddOpen(false)} />
+          {childForm}
         </BottomSheet>
       )}
       {selected && (
         <ChildDetail key={selected.id} me={me} child={selected} users={users} />
       )}
+      <ConfirmDialog
+        state={childClearConfirm}
+        onClose={() => setChildClearConfirm(null)}
+      />
     </div>
   );
 }
 
-function AddChildForm({ onDone }: { onDone: () => void }) {
+function AddChildForm({
+  onDone,
+  name,
+  setName,
+  photo,
+  setPhoto,
+  photoUrl,
+  setPhotoUrl,
+  canClear,
+  onClearRequest,
+}: {
+  onDone: () => void;
+  name: string;
+  setName: (v: string) => void;
+  photo: File | null;
+  setPhoto: (f: File | null) => void;
+  photoUrl: string | null;
+  setPhotoUrl: (u: string | null) => void;
+  canClear: boolean;
+  onClearRequest: () => void;
+}) {
   const [state, action, pending] = useActionState(addChild, empty);
-  const [name, setName] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (state.ok) {
@@ -176,13 +232,7 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
       setPhotoUrl(null);
       onDone();
     }
-  }, [state, onDone]);
-
-  useEffect(() => {
-    return () => {
-      if (photoUrl) URL.revokeObjectURL(photoUrl);
-    };
-  }, [photoUrl]);
+  }, [state, onDone, setName, setPhoto, setPhotoUrl]);
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -281,6 +331,16 @@ function AddChildForm({ onDone }: { onDone: () => void }) {
         >
           Anuluj
         </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            onClick={onClearRequest}
+            disabled={pending || !canClear}
+            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-surface/60 disabled:opacity-50"
+          >
+            Wyczyść
+          </button>
+        )}
       </div>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
@@ -314,6 +374,10 @@ function ChildDetail({
   const [parentPick, setParentPick] = useState("");
   const [wishAddOpen, setWishAddOpen] = useState(false);
   const [parentAddOpen, setParentAddOpen] = useState(false);
+  const [wishAddText, setWishAddText] = useState("");
+  const [wishAddLink, setWishAddLink] = useState("");
+  const [wishAddPrice, setWishAddPrice] = useState("");
+  const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [deleteState, deleteAction, deletePending] = useActionState(
     deleteChild,
@@ -453,9 +517,29 @@ function ChildDetail({
     </button>
   );
 
+  const wishAddEmpty = !wishAddText && !wishAddLink && !wishAddPrice;
+
   const wishAddForm = (
     <AddChildWishForm
       childId={child.id}
+      text={wishAddText}
+      link={wishAddLink}
+      price={wishAddPrice}
+      setText={setWishAddText}
+      setLink={setWishAddLink}
+      setPrice={setWishAddPrice}
+      canClear={!wishAddEmpty}
+      onClearRequest={() =>
+        setClearConfirm({
+          message: "Wyczyścić wprowadzone dane?",
+          confirmLabel: "Wyczyść",
+          onConfirm: () => {
+            setWishAddText("");
+            setWishAddLink("");
+            setWishAddPrice("");
+          },
+        })
+      }
       onClose={() => setWishAddOpen(false)}
     />
   );
@@ -498,6 +582,22 @@ function ChildDetail({
         {addParentPending ? <SpinnerIcon /> : null}
         {addParentPending ? "Dodawanie…" : "Dodaj rodzica"}
       </button>
+      {!isDesktop && (
+        <button
+          type="button"
+          onClick={() =>
+            setClearConfirm({
+              message: "Wyczyścić wprowadzone dane?",
+              confirmLabel: "Wyczyść",
+              onConfirm: () => setParentPick(""),
+            })
+          }
+          disabled={addParentPending || !parentPick}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+        >
+          Wyczyść
+        </button>
+      )}
     </form>
   );
 
@@ -771,6 +871,7 @@ function ChildDetail({
         state={deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
       />
+      <ConfirmDialog state={clearConfirm} onClose={() => setClearConfirm(null)} />
     </div>
   );
 }
@@ -888,7 +989,7 @@ function SortableChildWishRow({
           onClick={(e) => e.stopPropagation()}
           aria-label={`Przesuń życzenie: ${wish.text}`}
           title="Przesuń"
-          className="flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:bg-icon-hover active:cursor-grabbing"
+          className="flex h-10 w-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:bg-icon-hover active:cursor-grabbing"
         >
           <GripIcon />
         </button>
@@ -917,7 +1018,7 @@ function SortableChildWishRow({
           <MoreIcon />
         </button>
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pl-11">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pl-12">
         {wish.link && (
           <a
             href={wish.link}
@@ -1117,15 +1218,29 @@ function ReservationControls({
 
 function AddChildWishForm({
   childId,
+  text,
+  link,
+  price,
+  setText,
+  setLink,
+  setPrice,
+  canClear,
+  onClearRequest,
   onClose,
 }: {
   childId: number;
+  text: string;
+  link: string;
+  price: string;
+  setText: (v: string) => void;
+  setLink: (v: string) => void;
+  setPrice: (v: string) => void;
+  canClear: boolean;
+  onClearRequest: () => void;
   onClose: () => void;
 }) {
   const [state, action, pending] = useActionState(addChildWish, empty);
-  const [text, setText] = useState("");
-  const [link, setLink] = useState("");
-  const [price, setPrice] = useState("");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (state.ok) {
@@ -1134,7 +1249,7 @@ function AddChildWishForm({
       setPrice("");
       onClose();
     }
-  }, [state, onClose]);
+  }, [state, onClose, setText, setLink, setPrice]);
 
   return (
     <form
@@ -1177,7 +1292,6 @@ function AddChildWishForm({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             type="url"
-            placeholder="Link (opcjonalnie)"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1195,7 +1309,7 @@ function AddChildWishForm({
             onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
-            placeholder="Cena (zł)"
+            placeholder="np. 49,99"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1217,6 +1331,16 @@ function AddChildWishForm({
         >
           Anuluj
         </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            onClick={onClearRequest}
+            disabled={pending || !canClear}
+            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+          >
+            Wyczyść
+          </button>
+        )}
       </div>
       {!state.ok && state.error && (
         <p className="text-sm text-red-600">{state.error}</p>
@@ -1283,7 +1407,6 @@ function EditChildWishForm({
             value={link}
             onChange={(e) => setLink(e.target.value)}
             type="url"
-            placeholder="Link (opcjonalnie)"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1301,7 +1424,7 @@ function EditChildWishForm({
             onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
-            placeholder="Cena (zł)"
+            placeholder="np. 49,99"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1355,13 +1478,13 @@ function ListIcon() {
 
 function GripIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="9" cy="6" r="1.5" fill="currentColor" />
-      <circle cx="9" cy="12" r="1.5" fill="currentColor" />
-      <circle cx="9" cy="18" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="6" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="9" cy="6" r="2" fill="currentColor" />
+      <circle cx="9" cy="12" r="2" fill="currentColor" />
+      <circle cx="9" cy="18" r="2" fill="currentColor" />
+      <circle cx="15" cy="6" r="2" fill="currentColor" />
+      <circle cx="15" cy="12" r="2" fill="currentColor" />
+      <circle cx="15" cy="18" r="2" fill="currentColor" />
     </svg>
   );
 }

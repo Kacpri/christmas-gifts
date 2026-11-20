@@ -34,6 +34,7 @@ import { THEME_IDEAS } from "@/lib/theme-ideas";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Presence } from "@/components/presence";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 
 export type Wish = {
   id: number;
@@ -81,7 +82,12 @@ export function WishForm({
   const [justDrew, setJustDrew] = useState(false);
   const [menuWish, setMenuWish] = useState<Wish | null>(null);
   const [addPrice, setAddPrice] = useState("");
+  const [addText, setAddText] = useState("");
+  const [addLink, setAddLink] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(
+    null
+  );
   const addPriceRef = useRef<HTMLInputElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -109,6 +115,8 @@ export function WishForm({
   useEffect(() => {
     if (wishState.ok) {
       setAddPrice("");
+      setAddText("");
+      setAddLink("");
       setAddOpen(false);
     }
   }, [wishState]);
@@ -256,6 +264,8 @@ export function WishForm({
         <input
           id="wish-add-text"
           name="text"
+          value={addText}
+          onChange={(e) => setAddText(e.target.value)}
           required
           maxLength={500}
           placeholder="Czego sobie życzysz?"
@@ -274,8 +284,9 @@ export function WishForm({
           <input
             id="wish-add-link"
             name="link"
+            value={addLink}
+            onChange={(e) => setAddLink(e.target.value)}
             type="url"
-            placeholder="Link (opcjonalnie)"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -294,7 +305,7 @@ export function WishForm({
             inputMode="decimal"
             value={addPrice}
             onChange={(e) => setAddPrice(e.target.value)}
-            placeholder="Cena (zł)"
+            placeholder="np. 49,99"
             aria-invalid={addOverBudget || undefined}
             aria-describedby={
               addOverBudget
@@ -343,6 +354,26 @@ export function WishForm({
         >
           Anuluj
         </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            onClick={() =>
+              setClearConfirm({
+                message: "Wyczyścić wprowadzone dane?",
+                confirmLabel: "Wyczyść",
+                onConfirm: () => {
+                  setAddText("");
+                  setAddLink("");
+                  setAddPrice("");
+                },
+              })
+            }
+            disabled={addingWish || (!addText && !addLink && !addPrice)}
+            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+          >
+            Wyczyść
+          </button>
+        )}
       </div>
       {!wishState.ok && wishState.error && (
         <p className="text-sm text-red-600">{wishState.error}</p>
@@ -549,6 +580,8 @@ export function WishForm({
           />
         </BottomSheet>
       )}
+
+      <ConfirmDialog state={clearConfirm} onClose={() => setClearConfirm(null)} />
 
       <Presence
         open={!!menuWish}
@@ -865,7 +898,6 @@ function EditWishForm({
             type="url"
             value={editLink}
             onChange={(e) => setEditLink(e.target.value)}
-            placeholder="Link (opcjonalnie)"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -884,7 +916,7 @@ function EditWishForm({
             inputMode="decimal"
             value={editPrice}
             onChange={(e) => setEditPrice(e.target.value)}
-            placeholder="Cena (zł)"
+            placeholder="np. 49,99"
             aria-invalid={editOverBudget || undefined}
             aria-describedby={
               editOverBudget
@@ -944,18 +976,18 @@ function EditWishForm({
 function GripIcon() {
   return (
     <svg
-      width="16"
-      height="16"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
     >
-      <circle cx="9" cy="6" r="1.5" fill="currentColor" />
-      <circle cx="9" cy="12" r="1.5" fill="currentColor" />
-      <circle cx="9" cy="18" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="6" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="18" r="1.5" fill="currentColor" />
+      <circle cx="9" cy="6" r="2" fill="currentColor" />
+      <circle cx="9" cy="12" r="2" fill="currentColor" />
+      <circle cx="9" cy="18" r="2" fill="currentColor" />
+      <circle cx="15" cy="6" r="2" fill="currentColor" />
+      <circle cx="15" cy="12" r="2" fill="currentColor" />
+      <circle cx="15" cy="18" r="2" fill="currentColor" />
     </svg>
   );
 }

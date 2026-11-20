@@ -232,7 +232,7 @@ function computeLayout(
 
 function GripIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
       <circle cx="5" cy="3" r="1.5" />
       <circle cx="11" cy="3" r="1.5" />
       <circle cx="5" cy="8" r="1.5" />
@@ -785,7 +785,7 @@ function PanelCard({
             {...attributes}
             {...listeners}
             aria-label={`Przeciągnij: ${title}`}
-            className="cursor-grab touch-none rounded p-1 text-muted active:cursor-grabbing"
+            className="cursor-grab touch-none rounded p-1.5 text-muted active:cursor-grabbing"
           >
             <GripIcon />
           </button>

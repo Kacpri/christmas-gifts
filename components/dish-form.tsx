@@ -111,6 +111,9 @@ export function DishForm({
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addQuantity, setAddQuantity] = useState("");
+  const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
@@ -169,7 +172,8 @@ export function DishForm({
   useEffect(() => {
     if (addState.ok) {
       setAddCategory("");
-      addFormRef.current?.reset();
+      setAddName("");
+      setAddQuantity("");
       setAddOpen(false);
     }
   }, [addState]);
@@ -294,6 +298,8 @@ export function DishForm({
         <input
           id="dish-add-name"
           name="name"
+          value={addName}
+          onChange={(e) => setAddName(e.target.value)}
           required
           maxLength={120}
           placeholder="Co przynosisz? (np. szarlotka)"
@@ -331,8 +337,10 @@ export function DishForm({
           <input
             id="dish-add-quantity"
             name="quantity"
+            value={addQuantity}
+            onChange={(e) => setAddQuantity(e.target.value)}
             maxLength={12}
-            placeholder="Ilość (np. 2 kg)"
+            placeholder="np. 2 kg"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -363,6 +371,28 @@ export function DishForm({
         >
           Anuluj
         </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            onClick={() =>
+              setClearConfirm({
+                message: "Wyczyścić wprowadzone dane?",
+                confirmLabel: "Wyczyść",
+                onConfirm: () => {
+                  setAddName("");
+                  setAddQuantity("");
+                  setAddCategory("");
+                },
+              })
+            }
+            disabled={
+              adding || (!addName && !addQuantity && addCategory === "")
+            }
+            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-mist disabled:opacity-50"
+          >
+            Wyczyść
+          </button>
+        )}
       </div>
       {!addState.ok && addState.error && (
         <p className="text-sm text-red-600">{addState.error}</p>
@@ -410,7 +440,7 @@ export function DishForm({
             value={editQuantity}
             onChange={(e) => setEditQuantity(e.target.value)}
             maxLength={12}
-            placeholder="Ilość (np. 2 kg)"
+            placeholder="np. 2 kg"
             className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -727,6 +757,10 @@ export function DishForm({
       )}
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
+      <ConfirmDialog
+        state={clearConfirm}
+        onClose={() => setClearConfirm(null)}
+      />
 
       <Presence
         open={!!mobileMenuDish}

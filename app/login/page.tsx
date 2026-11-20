@@ -121,7 +121,6 @@ export default function LoginPage() {
               id="login-name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Imię i nazwisko"
               required
               className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
             />
@@ -138,7 +137,6 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
-              placeholder="Adres e-mail"
               required
               className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
             />
