@@ -8,6 +8,9 @@ import {
   type PointerEvent,
 } from "react";
 
+import { BottomSheet } from "@/components/bottom-sheet";
+import { useMediaQuery } from "@/lib/use-media-query";
+
 const FRAME = 240;
 const MAX_ZOOM = 4;
 
@@ -28,6 +31,7 @@ export function AvatarCropDialog({
   onClose: () => void;
   onSave: (cropped: File) => void;
 }) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [url, setUrl] = useState<string | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   const [view, setView] = useState<View | null>(null);
@@ -212,76 +216,90 @@ export function AvatarCropDialog({
   const W = dims && view ? dims.w * k : 0;
   const H = dims && view ? dims.h * k : 0;
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={busy ? undefined : onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Wyśrodkowanie zdjęcia"
-        className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-      >
-        <p className="text-sm leading-relaxed text-ink">
-          Przesuń zdjęcie, aby wyśrodkować. Przybliżaj kołem myszy lub
-          szczypnięciem.
-        </p>
-        <div className="mt-4 flex justify-center">
-          <div
-            ref={frameRef}
-            className="relative overflow-hidden rounded-full bg-mist"
-            style={{
-              width: FRAME,
-              height: FRAME,
-              touchAction: "none",
-              cursor: view ? "grab" : "default",
-            }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerEnd}
-            onPointerCancel={onPointerEnd}
-          >
-            {url && view && (
-              <img
-                src={url}
-                alt=""
-                draggable={false}
-                className="absolute max-w-none select-none"
-                style={{ width: W, height: H, left: view.x, top: view.y }}
-              />
-            )}
-            <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/10" />
-          </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist disabled:opacity-50"
-          >
-            Anuluj
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={busy || saving || !view}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
-          >
-            {busy || saving ? (
-              <>
-                <SpinnerIcon />
-                Zapisywanie…
-              </>
-            ) : (
-              "Zapisz"
-            )}
-          </button>
+  const content = (
+    <>
+      <p className="text-sm leading-relaxed text-ink">
+        Przesuń zdjęcie, aby wyśrodkować. Przybliżaj kołem myszy lub
+        szczypnięciem.
+      </p>
+      <div className="mt-4 flex justify-center">
+        <div
+          ref={frameRef}
+          className="relative overflow-hidden rounded-full bg-mist"
+          style={{
+            width: FRAME,
+            height: FRAME,
+            touchAction: "none",
+            cursor: view ? "grab" : "default",
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerEnd}
+          onPointerCancel={onPointerEnd}
+        >
+          {url && view && (
+            <img
+              src={url}
+              alt=""
+              draggable={false}
+              className="absolute max-w-none select-none"
+              style={{ width: W, height: H, left: view.x, top: view.y }}
+            />
+          )}
+          <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-black/10" />
         </div>
       </div>
-    </div>
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist disabled:opacity-50"
+        >
+          Anuluj
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={busy || saving || !view}
+          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+        >
+          {busy || saving ? (
+            <>
+              <SpinnerIcon />
+              Zapisywanie…
+            </>
+          ) : (
+            "Zapisz"
+          )}
+        </button>
+      </div>
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={busy ? undefined : onClose}
+        />
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Wyśrodkowanie zdjęcia"
+          className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BottomSheet open onClose={busy ? () => {} : onClose} tall>
+      {content}
+    </BottomSheet>
   );
 }
 

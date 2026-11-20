@@ -769,53 +769,45 @@ export function DishForm({
         onClose={() => setClearConfirm(null)}
       />
 
-      <Presence
+      <BottomSheet
         open={!!mobileMenuDish}
-        className="fixed inset-0 z-50 flex items-end justify-center p-4"
-        onClick={() => setMobileMenuDish(null)}
-        backdrop
-        sheetClassName="relative w-full max-w-xs"
-        sheetOnClick={(e) => e.stopPropagation()}
+        onClose={() => setMobileMenuDish(null)}
+        title={mobileMenuDish ? capitalizeFirst(mobileMenuDish.name) : undefined}
       >
         {mobileMenuDish && (
-          <div className="rounded-2xl bg-surface p-4 shadow-lg">
-            <p className="mb-3 truncate text-sm font-semibold text-ink">
-              {capitalizeFirst(mobileMenuDish.name)}
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  startEdit(mobileMenuDish);
-                  setMobileMenuDish(null);
-                }}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
-              >
-                <PencilIcon />
-                Edytuj
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleRemove(mobileMenuDish);
-                  setMobileMenuDish(null);
-                }}
-                className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
-              >
-                <TrashIcon />
-                Usuń
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileMenuDish(null)}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
-              >
-                Anuluj
-              </button>
-            </div>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                startEdit(mobileMenuDish);
+                setMobileMenuDish(null);
+              }}
+              className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+            >
+              <PencilIcon />
+              Edytuj
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                handleRemove(mobileMenuDish);
+                setMobileMenuDish(null);
+              }}
+              className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+            >
+              <TrashIcon />
+              Usuń
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileMenuDish(null)}
+              className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+            >
+              Anuluj
+            </button>
           </div>
         )}
-      </Presence>
+      </BottomSheet>
     </div>
   );
 }

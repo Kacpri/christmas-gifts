@@ -15,9 +15,11 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
+import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
 import { declineName } from "@/lib/declension";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 const empty: ActionResult = { ok: false };
 
@@ -94,6 +96,7 @@ export function OrganizerPanel({
   const [menuParticipant, setMenuParticipant] = useState<
     (typeof participants)[number] | null
   >(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (budgetState.ok) setBudgetSaved(true);
@@ -142,6 +145,64 @@ export function OrganizerPanel({
   const notReadyNames = participants
     .filter((p) => !p.is_ready)
     .map((p) => p.full_name);
+
+  const menuActions = menuParticipant ? (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          startEditName(menuParticipant);
+          setMenuParticipant(null);
+        }}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+      >
+        <PencilIcon />
+        Edytuj
+      </button>
+      <button
+        type="button"
+        disabled={readyPending}
+        onClick={() => {
+          toggleReady(menuParticipant);
+          setMenuParticipant(null);
+        }}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+      >
+        {menuParticipant.is_ready ? <CheckSlashIcon /> : <CheckIcon />}
+        {menuParticipant.is_ready
+          ? "Odznacz gotowego"
+          : "Oznacz gotowego"}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const target = menuParticipant;
+          setMenuParticipant(null);
+          setConfirm({
+            message: `Usunąć ${declineName(target.full_name, "acc")} z losowania?`,
+            confirmLabel: "Usuń",
+            tone: "danger",
+            onConfirm: () => {
+              const fd = new FormData();
+              fd.set("id", target.id);
+              removeUser(fd);
+            },
+          });
+        }}
+        className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+      >
+        <TrashIcon />
+        Usuń
+      </button>
+      <button
+        type="button"
+        onClick={() => setMenuParticipant(null)}
+        className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+      >
+        Anuluj
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -595,84 +656,54 @@ export function OrganizerPanel({
         )}
       </div>
 
-      <Presence
-        open={!!menuParticipant}
-        className="fixed inset-0 z-50 flex items-end justify-center p-4"
-        onClick={() => setMenuParticipant(null)}
-        backdrop
-        sheetClassName="relative w-full max-w-xs"
-        sheetOnClick={(e) => e.stopPropagation()}
-      >
-        {menuParticipant && (
-          <div className="rounded-2xl bg-surface p-4 shadow-lg">
-            <div className="mb-3 flex items-center gap-2">
-              <Avatar
-                name={menuParticipant.full_name}
-                src={menuParticipant.avatar_url}
-                size={28}
-              />
-              <p className="min-w-0 truncate text-sm font-semibold text-ink">
-                {menuParticipant.full_name}
-              </p>
+      {!isDesktop && (
+        <BottomSheet
+          open={!!menuParticipant}
+          onClose={() => setMenuParticipant(null)}
+          title={
+            menuParticipant && (
+              <span className="flex items-center gap-2">
+                <Avatar
+                  name={menuParticipant.full_name}
+                  src={menuParticipant.avatar_url}
+                  size={28}
+                />
+                <span className="min-w-0 truncate">
+                  {menuParticipant.full_name}
+                </span>
+              </span>
+            )
+          }
+        >
+          {menuActions}
+        </BottomSheet>
+      )}
+      {isDesktop && (
+        <Presence
+          open={!!menuParticipant}
+          className="fixed inset-0 z-50 flex items-end justify-center p-4"
+          onClick={() => setMenuParticipant(null)}
+          backdrop
+          sheetClassName="relative w-full max-w-xs"
+          sheetOnClick={(e) => e.stopPropagation()}
+        >
+          {menuParticipant && (
+            <div className="rounded-2xl bg-surface p-4 shadow-lg">
+              <div className="mb-3 flex items-center gap-2">
+                <Avatar
+                  name={menuParticipant.full_name}
+                  src={menuParticipant.avatar_url}
+                  size={28}
+                />
+                <p className="min-w-0 truncate text-sm font-semibold text-ink">
+                  {menuParticipant.full_name}
+                </p>
+              </div>
+              {menuActions}
             </div>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  startEditName(menuParticipant);
-                  setMenuParticipant(null);
-                }}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
-              >
-                <PencilIcon />
-                Edytuj
-              </button>
-              <button
-                type="button"
-                disabled={readyPending}
-                onClick={() => {
-                  toggleReady(menuParticipant);
-                  setMenuParticipant(null);
-                }}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
-              >
-                {menuParticipant.is_ready ? <CheckSlashIcon /> : <CheckIcon />}
-                {menuParticipant.is_ready
-                  ? "Odznacz gotowego"
-                  : "Oznacz gotowego"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const target = menuParticipant;
-                  setMenuParticipant(null);
-                  setConfirm({
-                    message: `Usunąć ${declineName(target.full_name, "acc")} z losowania?`,
-                    confirmLabel: "Usuń",
-                    tone: "danger",
-                    onConfirm: () => {
-                      const fd = new FormData();
-                      fd.set("id", target.id);
-                      removeUser(fd);
-                    },
-                  });
-                }}
-                className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
-              >
-                <TrashIcon />
-                Usuń
-              </button>
-              <button
-                type="button"
-                onClick={() => setMenuParticipant(null)}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
-              >
-                Anuluj
-              </button>
-            </div>
-          </div>
-        )}
-      </Presence>
+          )}
+        </Presence>
+      )}
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </div>

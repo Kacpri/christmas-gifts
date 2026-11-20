@@ -232,6 +232,94 @@ export function WishForm({
       ? localWishes.find((w) => w.id === editingId) ?? null
       : null;
 
+  const menuActions = menuWish ? (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          handleMoveTo(menuWish, 0);
+          setMenuWish(null);
+        }}
+        disabled={menuIndex === 0}
+        aria-label={`Na samą górę: ${menuWish.text}`}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+      >
+        <ArrowToTopIcon />
+        Na samą górę
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          handleMove(menuWish, -1);
+          setMenuWish(null);
+        }}
+        disabled={menuIndex === 0}
+        aria-label={`Przenieś wyżej: ${menuWish.text}`}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+      >
+        <ArrowUpIcon />
+        Przenieś wyżej
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          handleMove(menuWish, 1);
+          setMenuWish(null);
+        }}
+        disabled={menuIndex === localWishes.length - 1}
+        aria-label={`Przenieś niżej: ${menuWish.text}`}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+      >
+        <ArrowDownIcon />
+        Przenieś niżej
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          handleMoveTo(menuWish, localWishes.length - 1);
+          setMenuWish(null);
+        }}
+        disabled={menuIndex === localWishes.length - 1}
+        aria-label={`Na sam dół: ${menuWish.text}`}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+      >
+        <ArrowToBottomIcon />
+        Na sam dół
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          startEdit(menuWish);
+          setMenuWish(null);
+        }}
+        aria-label={`Edytuj życzenie: ${menuWish.text}`}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+      >
+        <PencilIcon />
+        Edytuj
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          handleRemove(menuWish);
+          setMenuWish(null);
+        }}
+        aria-label={`Usuń życzenie: ${menuWish.text}`}
+        className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+      >
+        <TrashIcon />
+        Usuń
+      </button>
+      <button
+        type="button"
+        onClick={() => setMenuWish(null)}
+        className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+      >
+        Anuluj
+      </button>
+    </div>
+  ) : null;
+
   const addButton = (
     <button
       type="button"
@@ -585,107 +673,34 @@ export function WishForm({
 
       <ConfirmDialog state={clearConfirm} onClose={() => setClearConfirm(null)} />
 
-      <Presence
-        open={!!menuWish}
-        className="fixed inset-0 z-50 flex items-end justify-center p-4"
-        onClick={() => setMenuWish(null)}
-        backdrop
-        sheetClassName="relative w-full max-w-xs"
-        sheetOnClick={(e) => e.stopPropagation()}
-      >
-        {menuWish && (
-          <div className="rounded-2xl bg-surface p-4 shadow-lg">
-            <p className="mb-3 truncate text-sm font-semibold text-ink">
-              {menuWish.text}
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  handleMoveTo(menuWish, 0);
-                  setMenuWish(null);
-                }}
-                disabled={menuIndex === 0}
-                aria-label={`Na samą górę: ${menuWish.text}`}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
-              >
-                <ArrowToTopIcon />
-                Na samą górę
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleMove(menuWish, -1);
-                  setMenuWish(null);
-                }}
-                disabled={menuIndex === 0}
-                aria-label={`Przenieś wyżej: ${menuWish.text}`}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
-              >
-                <ArrowUpIcon />
-                Przenieś wyżej
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleMove(menuWish, 1);
-                  setMenuWish(null);
-                }}
-                disabled={menuIndex === localWishes.length - 1}
-                aria-label={`Przenieś niżej: ${menuWish.text}`}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
-              >
-                <ArrowDownIcon />
-                Przenieś niżej
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleMoveTo(menuWish, localWishes.length - 1);
-                  setMenuWish(null);
-                }}
-                disabled={menuIndex === localWishes.length - 1}
-                aria-label={`Na sam dół: ${menuWish.text}`}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
-              >
-                <ArrowToBottomIcon />
-                Na sam dół
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  startEdit(menuWish);
-                  setMenuWish(null);
-                }}
-                aria-label={`Edytuj życzenie: ${menuWish.text}`}
-                className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
-              >
-                <PencilIcon />
-                Edytuj
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  handleRemove(menuWish);
-                  setMenuWish(null);
-                }}
-                aria-label={`Usuń życzenie: ${menuWish.text}`}
-                className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
-              >
-                <TrashIcon />
-                Usuń
-              </button>
-              <button
-                type="button"
-                onClick={() => setMenuWish(null)}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
-              >
-                Anuluj
-              </button>
+      {!isDesktop && (
+        <BottomSheet
+          open={!!menuWish}
+          onClose={() => setMenuWish(null)}
+          title={menuWish?.text}
+        >
+          {menuActions}
+        </BottomSheet>
+      )}
+      {isDesktop && (
+        <Presence
+          open={!!menuWish}
+          className="fixed inset-0 z-50 flex items-end justify-center p-4"
+          onClick={() => setMenuWish(null)}
+          backdrop
+          sheetClassName="relative w-full max-w-xs"
+          sheetOnClick={(e) => e.stopPropagation()}
+        >
+          {menuWish && (
+            <div className="rounded-2xl bg-surface p-4 shadow-lg">
+              <p className="mb-3 truncate text-sm font-semibold text-ink">
+                {menuWish.text}
+              </p>
+              {menuActions}
             </div>
-          </div>
-        )}
-      </Presence>
+          )}
+        </Presence>
+      )}
     </div>
   );
 }

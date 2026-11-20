@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Presence } from "./presence";
 
@@ -37,25 +37,42 @@ export function BottomSheet({
   onClose,
   title,
   children,
+  tall = false,
+  zClass = "z-50",
+  className = "",
+  contentClassName = "min-h-0 overflow-y-auto px-4 pb-4 pt-1",
 }: {
   open: boolean;
   onClose: () => void;
-  title?: string;
+  title?: ReactNode;
   children: ReactNode;
+  tall?: boolean;
+  zClass?: string;
+  className?: string;
+  contentClassName?: string;
 }) {
   const kbPadding = useVisualViewportPadding(open);
+  const lastTitle = useRef<ReactNode>(undefined);
+  if (title != null) lastTitle.current = title;
+  const shownTitle = title ?? lastTitle.current;
 
   return (
     <Presence
       open={open}
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className={`fixed inset-0 ${zClass} flex items-end justify-center${
+        className ? ` ${className}` : ""
+      }`}
       style={{ paddingBottom: kbPadding }}
       onClick={onClose}
       backdrop
       sheetClassName="relative flex h-full w-full flex-col justify-end"
       sheetOnClick={(e) => e.stopPropagation()}
     >
-      <div className="flex max-h-[60%] flex-col rounded-t-2xl bg-surface shadow-lg">
+      <div
+        className={`flex ${
+          tall ? "max-h-[85%]" : "max-h-[60%]"
+        } flex-col rounded-t-2xl bg-surface shadow-lg`}
+      >
         <button
           type="button"
           onClick={onClose}
@@ -64,14 +81,12 @@ export function BottomSheet({
         >
           <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
         </button>
-        {title && (
-          <div className="shrink-0 px-4 pb-2 text-sm font-semibold text-ink">
-            {title}
+        {shownTitle != null && (
+          <div className="shrink-0 truncate px-4 pb-2 text-sm font-semibold text-ink">
+            {shownTitle}
           </div>
         )}
-        <div className="min-h-0 overflow-y-auto px-4 pb-4 pt-1">
-          {children}
-        </div>
+        <div className={contentClassName}>{children}</div>
       </div>
     </Presence>
   );

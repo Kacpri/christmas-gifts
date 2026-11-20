@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+import { BottomSheet } from "@/components/bottom-sheet";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 export type ConfirmState = {
   message: string;
@@ -17,6 +20,11 @@ export function ConfirmDialog({
   state: ConfirmState | null;
   onClose: () => void;
 }) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const lastState = useRef<ConfirmState | null>(null);
+  if (state) lastState.current = state;
+  const s = state ?? lastState.current;
+
   useEffect(() => {
     if (!state) return;
     function onKey(e: KeyboardEvent) {
@@ -26,43 +34,57 @@ export function ConfirmDialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [state, onClose]);
 
-  if (!state) return null;
+  if (!s) return null;
 
-  const tone = state.tone ?? "danger";
+  const tone = s.tone ?? "danger";
   const confirmClass =
     tone === "danger"
       ? "bg-danger text-white hover:bg-danger-deep"
       : "bg-accent text-white hover:bg-accent/90";
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-      >
-        <p className="text-sm leading-relaxed text-ink">{state.message}</p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
-          >
-            {state.cancelLabel ?? "Anuluj"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              state.onConfirm();
-              onClose();
-            }}
-            className={`rounded-xl px-4 py-2 text-sm font-medium ${confirmClass}`}
-          >
-            {state.confirmLabel ?? "Potwierdź"}
-          </button>
+  const content = (
+    <>
+      <p className="text-sm leading-relaxed text-ink">{s.message}</p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
+        >
+          {s.cancelLabel ?? "Anuluj"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            s.onConfirm();
+            onClose();
+          }}
+          className={`rounded-xl px-4 py-2 text-sm font-medium ${confirmClass}`}
+        >
+          {s.confirmLabel ?? "Potwierdź"}
+        </button>
+      </div>
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >
+          {content}
         </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <BottomSheet open={!!state} onClose={onClose} zClass="z-[60]">
+      {content}
+    </BottomSheet>
   );
 }

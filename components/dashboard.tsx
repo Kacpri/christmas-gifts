@@ -37,6 +37,7 @@ import {
 
 import { toggleGiftReady } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
+import { BottomSheet } from "@/components/bottom-sheet";
 import {
   ChatsPanel,
   type DmParticipant,
@@ -59,7 +60,6 @@ import { NotificationToggle } from "@/components/notification-toggle";
 import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
 import { PartyPanel } from "@/components/party-panel";
-import { Presence } from "@/components/presence";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
 import {
@@ -2085,61 +2085,49 @@ export function Dashboard({
         )}
       </div>
 
-      <Presence
+      <BottomSheet
         open={mobileMenuOpen && !editMode}
-        className="fixed inset-0 z-50 flex items-end justify-center md:hidden"
-        onClick={() => setMobileMenuOpen(false)}
-        backdrop
-        sheetClassName="relative w-full"
-        sheetOnClick={(e) => e.stopPropagation()}
+        onClose={() => setMobileMenuOpen(false)}
+        className="md:hidden"
+        contentClassName="min-h-0 overflow-y-auto p-2"
       >
-        <div className="flex max-h-[60vh] flex-col rounded-t-2xl bg-surface shadow-lg">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2.5 px-2 py-1.5">
+            <Avatar name={userName} src={profile.avatarUrl} size={32} />
+            <span className="truncate font-medium text-ink">{userName}</span>
+          </div>
+          <div className="mx-1 border-t border-line" />
           <button
             type="button"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-label="Zamknij"
-            className="flex shrink-0 justify-center pb-2 pt-3 transition-colors active:bg-mist"
+            onClick={() => {
+              setEditMode(true);
+              setMobileMenuOpen(false);
+            }}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
           >
-            <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
+            <SlidersIcon />
+            Dostosuj układ
           </button>
-          <div className="flex min-h-0 flex-col gap-1 overflow-y-auto p-2">
-            <div className="flex items-center gap-2.5 px-2 py-1.5">
-              <Avatar name={userName} src={profile.avatarUrl} size={32} />
-              <span className="truncate font-medium text-ink">{userName}</span>
-            </div>
-            <div className="mx-1 border-t border-line" />
-            <button
-              type="button"
-              onClick={() => {
-                setEditMode(true);
-                setMobileMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
-            >
-              <SlidersIcon />
-              Dostosuj układ
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setReportOpen(true);
-                setMobileMenuOpen(false);
-              }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
-            >
-              <ReportIcon />
-              Zgłoś błąd
-            </button>
-            <div className="flex flex-col">
-              <NotificationToggle variant="row" tone="light" />
-              <ThemeToggle variant="row" tone="light" />
-            </div>
-            <div className="border-t border-line pt-1">
-              <LogoutButton variant="row" tone="light" />
-            </div>
+          <button
+            type="button"
+            onClick={() => {
+              setReportOpen(true);
+              setMobileMenuOpen(false);
+            }}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-mist"
+          >
+            <ReportIcon />
+            Zgłoś błąd
+          </button>
+          <div className="flex flex-col">
+            <NotificationToggle variant="row" tone="light" />
+            <ThemeToggle variant="row" tone="light" />
+          </div>
+          <div className="border-t border-line pt-1">
+            <LogoutButton variant="row" tone="light" />
           </div>
         </div>
-      </Presence>
+      </BottomSheet>
 
       <ErrorReportForm
         open={reportOpen}
