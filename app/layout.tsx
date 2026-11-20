@@ -31,15 +31,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0d4024",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pl"
-      className={`${inter.variable} ${lobster.variable} h-full antialiased`}
+      className={`${inter.variable} ${lobster.variable} h-dvh antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-x-hidden">
+      <body className="min-h-dvh flex flex-col overflow-x-hidden">
         <script
           dangerouslySetInnerHTML={{
             __html: "(function(){try{var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(!t)localStorage.setItem('theme',d?'dark':'light');document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();",

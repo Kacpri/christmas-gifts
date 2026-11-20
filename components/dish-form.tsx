@@ -302,6 +302,8 @@ export function DishForm({
           onChange={(e) => setAddName(e.target.value)}
           required
           maxLength={120}
+          placeholder="Co przynosisz? (np. szarlotka)"
+          autoComplete="off"
           className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -339,6 +341,8 @@ export function DishForm({
             value={addQuantity}
             onChange={(e) => setAddQuantity(e.target.value)}
             maxLength={12}
+            placeholder="np. 2 kg"
+            autoComplete="off"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -421,6 +425,7 @@ export function DishForm({
           onChange={(e) => setEditName(e.target.value)}
           required
           maxLength={120}
+          autoComplete="off"
           className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink"
         />
       </div>
@@ -438,6 +443,8 @@ export function DishForm({
             value={editQuantity}
             onChange={(e) => setEditQuantity(e.target.value)}
             maxLength={12}
+            placeholder="np. 2 kg"
+            autoComplete="off"
             className="w-full rounded-xl border border-input-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -534,55 +541,58 @@ export function DishForm({
               )}
             </button>
           </div>
-          {filtersOpen && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Presence
+            open={filtersOpen}
+            sheetFrom="opacity-0 -translate-y-1"
+            sheetTo="opacity-100 translate-y-0"
+            sheetClassName="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+          >
+            <Select
+              leadingIcon={<UserIcon />}
+              value={personFilter}
+              onChange={(v) => {
+                setPersonFilter(v);
+                setPage(1);
+              }}
+              options={personOptions}
+              className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
+            />
+            <Select
+              leadingIcon={<TagIcon />}
+              value={categoryFilter}
+              onChange={(v) => {
+                setCategoryFilter(v);
+                setPage(1);
+              }}
+              options={categoryFilterOptions}
+              scrollable={false}
+              className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
+            />
+            <div
+              className={
+                narrow
+                  ? "flex w-full items-center gap-1.5"
+                  : "flex w-full items-center gap-1.5 sm:w-auto sm:min-w-[200px] sm:flex-1"
+              }
+            >
               <Select
-                leadingIcon={<UserIcon />}
-                value={personFilter}
-                onChange={(v) => {
-                  setPersonFilter(v);
-                  setPage(1);
-                }}
-                options={personOptions}
-                className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
+                leadingIcon={<SortFieldIcon field={sortField} />}
+                value={sortField}
+                onChange={handleSortField}
+                options={SORT_OPTIONS}
+                className="flex-1"
               />
-              <Select
-                leadingIcon={<TagIcon />}
-                value={categoryFilter}
-                onChange={(v) => {
-                  setCategoryFilter(v);
-                  setPage(1);
-                }}
-                options={categoryFilterOptions}
-                scrollable={false}
-                className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
-              />
-              <div
-                className={
-                  narrow
-                    ? "flex w-full items-center gap-1.5"
-                    : "flex w-full items-center gap-1.5 sm:w-auto sm:min-w-[200px] sm:flex-1"
-                }
+              <button
+                type="button"
+                onClick={toggleSortDir}
+                aria-label="Odwróć kierunek sortowania"
+                title={sortDir === "asc" ? "Rosnąco" : "Malejąco"}
+                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
               >
-                <Select
-                  leadingIcon={<SortFieldIcon field={sortField} />}
-                  value={sortField}
-                  onChange={handleSortField}
-                  options={SORT_OPTIONS}
-                  className="flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={toggleSortDir}
-                  aria-label="Odwróć kierunek sortowania"
-                  title={sortDir === "asc" ? "Rosnąco" : "Malejąco"}
-                  className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
-                >
-                  <SortDirIcon dir={sortDir} />
-                </button>
-              </div>
+                <SortDirIcon dir={sortDir} />
+              </button>
             </div>
-          )}
+          </Presence>
         </div>
       </div>
 

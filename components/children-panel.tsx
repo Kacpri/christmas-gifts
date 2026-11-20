@@ -44,6 +44,7 @@ import { Avatar } from "@/components/avatar";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
+import { LinkPasteField } from "@/components/link-paste-field";
 import { Presence } from "@/components/presence";
 import { Select } from "@/components/select";
 import { createClient } from "@/lib/supabase/client";
@@ -275,6 +276,8 @@ function AddChildForm({
           onChange={(e) => setName(e.target.value)}
           required
           maxLength={100}
+          placeholder="Imię dziecka"
+          autoComplete="off"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -1239,7 +1242,6 @@ function AddChildWishForm({
   onClose: () => void;
 }) {
   const [state, action, pending] = useActionState(addChildWish, empty);
-  const [linkFocused, setLinkFocused] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
@@ -1274,6 +1276,8 @@ function AddChildWishForm({
           onChange={(e) => setText(e.target.value)}
           required
           maxLength={500}
+          placeholder="Czego dziecko sobie życzy?"
+          autoComplete="off"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -1285,16 +1289,11 @@ function AddChildWishForm({
           >
             Link (opcjonalnie)
           </label>
-          <input
+          <LinkPasteField
             id="child-wish-add-link"
             name="link"
             value={link}
-            onChange={(e) => setLink(e.target.value)}
-            type="url"
-            placeholder={linkFocused ? "wklej" : undefined}
-            onFocus={() => setLinkFocused(true)}
-            onBlur={() => setLinkFocused(false)}
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            onChange={setLink}
           />
         </div>
         <div className="flex w-full flex-col gap-1.5 sm:w-[140px]">
@@ -1311,6 +1310,8 @@ function AddChildWishForm({
             onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
+            placeholder="np. 49,99"
+            autoComplete="off"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>
@@ -1358,7 +1359,6 @@ function EditChildWishForm({
   onCancel: () => void;
 }) {
   const [state, action, pending] = useActionState(editChildWish, empty);
-  const [linkFocused, setLinkFocused] = useState(false);
   const [text, setText] = useState(wish.text);
   const [link, setLink] = useState(wish.link ?? "");
   const [price, setPrice] = useState(
@@ -1392,6 +1392,7 @@ function EditChildWishForm({
           onChange={(e) => setText(e.target.value)}
           required
           maxLength={500}
+          autoComplete="off"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -1403,16 +1404,11 @@ function EditChildWishForm({
           >
             Link (opcjonalnie)
           </label>
-          <input
+          <LinkPasteField
             id={`child-wish-edit-link-${wish.id}`}
             name="link"
             value={link}
-            onChange={(e) => setLink(e.target.value)}
-            type="url"
-            placeholder={linkFocused ? "wklej" : undefined}
-            onFocus={() => setLinkFocused(true)}
-            onBlur={() => setLinkFocused(false)}
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            onChange={setLink}
           />
         </div>
         <div className="flex w-full flex-col gap-1.5 sm:w-[140px]">
@@ -1429,6 +1425,8 @@ function EditChildWishForm({
             onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
+            placeholder="np. 49,99"
+            autoComplete="off"
             className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
           />
         </div>

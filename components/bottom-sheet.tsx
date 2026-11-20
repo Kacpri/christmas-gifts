@@ -4,37 +4,32 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Presence } from "./presence";
 
-function useVisualViewportRect(active: boolean) {
-  const [rect, setRect] = useState<{ top: number; height: number } | null>(
-    null
-  );
+function useVisualViewportPadding(active: boolean) {
+  const [padding, setPadding] = useState(0);
 
   useEffect(() => {
     if (!active) {
-      setRect(null);
+      setPadding(0);
       return;
     }
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      setRect((prev) => {
-        const top = -vv.offsetTop;
-        const height = vv.height;
-        return prev && prev.top === top && prev.height === height
-          ? prev
-          : { top, height };
-      });
+      const p = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setPadding((prev) => (prev === p ? prev : p));
     };
     update();
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
     return () => {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
     };
   }, [active]);
 
-  return rect;
+  return padding;
 }
 
 export function BottomSheet({
@@ -48,15 +43,13 @@ export function BottomSheet({
   title?: string;
   children: ReactNode;
 }) {
-  const viewport = useVisualViewportRect(open);
+  const kbPadding = useVisualViewportPadding(open);
 
   return (
     <Presence
       open={open}
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={
-        viewport ? { top: viewport.top, height: viewport.height } : undefined
-      }
+      style={{ paddingBottom: kbPadding }}
       onClick={onClose}
       backdrop
       sheetClassName="relative flex h-full w-full flex-col justify-end"

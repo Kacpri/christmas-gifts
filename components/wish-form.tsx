@@ -35,6 +35,7 @@ import { useMediaQuery } from "@/lib/use-media-query";
 import { Presence } from "@/components/presence";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
+import { LinkPasteField } from "@/components/link-paste-field";
 
 export type Wish = {
   id: number;
@@ -84,7 +85,6 @@ export function WishForm({
   const [addPrice, setAddPrice] = useState("");
   const [addText, setAddText] = useState("");
   const [addLink, setAddLink] = useState("");
-  const [addLinkFocused, setAddLinkFocused] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(
     null
@@ -269,8 +269,11 @@ export function WishForm({
           onChange={(e) => setAddText(e.target.value)}
           required
           maxLength={500}
+          placeholder="Czego sobie życzysz?"
+          autoComplete="off"
           className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
+        <p className="text-sm text-muted">np. kubek, książka, voucher</p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex flex-1 flex-col gap-1.5">
@@ -280,16 +283,11 @@ export function WishForm({
           >
             Link (opcjonalnie)
           </label>
-          <input
+          <LinkPasteField
             id="wish-add-link"
             name="link"
             value={addLink}
-            onChange={(e) => setAddLink(e.target.value)}
-            type="url"
-            placeholder={addLinkFocused ? "wklej" : undefined}
-            onFocus={() => setAddLinkFocused(true)}
-            onBlur={() => setAddLinkFocused(false)}
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            onChange={setAddLink}
           />
         </div>
         <div className="flex w-full flex-col gap-1.5 sm:w-[140px]">
@@ -307,6 +305,8 @@ export function WishForm({
             inputMode="decimal"
             value={addPrice}
             onChange={(e) => setAddPrice(e.target.value)}
+            placeholder="np. 49,99"
+            autoComplete="off"
             aria-invalid={addOverBudget || undefined}
             aria-describedby={
               addOverBudget
@@ -488,7 +488,12 @@ export function WishForm({
             onKeyDown={(e) => {
               if (themeLocked && e.key === "Enter") e.preventDefault();
             }}
-            placeholder={themeLocked ? "Temat zablokowany" : undefined}
+            placeholder={
+              themeLocked
+                ? "Temat zablokowany"
+                : "np. coś ciepłego na zimowe wieczory"
+            }
+            autoComplete="off"
               className={`w-full rounded-xl border border-input-line px-3.5 py-2.5 text-sm placeholder:text-placeholder ${
                 themeLocked ? "bg-mist pr-10 text-faint" : "bg-surface text-ink"
               }`}
@@ -842,7 +847,6 @@ function EditWishForm({
   listBudget: number;
 }) {
   const editPriceRef = useRef<HTMLInputElement>(null);
-  const [editLinkFocused, setEditLinkFocused] = useState(false);
   const editParsed = parsePrice(editPrice);
   const oldGrosze = wish.price != null ? Math.round(wish.price * 100) : null;
   const editOverBudget =
@@ -879,6 +883,7 @@ function EditWishForm({
           onChange={(e) => setEditText(e.target.value)}
           required
           maxLength={500}
+          autoComplete="off"
           className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
         />
       </div>
@@ -890,16 +895,11 @@ function EditWishForm({
           >
             Link (opcjonalnie)
           </label>
-          <input
+          <LinkPasteField
             id={`wish-edit-link-${wish.id}`}
             name="link"
-            type="url"
             value={editLink}
-            onChange={(e) => setEditLink(e.target.value)}
-            placeholder={editLinkFocused ? "wklej" : undefined}
-            onFocus={() => setEditLinkFocused(true)}
-            onBlur={() => setEditLinkFocused(false)}
-            className="w-full rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+            onChange={setEditLink}
           />
         </div>
         <div className="flex w-full flex-col gap-1.5 sm:w-[140px]">
@@ -917,6 +917,8 @@ function EditWishForm({
             inputMode="decimal"
             value={editPrice}
             onChange={(e) => setEditPrice(e.target.value)}
+            placeholder="np. 49,99"
+            autoComplete="off"
             aria-invalid={editOverBudget || undefined}
             aria-describedby={
               editOverBudget

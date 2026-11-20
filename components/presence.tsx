@@ -68,7 +68,7 @@ export function Presence({
         />
       )}
       <div
-        className={`transition-all duration-200 ease-out motion-reduce:transition-none ${sheetClassName} ${
+        className={`transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sheetClassName} ${
           shown ? sheetTo : sheetFrom
         }`}
         onClick={sheetOnClick}
