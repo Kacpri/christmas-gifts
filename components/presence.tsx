@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -12,6 +13,7 @@ export function Presence({
   open,
   children,
   className = "",
+  style,
   onClick,
   backdrop = false,
   sheetClassName = "",
@@ -22,6 +24,7 @@ export function Presence({
   open: boolean;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
   onClick?: () => void;
   backdrop?: boolean;
   sheetClassName?: string;
@@ -55,7 +58,7 @@ export function Presence({
   if (!rendered) return null;
 
   return (
-    <div className={className} onClick={onClick}>
+    <div className={className} style={style} onClick={onClick}>
       {backdrop && (
         <div
           aria-hidden

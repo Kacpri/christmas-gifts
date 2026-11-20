@@ -2094,9 +2094,14 @@ export function Dashboard({
         sheetOnClick={(e) => e.stopPropagation()}
       >
         <div className="flex max-h-[60vh] flex-col rounded-t-2xl bg-surface shadow-lg">
-          <div className="flex shrink-0 justify-center pb-2 pt-3" aria-hidden>
-            <div className="h-1 w-10 rounded-full bg-line" />
-          </div>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Zamknij"
+            className="flex shrink-0 justify-center pb-2 pt-3"
+          >
+            <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
+          </button>
           <div className="flex min-h-0 flex-col gap-1 overflow-y-auto p-2">
             <div className="flex items-center gap-2.5 px-2 py-1.5">
               <Avatar name={userName} src={profile.avatarUrl} size={32} />

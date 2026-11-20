@@ -179,9 +179,14 @@ export function Select({
               sheetOnClick={(e) => e.stopPropagation()}
             >
               <div className="flex max-h-[60vh] flex-col rounded-t-2xl bg-surface shadow-lg">
-                <div className="flex shrink-0 justify-center pb-2 pt-3" aria-hidden>
-                  <div className="h-1 w-10 rounded-full bg-line" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Zamknij"
+                  className="flex shrink-0 justify-center pb-2 pt-3"
+                >
+                  <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
+                </button>
                 <ul role="listbox" ref={listRef} className="min-h-0 overflow-y-auto py-1">
                   {optionItems}
                 </ul>

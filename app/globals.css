@@ -282,7 +282,7 @@ a:focus-visible {
 }
 
 .panel-enter {
-  animation: panel-in 300ms ease-out both;
+  animation: panel-in 300ms ease-out backwards;
 }
 
 @keyframes badge-pop {
