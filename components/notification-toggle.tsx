@@ -87,7 +87,7 @@ export function NotificationToggle({
             </span>
           )}
         </span>
-        <ToggleSwitch on={active} disabled={denied} />
+        <ToggleSwitch on={active} disabled={denied} tone={tone} />
       </button>
     );
   }

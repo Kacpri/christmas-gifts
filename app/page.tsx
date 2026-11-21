@@ -81,7 +81,9 @@ export default async function Home() {
     supabase.from("dish_likes").select("dish_id, user_id"),
     supabase
       .from("party")
-      .select("starts_at, location, notes, label, list_budget, theme_budget")
+      .select(
+        "starts_at, location, notes, label, list_budget, theme_budget, panel_visibility"
+      )
       .eq("id", 1)
       .maybeSingle(),
     supabase
@@ -561,6 +563,11 @@ export default async function Home() {
         isOrganizer: Boolean(profile?.is_organizer),
         listBudget: partyRow?.list_budget ?? null,
         themeBudget: partyRow?.theme_budget ?? null,
+        hiddenPanels: Array.isArray(partyRow?.panel_visibility?.hidden)
+          ? partyRow.panel_visibility.hidden.filter(
+              (x: unknown): x is string => typeof x === "string"
+            )
+          : [],
       }}
       ready={{
         hasWish: (myWishes ?? []).length >= 2,

@@ -51,7 +51,7 @@ export function ThemeToggle({
       >
         {dark ? <SunIcon /> : <MoonIcon />}
         <span className="flex-1 text-sm font-medium">Tryb ciemny</span>
-        <ToggleSwitch on={dark} />
+        <ToggleSwitch on={dark} tone={tone} />
       </button>
     );
   }

@@ -7,6 +7,7 @@ import {
   deleteErrorReport,
   removeUser,
   runLottery,
+  savePanelVisibility,
   savePartyBudgets,
   sendLotteryEmails,
   sendReadyReminders,
@@ -18,6 +19,7 @@ import { Avatar } from "@/components/avatar";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
+import { ToggleSwitch } from "@/components/toggle-switch";
 import { declineName } from "@/lib/declension";
 import { useMediaQuery } from "@/lib/use-media-query";
 
@@ -31,6 +33,13 @@ const plural = (n: number, forms: [string, string, string]) => {
   return forms[2];
 };
 
+const PANEL_VISIBILITY_OPTIONS = [
+  { id: "wishes", title: "Życzenia" },
+  { id: "potrawy", title: "Potrawy" },
+  { id: "children", title: "Dzieci" },
+  { id: "group-chat", title: "Czat wspólny" },
+] as const;
+
 export function OrganizerPanel({
   participants,
   lateJoiners,
@@ -38,6 +47,7 @@ export function OrganizerPanel({
   listBudget,
   themeBudget,
   errorReports,
+  hiddenPanels,
 }: {
   participants: {
     id: string;
@@ -61,6 +71,7 @@ export function OrganizerPanel({
     screenshot_url: string | null;
     avatar_url: string | null;
   }[];
+  hiddenPanels: string[];
 }) {
   const [state, formAction, pending] = useActionState(runLottery, empty);
   const [cancelState, cancelAction, cancelPending] = useActionState(
@@ -87,6 +98,8 @@ export function OrganizerPanel({
     savePartyBudgets,
     empty
   );
+  const [visibilityState, visibilityAction, visibilityPending] =
+    useActionState(savePanelVisibility, empty);
   const [reportState, deleteReportAction, deleteReportPending] =
     useActionState(deleteErrorReport, empty);
   const [budgetSaved, setBudgetSaved] = useState(false);
@@ -450,6 +463,43 @@ export function OrganizerPanel({
             <p className="text-sm text-red-600">{budgetState.error}</p>
           )}
         </form>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium text-muted">Widoczność paneli</h3>
+        <p className="mt-1 text-xs text-faint">
+          Ukryte panele znikają u uczestników — u Ciebie zostają widoczne.
+        </p>
+        <div className="mt-2 flex flex-col gap-1">
+          {PANEL_VISIBILITY_OPTIONS.map((opt) => {
+            const hidden = hiddenPanels.includes(opt.id);
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                disabled={visibilityPending}
+                aria-pressed={!hidden}
+                onClick={() => {
+                  const next = hidden
+                    ? hiddenPanels.filter((p) => p !== opt.id)
+                    : [...hiddenPanels, opt.id];
+                  const fd = new FormData();
+                  fd.set("hidden", next.join(","));
+                  visibilityAction(fd);
+                }}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left hover:bg-mist disabled:opacity-50"
+              >
+                <span className="flex-1 text-sm font-medium text-ink">
+                  {opt.title}
+                </span>
+                <ToggleSwitch on={!hidden} tone="light" />
+              </button>
+            );
+          })}
+        </div>
+        {!visibilityState.ok && visibilityState.error && (
+          <p className="mt-2 text-sm text-red-600">{visibilityState.error}</p>
+        )}
       </div>
 
       <div>

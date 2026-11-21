@@ -864,30 +864,38 @@ function ChipButton({
   title,
   unread,
   active,
+  iconOnly = false,
   onClick,
 }: {
   id: PanelId;
   title: string;
   unread: number;
   active: boolean;
+  iconOnly?: boolean;
   onClick: () => void;
 }) {
+  const compact = iconOnly && !active;
   return (
     <button
       type="button"
       data-chip={id}
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
-        active
-          ? "border-cream bg-cream text-[#0d4024]"
-           : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
-       }`}
+      aria-label={compact ? title : undefined}
+      className={`relative flex shrink-0 items-center gap-1.5 rounded-full border text-sm font-semibold ${
+        compact
+          ? "h-9 w-9 justify-center border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+          : `px-3.5 py-1.5 ${
+              active
+                ? "border-cream bg-cream text-[#0d4024]"
+                : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
+            }`
+      }`}
     >
       <span aria-hidden className="shrink-0">
         {PANEL_ICONS[id]}
       </span>
-      {title}
+      {!compact && title}
       {unread > 0 && (
         <span
           key={unread}
@@ -897,7 +905,11 @@ function ChipButton({
             "nieprzeczytanych wiadomości",
           ])}`}
           className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
-            active ? "bg-[#0d4024] text-cream" : "bg-cream text-[#0d4024]"
+            compact
+              ? "absolute -right-1 -top-1 bg-cream text-[#0d4024]"
+              : active
+                ? "bg-[#0d4024] text-cream"
+                : "bg-cream text-[#0d4024]"
           }`}
         >
           {unread}
@@ -1296,6 +1308,7 @@ export function Dashboard({
     isOrganizer: boolean;
     listBudget: number | null;
     themeBudget: number | null;
+    hiddenPanels: string[];
   };
   ready: {
     hasWish: boolean;
@@ -1517,7 +1530,8 @@ export function Dashboard({
     (id !== "impreza" || organizer) &&
     (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
     (id !== "gifts" || gifts.kind !== "waiting") &&
-    (id !== "chats" || chats.lotteryDone);
+    (id !== "chats" || chats.lotteryDone) &&
+    (organizer || !party.hiddenPanels.includes(id));
 
   const visible = layout.order.filter(isVisible);
 
@@ -1573,6 +1587,12 @@ export function Dashboard({
   }, [isDesktop]);
 
   const visibleKey = visible.join(",");
+
+  useEffect(() => {
+    if (activePanel && !visibleIdsRef.current.includes(activePanel)) {
+      setActivePanel(visibleIdsRef.current[0] ?? null);
+    }
+  }, [visibleKey, activePanel]);
 
   useEffect(() => {
     updateChipFades();
@@ -1761,7 +1781,9 @@ export function Dashboard({
     },
     organizer: {
       title: "Panel organizatora",
-      body: organizer ? <OrganizerPanel {...organizer} /> : null,
+      body: organizer ? (
+        <OrganizerPanel {...organizer} hiddenPanels={party.hiddenPanels} />
+      ) : null,
     },
   };
 
@@ -1883,9 +1905,9 @@ export function Dashboard({
 
   function renderChipNav(
     ref: Ref<HTMLElement>,
-    opts?: { sortable?: boolean; dragScroll?: boolean }
+    opts?: { sortable?: boolean; dragScroll?: boolean; iconOnly?: boolean }
   ) {
-    const { sortable = false, dragScroll = false } = opts ?? {};
+    const { sortable = false, dragScroll = false, iconOnly = false } = opts ?? {};
     return (
       <div className="relative min-w-0 flex-1">
         <nav
@@ -1923,6 +1945,7 @@ export function Dashboard({
                 title={panels[id].title}
                 unread={chipUnread(id)}
                 active={activePanel === id}
+                iconOnly={iconOnly}
                 onClick={() => handleChipClick(id)}
               />
             ))
@@ -1984,7 +2007,7 @@ export function Dashboard({
           </div>
         ) : (
           <>
-            {renderChipNav(chipNavRef)}
+            {renderChipNav(chipNavRef, { iconOnly: true })}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}

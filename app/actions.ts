@@ -990,6 +990,49 @@ export async function savePartyBudgets(
   return { ok: true };
 }
 
+const TOGGLEABLE_PANELS = [
+  "wishes",
+  "potrawy",
+  "children",
+  "group-chat",
+] as const;
+
+export async function savePanelVisibility(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return {
+      ok: false,
+      error: "Tylko organizator może zmieniać widoczność paneli.",
+    };
+  }
+  const { supabase } = org;
+  const hidden = String(formData.get("hidden") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  for (const id of hidden) {
+    if (!(TOGGLEABLE_PANELS as readonly string[]).includes(id)) {
+      return { ok: false, error: "Nieznany panel." };
+    }
+  }
+  const { error } = await supabase
+    .from("party")
+    .upsert(
+      {
+        id: 1,
+        panel_visibility: { hidden },
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function sendReadyReminders(
   _prev: ActionResult,
   _formData: FormData
