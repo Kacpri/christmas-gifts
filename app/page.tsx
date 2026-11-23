@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import {
+  type AnonDmThread,
   type DmParticipant,
   type DmThread,
   type Thread,
@@ -33,6 +34,9 @@ export default async function Home() {
     { data: partyRow },
     { data: myDmMessages },
     { data: myDmReads },
+    { data: myAnonConvs },
+    { data: myAnonMessages },
+    { data: myAnonReads },
     { data: childRows },
     { data: childParentRows },
     { data: childWishRows },
@@ -96,6 +100,20 @@ export default async function Home() {
     supabase
       .from("dm_reads")
       .select("peer_id, last_read_at")
+      .eq("user_id", user.id),
+    supabase
+      .from("anon_dm_conversations")
+      .select("id, sender_id, recipient_id")
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`),
+    supabase
+      .from("anon_dm_messages")
+      .select(
+        "id, conversation_id, sender_id, text, created_at, edited_at, deleted_at"
+      )
+      .order("created_at"),
+    supabase
+      .from("anon_dm_reads")
+      .select("conversation_id, last_read_at")
       .eq("user_id", user.id),
     supabase
       .from("children")
@@ -314,10 +332,14 @@ export default async function Home() {
   const myMessageIds = (myMessages ?? []).map((m) => m.id);
   const myDmMessageIds = (myDmMessages ?? []).map((m) => m.id);
   const groupMessageIds = groupMessages.map((m) => m.id);
+  const myAnonMessageIds = (myAnonMessages ?? []).map(
+    (m: { id: number }) => m.id
+  );
   const [
     { data: lotteryReactionRows },
     { data: groupReactionRows },
     { data: dmReactionRows },
+    { data: anonReactionRows },
   ] = await Promise.all([
     myMessageIds.length > 0
       ? supabase
@@ -337,10 +359,17 @@ export default async function Home() {
           .select("message_id, user_id, emoji")
           .in("message_id", myDmMessageIds)
       : Promise.resolve({ data: [] as { message_id: number; user_id: string; emoji: string }[] }),
+    myAnonMessageIds.length > 0
+      ? supabase
+          .from("anon_dm_message_reactions")
+          .select("message_id, user_id, emoji")
+          .in("message_id", myAnonMessageIds)
+      : Promise.resolve({ data: [] as { message_id: number; user_id: string; emoji: string }[] }),
   ]);
   const lotteryReactionsByMsg = reactionRowsByMessage(lotteryReactionRows);
   const groupReactionsByMsg = reactionRowsByMessage(groupReactionRows);
   const dmReactionsByMsg = reactionRowsByMessage(dmReactionRows);
+  const anonReactionsByMsg = reactionRowsByMessage(anonReactionRows);
   const photoBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat-photos`;
 
   let listGift: { person: string; avatarUrl: string | null; wishes: Wish[] } | null = null;
@@ -503,6 +532,53 @@ export default async function Home() {
     };
   });
 
+  const anonConvs = (myAnonConvs ?? []) as {
+    id: number;
+    sender_id: string;
+    recipient_id: string;
+  }[];
+  const anonMsgsAll = (myAnonMessages ?? []) as {
+    id: number;
+    conversation_id: number;
+    sender_id: string;
+    text: string;
+    created_at: string;
+    edited_at: string | null;
+    deleted_at: string | null;
+  }[];
+  const anonReads = (myAnonReads ?? []) as {
+    conversation_id: number;
+    last_read_at: string;
+  }[];
+  const anonThreads: AnonDmThread[] = anonConvs.map((c) => {
+    const isAnonSender = c.sender_id === user.id;
+    const peerId = isAnonSender ? c.recipient_id : c.sender_id;
+    const convMsgs = anonMsgsAll.filter((m) => m.conversation_id === c.id);
+    const read = anonReads.find((r) => r.conversation_id === c.id);
+    return {
+      conversationId: c.id,
+      isAnonSender,
+      peerName: isAnonSender ? (nameById.get(peerId) ?? "??") : "Anonim",
+      peerAvatarUrl: isAnonSender ? (avatarById.get(peerId) ?? null) : null,
+      messages: convMsgs.map((m) => ({
+        id: m.id,
+        senderId: m.sender_id === user.id ? user.id : "anon",
+        text: m.text,
+        createdAt: m.created_at,
+        editedAt: m.edited_at,
+        deleted: m.deleted_at != null,
+        imageUrl: null,
+        reactions: reactionsFor(anonReactionsByMsg, m.id),
+      })),
+      unread: convMsgs.filter(
+        (m) =>
+          m.deleted_at == null &&
+          m.sender_id !== user.id &&
+          (!read || m.created_at > read.last_read_at)
+      ).length,
+    };
+  });
+
   const gifts: GiftsData =
     lotteryDone && listGift && themeGift
       ? { kind: "done", listGift, themeGift, giftReady: profile?.gift_ready ?? false }
@@ -526,6 +602,7 @@ export default async function Home() {
         lateJoiner: isLateJoiner,
         participants: dmParticipants,
         dmThreads,
+        anonThreads,
       }}
       groupChat={{
         me: user.id,

@@ -32,6 +32,7 @@ import {
   addChildWish,
   cancelChildWishReservation,
   deleteChild,
+  editChild,
   editChildWish,
   markChildWishPurchased,
   removeChildParent,
@@ -359,6 +360,168 @@ function AddChildForm({
   );
 }
 
+function EditChildForm({
+  child,
+  onDone,
+}: {
+  child: ChildItem;
+  onDone: () => void;
+}) {
+  const [state, action, pending] = useActionState(editChild, empty);
+  const [name, setName] = useState(child.name);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (state.ok) onDone();
+  }, [state, onDone]);
+
+  useEffect(() => {
+    return () => {
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+    };
+  }, [photoUrl]);
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setCropFile(file);
+  }
+
+  function handleCropSave(cropped: File) {
+    setPhoto(cropped);
+    setPhotoUrl(URL.createObjectURL(cropped));
+    setRemovePhoto(false);
+    setCropFile(null);
+  }
+
+  const previewUrl = photoUrl ?? (removePhoto ? null : child.avatarUrl);
+
+  return (
+    <form
+      action={(formData) => {
+        formData.set("child_id", String(child.id));
+        if (photo) formData.append("photo", photo);
+        if (removePhoto) formData.set("remove_photo", "1");
+        action(formData);
+      }}
+      className="flex flex-col gap-3 rounded-[10px] border border-line bg-mist p-3.5"
+    >
+      <h4 className="text-sm font-semibold text-ink">Edytuj dziecko</h4>
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="child-edit-name"
+          className="text-[13px] font-medium text-faint"
+        >
+          Imię
+        </label>
+        <input
+          id="child-edit-name"
+          name="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          maxLength={100}
+          placeholder="Imię dziecka"
+          autoComplete="off"
+          className="rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-placeholder"
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-faint">
+          Zdjęcie (opcjonalnie)
+        </span>
+        <div className="flex items-center gap-3">
+          <Avatar name={name || child.name || "?"} src={previewUrl} size={48} />
+          <div className="flex flex-col items-start gap-0.5">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={pending}
+              className="text-sm font-medium text-accent-deep hover:underline disabled:opacity-50"
+            >
+              {photo ? "Zmień zdjęcie" : "Dodaj zdjęcie"}
+            </button>
+            {photo && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPhoto(null);
+                  setPhotoUrl(null);
+                }}
+                disabled={pending}
+                className="text-sm text-danger hover:underline disabled:opacity-50"
+              >
+                Cofnij zmianę zdjęcia
+              </button>
+            )}
+            {!photo && child.avatarUrl && !removePhoto && (
+              <button
+                type="button"
+                onClick={() => setRemovePhoto(true)}
+                disabled={pending}
+                className="text-sm text-danger hover:underline disabled:opacity-50"
+              >
+                Usuń zdjęcie
+              </button>
+            )}
+            {removePhoto && (
+              <button
+                type="button"
+                onClick={() => setRemovePhoto(false)}
+                disabled={pending}
+                className="text-sm text-danger hover:underline disabled:opacity-50"
+              >
+                Przywróć zdjęcie
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleFile}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep"
+        >
+          {pending ? <SpinnerIcon /> : <CheckIcon />}
+          {pending ? "Zapisywanie…" : "Zapisz zmiany"}
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={pending}
+          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium hover:bg-surface/60 disabled:opacity-50"
+        >
+          Anuluj
+        </button>
+      </div>
+      {!state.ok && state.error && (
+        <p className="text-sm text-red-600">{state.error}</p>
+      )}
+      {cropFile && (
+        <AvatarCropDialog
+          file={cropFile}
+          busy={false}
+          onClose={() => setCropFile(null)}
+          onSave={handleCropSave}
+        />
+      )}
+    </form>
+  );
+}
+
 function ChildDetail({
   me,
   child,
@@ -373,6 +536,8 @@ function ChildDetail({
   const [reorderError, setReorderError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [menuWish, setMenuWish] = useState<ChildWish | null>(null);
+  const [menuChild, setMenuChild] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [parentPick, setParentPick] = useState("");
   const [wishAddOpen, setWishAddOpen] = useState(false);
   const [parentAddOpen, setParentAddOpen] = useState(false);
@@ -381,10 +546,7 @@ function ChildDetail({
   const [wishAddPrice, setWishAddPrice] = useState("");
   const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [deleteState, deleteAction, deletePending] = useActionState(
-    deleteChild,
-    empty
-  );
+  const [deleteState, deleteAction] = useActionState(deleteChild, empty);
   const [detachState, detachAction, detachPending] = useActionState(
     removeChildParent,
     empty
@@ -507,6 +669,42 @@ function ChildDetail({
   const menuIndex = menuWish
     ? localWishes.findIndex((w) => w.id === menuWish.id)
     : -1;
+
+  const childMenuActions = (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          setMenuChild(false);
+          setEditOpen(true);
+        }}
+        aria-label={`Edytuj dziecko: ${child.name}`}
+        className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover"
+      >
+        <PencilIcon />
+        Edytuj
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setMenuChild(false);
+          handleDelete();
+        }}
+        aria-label={`Usuń dziecko: ${child.name}`}
+        className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
+      >
+        <TrashIcon />
+        Usuń dziecko
+      </button>
+      <button
+        type="button"
+        onClick={() => setMenuChild(false)}
+        className="rounded-xl px-4 py-2 text-sm font-medium text-muted hover:bg-mist"
+      >
+        Anuluj
+      </button>
+    </div>
+  );
 
   const wishAddButton = (
     <button
@@ -718,13 +916,31 @@ function ChildDetail({
             </span>
           )}
         </div>
-        <p className="flex items-center gap-2.5 text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
-          <Avatar name={child.name} src={child.avatarUrl} size={36} />
-          {child.name}
-        </p>
+        <div className="flex items-center gap-2.5">
+          <p className="flex min-w-0 items-center gap-2.5 text-[28px] font-bold leading-tight text-[#0f3d24] dark:text-[#7cc99a]">
+            <Avatar name={child.name} src={child.avatarUrl} size={36} />
+            <span className="truncate">{child.name}</span>
+          </p>
+          {isParent && (
+            <button
+              type="button"
+              onClick={() => setMenuChild(true)}
+              aria-label={`Opcje: ${child.name}`}
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+            >
+              <MoreIcon />
+            </button>
+          )}
+        </div>
         <p className="text-sm text-[#4a5c50] dark:text-muted">
           Ułożone od najbardziej wymarzonego.
         </p>
+        {isParent && editOpen && isDesktop && (
+          <EditChildForm child={child} onDone={() => setEditOpen(false)} />
+        )}
+        {!deleteState.ok && deleteState.error && (
+          <p className="text-sm text-red-600">{deleteState.error}</p>
+        )}
         {localWishes.length > 0 ? (
           isParent ? (
             <DndContext
@@ -822,27 +1038,6 @@ function ChildDetail({
         </div>
       )}
 
-      {isParent && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleDelete();
-          }}
-        >
-          <button
-            type="submit"
-            disabled={deletePending}
-            className="inline-flex w-fit items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2 text-sm font-medium text-danger hover:opacity-80 disabled:opacity-50"
-          >
-            <TrashIcon />
-            {deletePending ? "Usuwanie…" : "Usuń dziecko"}
-          </button>
-          {!deleteState.ok && deleteState.error && (
-            <p className="mt-2 text-sm text-red-600">{deleteState.error}</p>
-          )}
-        </form>
-      )}
-
       {!isDesktop && parentAddOpen && (
         <BottomSheet open onClose={() => setParentAddOpen(false)}>
           {parentForm}
@@ -884,6 +1079,40 @@ function ChildDetail({
             </div>
           )}
         </Presence>
+      )}
+      {!isDesktop && (
+        <BottomSheet
+          open={menuChild}
+          onClose={() => setMenuChild(false)}
+          title={child.name}
+          closeOnBackdrop
+        >
+          {childMenuActions}
+        </BottomSheet>
+      )}
+      {isDesktop && (
+        <Presence
+          open={menuChild}
+          className="fixed inset-0 z-50 flex items-end justify-center p-4"
+          onClick={() => setMenuChild(false)}
+          backdrop
+          sheetClassName="relative w-full max-w-xs"
+          sheetOnClick={(e) => e.stopPropagation()}
+        >
+          {menuChild && (
+            <div className="rounded-2xl bg-surface p-4 shadow-lg">
+              <p className="mb-3 truncate text-sm font-semibold text-ink">
+                {child.name}
+              </p>
+              {childMenuActions}
+            </div>
+          )}
+        </Presence>
+      )}
+      {!isDesktop && editOpen && (
+        <BottomSheet open onClose={() => setEditOpen(false)}>
+          <EditChildForm child={child} onDone={() => setEditOpen(false)} />
+        </BottomSheet>
       )}
       <ConfirmDialog
         state={deleteConfirm}

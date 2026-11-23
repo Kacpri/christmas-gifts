@@ -737,6 +737,104 @@ export async function markDmRead(formData: FormData): Promise<void> {
     );
 }
 
+export async function sendAnonDm(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const text = String(formData.get("text") ?? "").trim();
+  const conversationId = Number(formData.get("conversation_id"));
+  if (!Number.isInteger(conversationId) || conversationId <= 0) {
+    return { ok: false, error: "Nieprawidłowa rozmowa." };
+  }
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  const { data: conv } = await supabase
+    .from("anon_dm_conversations")
+    .select("id, sender_id, recipient_id")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conv || (conv.sender_id !== user.id && conv.recipient_id !== user.id)) {
+    return { ok: false, error: "Nie masz dostępu do tej rozmowy." };
+  }
+  const { error } = await supabase
+    .from("anon_dm_messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      text,
+    });
+  if (error) return { ok: false, error: error.message };
+  await supabase
+    .from("anon_dm_reads")
+    .upsert(
+      {
+        user_id: user.id,
+        conversation_id: conversationId,
+        last_read_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,conversation_id" }
+    );
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function editAnonDm(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  const text = String(formData.get("text") ?? "").trim();
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  const { error } = await supabase
+    .from("anon_dm_messages")
+    .update({ text, edited_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteAnonDm(formData: FormData): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  const { error } = await supabase
+    .from("anon_dm_messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function markAnonDmRead(formData: FormData): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const conversationId = Number(formData.get("conversation_id"));
+  if (!Number.isInteger(conversationId) || conversationId <= 0) return;
+  await supabase
+    .from("anon_dm_reads")
+    .upsert(
+      {
+        user_id: user.id,
+        conversation_id: conversationId,
+        last_read_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,conversation_id" }
+    );
+}
+
 export async function cancelLottery(
   _prev: ActionResult,
   _formData: FormData
@@ -1184,6 +1282,76 @@ export async function addChild(
       })
       .eq("id", childId);
     if (updateError) return { ok: false, error: updateError.message };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function editChild(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const childId = Number(formData.get("child_id"));
+  const name = String(formData.get("name") ?? "").trim();
+  if (!Number.isInteger(childId) || childId <= 0) {
+    return { ok: false, error: "Nieprawidłowe dziecko." };
+  }
+  if (!name || name.length > 100) {
+    return { ok: false, error: "Imię dziecka: 1–100 znaków." };
+  }
+  const { data: parentRow } = await supabase
+    .from("child_parents")
+    .select("child_id")
+    .eq("child_id", childId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!parentRow) {
+    return { ok: false, error: "Tylko rodzic może edytować dziecko." };
+  }
+  const patch: {
+    name: string;
+    avatar_path?: string | null;
+    avatar_updated_at?: string;
+  } = { name };
+  const file = formData.get("photo");
+  const removePhoto = formData.get("remove_photo") === "1";
+  if (file instanceof Blob && file.size > 0) {
+    const ext = AVATAR_TYPES[file.type];
+    if (!ext) {
+      return { ok: false, error: "Dozwolone formaty: JPG, PNG, WebP." };
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      return { ok: false, error: "Zdjęcie może mieć maks. 4 MB." };
+    }
+    const path = `${user.id}/child-${childId}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (uploadError) return { ok: false, error: uploadError.message };
+    patch.avatar_path = path;
+    patch.avatar_updated_at = new Date().toISOString();
+  } else if (removePhoto) {
+    patch.avatar_path = null;
+    patch.avatar_updated_at = new Date().toISOString();
+  }
+  const { data: old } = await supabase
+    .from("children")
+    .select("avatar_path")
+    .eq("id", childId)
+    .maybeSingle();
+  const { error } = await supabase
+    .from("children")
+    .update(patch)
+    .eq("id", childId);
+  if (error) return { ok: false, error: error.message };
+  const oldPath = (old as { avatar_path: string | null } | null)?.avatar_path;
+  if (
+    oldPath &&
+    oldPath.startsWith(`${user.id}/`) &&
+    oldPath !== (patch.avatar_path ?? null)
+  ) {
+    await supabase.storage.from("avatars").remove([oldPath]);
   }
   revalidatePath("/");
   return { ok: true };

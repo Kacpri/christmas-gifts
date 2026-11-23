@@ -40,6 +40,7 @@ import { Avatar } from "@/components/avatar";
 import { BottomSheet } from "@/components/bottom-sheet";
 import {
   ChatsPanel,
+  type AnonDmThread,
   type DmParticipant,
   type DmThread,
   type Thread,
@@ -1276,6 +1277,7 @@ export function Dashboard({
     lateJoiner: boolean;
     participants: DmParticipant[];
     dmThreads: DmThread[];
+    anonThreads: AnonDmThread[];
   };
   groupChat: { me: string; messages: ChatMessage[] };
   wishes: {
@@ -1714,6 +1716,7 @@ export function Dashboard({
           collapsed={!!collapsed["chats"]}
           participants={chats.participants}
           dmThreads={chats.dmThreads}
+          anonThreads={chats.anonThreads}
           onUnreadChange={handleUnreadChange}
           narrow={isTwoCol}
         />

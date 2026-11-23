@@ -11,12 +11,16 @@ import {
 } from "react";
 
 import {
+  deleteAnonDm,
   deleteDm,
   deleteMessage,
+  editAnonDm,
   editDm,
   editMessage,
+  markAnonDmRead,
   markDmRead,
   markThreadRead,
+  sendAnonDm,
   sendDm,
   sendMessage,
   type ActionResult,
@@ -61,6 +65,15 @@ export type DmParticipant = {
   avatarUrl: string | null;
 };
 
+export type AnonDmThread = {
+  conversationId: number;
+  isAnonSender: boolean;
+  peerName: string;
+  peerAvatarUrl: string | null;
+  messages: ChatMessage[];
+  unread: number;
+};
+
 const empty: ActionResult = { ok: false };
 
 const ltKey = (t: {
@@ -71,6 +84,9 @@ const ltKey = (t: {
 
 const dmKey = (peerId: string) => `dm:${peerId}`;
 const dmPeerOf = (key: string) => key.slice(3);
+
+const anonKey = (conversationId: number) => `anon:${conversationId}`;
+const anonConvOf = (key: string) => Number(key.slice(5));
 
 function applyReactionToMessages(
   list: ChatMessage[],
@@ -106,7 +122,7 @@ type DbRead = {
   last_read_at: string;
 };
 
-type Tag = "z listy" | "tematyczny" | "prywatny";
+type Tag = "z listy" | "tematyczny" | "prywatny" | "anonimowy";
 
 type ListItem = {
   key: string;
@@ -114,17 +130,19 @@ type ListItem = {
   tag: Tag;
   last: ChatMessage | null;
   unread: number;
-  kind: "lottery" | "dm";
+  kind: "lottery" | "dm" | "anon";
   avatarUrl?: string | null;
   lotteryType?: number;
   drawerId?: string;
   draweeId?: string;
   peerId?: string;
+  conversationId?: number;
 };
 
 function tagClass(tag: Tag) {
   if (tag === "z listy") return "bg-sage-200 text-list-ink";
   if (tag === "tematyczny") return "bg-honey-200 text-honey-800";
+  if (tag === "anonimowy") return "bg-violet-200 text-violet-800";
   return "bg-sky-200 text-sky-800";
 }
 
@@ -157,6 +175,15 @@ function TagPillIcon({ tag }: { tag: Tag }) {
       <svg {...common}>
         <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
         <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (tag === "anonimowy") {
+    return (
+      <svg {...common}>
+        <path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a3 3 0 0 0-3 3v1a2 2 0 0 1-2 2 2 2 0 0 1-2-2V10a3 3 0 0 0-3-3H2Z" />
+        <path d="M9 14v2" />
+        <path d="M15 14v2" />
       </svg>
     );
   }
@@ -274,6 +301,26 @@ function ArrowLeftIcon() {
   );
 }
 
+function MaskIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a3 3 0 0 0-3 3v1a2 2 0 0 1-2 2 2 2 0 0 1-2-2V10a3 3 0 0 0-3-3H2Z" />
+      <path d="M9 14v2" />
+      <path d="M15 14v2" />
+    </svg>
+  );
+}
+
 export function ChatsPanel({
   me,
   threads,
@@ -282,6 +329,7 @@ export function ChatsPanel({
   collapsed,
   participants,
   dmThreads,
+  anonThreads,
   onUnreadChange,
   narrow = false,
 }: {
@@ -292,6 +340,7 @@ export function ChatsPanel({
   collapsed: boolean;
   participants: DmParticipant[];
   dmThreads: DmThread[];
+  anonThreads: AnonDmThread[];
   onUnreadChange?: (total: number) => void;
   narrow?: boolean;
 }) {
@@ -302,11 +351,23 @@ export function ChatsPanel({
   const [dmMsgs, setDmMsgs] = useState<Record<string, ChatMessage[]>>(
     () => Object.fromEntries(dmThreads.map((t) => [t.peerId, t.messages]))
   );
+  const [anonMsgs, setAnonMsgs] = useState<Record<string, ChatMessage[]>>(
+    () =>
+      Object.fromEntries(
+        anonThreads.map((t) => [anonKey(t.conversationId), t.messages])
+      )
+  );
   const [lotteryUnread, setLotteryUnread] = useState<Record<string, number>>(
     () => Object.fromEntries(threads.map((t) => [ltKey(t), t.unread]))
   );
   const [dmUnread, setDmUnread] = useState<Record<string, number>>(
     () => Object.fromEntries(dmThreads.map((t) => [t.peerId, t.unread]))
+  );
+  const [anonUnread, setAnonUnread] = useState<Record<string, number>>(
+    () =>
+      Object.fromEntries(
+        anonThreads.map((t) => [anonKey(t.conversationId), t.unread])
+      )
   );
   const [value, setValue] = useState("");
   const [lotteryState, lotterySend, lotteryPending] = useActionState(
@@ -314,8 +375,11 @@ export function ChatsPanel({
     empty
   );
   const [dmState, dmSend, dmPending] = useActionState(sendDm, empty);
+  const [anonState, anonSend, anonPending] = useActionState(sendAnonDm, empty);
   const photo = usePhotoAttachment();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"dm" | "anon">("dm");
+  const [anonNewPeers, setAnonNewPeers] = useState<Record<number, string>>({});
   const [listFade, setListFade] = useState(false);
   const [listExpanded, setListExpanded] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -336,6 +400,19 @@ export function ChatsPanel({
   );
   const nameByIdRef = useRef(nameById);
   nameByIdRef.current = nameById;
+
+  const anonInfo = useMemo(
+    () =>
+      new Map(
+        anonThreads.map((t) => [
+          t.conversationId,
+          { name: t.peerName, isAnonSender: t.isAnonSender },
+        ])
+      ),
+    [anonThreads]
+  );
+  const anonInfoRef = useRef(anonInfo);
+  anonInfoRef.current = anonInfo;
 
   const listItems = useMemo<ListItem[]>(() => {
     const items: ListItem[] = [];
@@ -374,6 +451,27 @@ export function ChatsPanel({
         peerId,
       });
     }
+    const anonConvIds = new Set(anonThreads.map((t) => t.conversationId));
+    if (selectedKey?.startsWith("anon:")) {
+      const cid = anonConvOf(selectedKey);
+      if (Number.isInteger(cid) && cid > 0) anonConvIds.add(cid);
+    }
+    for (const cid of anonConvIds) {
+      const t = anonThreads.find((x) => x.conversationId === cid);
+      const key = anonKey(cid);
+      const msgs = anonMsgs[key] ?? [];
+      const last = msgs.length ? msgs[msgs.length - 1] : null;
+      items.push({
+        key,
+        name: t?.peerName ?? nameById.get(anonNewPeers[cid] ?? "") ?? "Anonim",
+        tag: "anonimowy",
+        last,
+        unread: anonUnread[key] ?? 0,
+        kind: "anon",
+        avatarUrl: t?.peerAvatarUrl ?? null,
+        conversationId: cid,
+      });
+    }
     return items.sort((a, b) => {
       const la = a.last?.createdAt ?? "";
       const lb = b.last?.createdAt ?? "";
@@ -384,12 +482,16 @@ export function ChatsPanel({
     lotteryDone,
     threads,
     dmThreads,
+    anonThreads,
     selectedKey,
     lotteryMsgs,
     dmMsgs,
+    anonMsgs,
     lotteryUnread,
     dmUnread,
+    anonUnread,
     nameById,
+    anonNewPeers,
   ]);
 
   const updateListFade = useCallback(() => {
@@ -436,6 +538,19 @@ export function ChatsPanel({
         messages: dmMsgs[peerId] ?? [],
       };
     }
+    if (selectedKey.startsWith("anon:")) {
+      const cid = anonConvOf(selectedKey);
+      const t = anonThreads.find((x) => x.conversationId === cid);
+      return {
+        kind: "anon" as const,
+        key: selectedKey,
+        name: t?.peerName ?? nameById.get(anonNewPeers[cid] ?? "") ?? "Anonim",
+        tag: "anonimowy" as Tag,
+        conversationId: cid,
+        isAnonSender: t?.isAnonSender ?? true,
+        messages: anonMsgs[anonKey(cid)] ?? [],
+      };
+    }
     const t = threads.find((x) => ltKey(x) === selectedKey);
     if (!t) return null;
     return {
@@ -448,7 +563,16 @@ export function ChatsPanel({
       draweeId: t.draweeId,
       messages: lotteryMsgs[selectedKey] ?? [],
     };
-  }, [selectedKey, threads, dmMsgs, lotteryMsgs, nameById]);
+  }, [
+    selectedKey,
+    threads,
+    dmMsgs,
+    anonMsgs,
+    anonThreads,
+    anonNewPeers,
+    lotteryMsgs,
+    nameById,
+  ]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -800,6 +924,151 @@ export function ChatsPanel({
             });
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "anon_dm_messages" },
+          (payload) => {
+            const m = payload.new as {
+              id: number;
+              conversation_id: number;
+              sender_id: string;
+              text: string;
+              created_at: string;
+            };
+            const key = anonKey(m.conversation_id);
+            const isMine = m.sender_id === me;
+            setAnonMsgs((prev) => {
+              const list = prev[key] ?? [];
+              if (list.some((x) => x.id === m.id)) return prev;
+              return {
+                ...prev,
+                [key]: [
+                  ...list,
+                  {
+                    id: m.id,
+                    senderId: isMine ? me : "anon",
+                    text: m.text,
+                    createdAt: m.created_at,
+                    editedAt: null,
+                    deleted: false,
+                    imageUrl: null,
+                    reactions: [],
+                  },
+                ],
+              };
+            });
+            if (isMine) return;
+            if (key === selectedRef.current && !collapsedRef.current) {
+              setAnonUnread((prev) => ({ ...prev, [key]: 0 }));
+              const fd = new FormData();
+              fd.set("conversation_id", String(m.conversation_id));
+              markAnonDmRead(fd);
+            } else {
+              setAnonUnread((prev) => ({
+                ...prev,
+                [key]: (prev[key] ?? 0) + 1,
+              }));
+              const info = anonInfoRef.current.get(m.conversation_id);
+              const who =
+                info && info.isAnonSender ? info.name : "Anonim";
+              notify("Nowa wiadomość", who);
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "anon_dm_messages" },
+          (payload) => {
+            const m = payload.new as {
+              id: number;
+              text: string;
+              edited_at: string | null;
+              deleted_at: string | null;
+            };
+            setAnonMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === m.id)) {
+                  next[key] = list.map((x) =>
+                    x.id === m.id
+                      ? {
+                          ...x,
+                          text: m.text,
+                          editedAt: m.edited_at,
+                          deleted: m.deleted_at != null,
+                        }
+                      : x
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "anon_dm_message_reactions" },
+          (payload) => {
+            const r = payload.new as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setAnonMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[key] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    true
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "anon_dm_message_reactions" },
+          (payload) => {
+            const r = payload.old as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setAnonMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[key] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    false
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
         .subscribe();
     })();
 
@@ -820,6 +1089,12 @@ export function ChatsPanel({
       setValue((v) => v || lastSentRef.current);
     }
   }, [dmState]);
+
+  useEffect(() => {
+    if (!anonState.ok && anonState.error) {
+      setValue((v) => v || lastSentRef.current);
+    }
+  }, [anonState]);
 
   const photoClearRef = useRef(photo.clear);
   photoClearRef.current = photo.clear;
@@ -951,6 +1226,12 @@ export function ChatsPanel({
       const fd = new FormData();
       fd.set("peer_id", peerId);
       markDmRead(fd);
+    } else if (key.startsWith("anon:")) {
+      const cid = anonConvOf(key);
+      setAnonUnread((prev) => ({ ...prev, [key]: 0 }));
+      const fd = new FormData();
+      fd.set("conversation_id", String(cid));
+      markAnonDmRead(fd);
     } else {
       const t = threadsRef.current.find((x) => ltKey(x) === key);
       if (!t) return;
@@ -989,9 +1270,10 @@ export function ChatsPanel({
   useEffect(() => {
     const total =
       Object.values(lotteryUnread).reduce((a, b) => a + b, 0) +
-      Object.values(dmUnread).reduce((a, b) => a + b, 0);
+      Object.values(dmUnread).reduce((a, b) => a + b, 0) +
+      Object.values(anonUnread).reduce((a, b) => a + b, 0);
     onUnreadChange?.(total);
-  }, [lotteryUnread, dmUnread, onUnreadChange]);
+  }, [lotteryUnread, dmUnread, anonUnread, onUnreadChange]);
 
   function openLottery(t: Thread) {
     const key = ltKey(t);
@@ -1011,6 +1293,48 @@ export function ChatsPanel({
     const fd = new FormData();
     fd.set("peer_id", peerId);
     markDmRead(fd);
+  }
+
+  function openAnon(conversationId: number) {
+    const key = anonKey(conversationId);
+    setSelectedKey(key);
+    setAnonUnread((prev) => ({ ...prev, [key]: 0 }));
+    const fd = new FormData();
+    fd.set("conversation_id", String(conversationId));
+    markAnonDmRead(fd);
+  }
+
+  async function openAnonDm(peerId: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("anon_dm_conversations")
+      .upsert(
+        { sender_id: me, recipient_id: peerId },
+        { onConflict: "sender_id,recipient_id" }
+      )
+      .select("id")
+      .single();
+    if (error || !data) {
+      console.error("anon_dm_conversations upsert:", error?.message);
+      return;
+    }
+    const cid = data.id as number;
+    setAnonNewPeers((prev) => ({ ...prev, [cid]: peerId }));
+    anonInfoRef.current.set(cid, {
+      name: nameByIdRef.current.get(peerId) ?? peerId,
+      isAnonSender: true,
+    });
+    setPickerOpen(false);
+    openAnon(cid);
+  }
+
+  function pickParticipant(p: DmParticipant) {
+    if (pickerMode === "anon") {
+      void openAnonDm(p.id);
+    } else {
+      openDm(p.id);
+      setPickerOpen(false);
+    }
   }
 
   function toggleLotteryReaction(key: string, messageId: number, emoji: string) {
@@ -1089,6 +1413,49 @@ export function ChatsPanel({
       });
   }
 
+  function toggleAnonReaction(
+    conversationId: number,
+    messageId: number,
+    emoji: string
+  ) {
+    const key = anonKey(conversationId);
+    const cur = (anonMsgs[key] ?? []).find((m) => m.id === messageId);
+    const add = !cur?.reactions.some(
+      (r) => r.emoji === emoji && r.users.includes(me)
+    );
+    setAnonMsgs((prev) => ({
+      ...prev,
+      [key]: applyReactionToMessages(
+        prev[key] ?? [],
+        messageId,
+        emoji,
+        me,
+        add
+      ),
+    }));
+    createClient()
+      .rpc("toggle_message_reaction", {
+        p_kind: 4,
+        p_message_id: messageId,
+        p_emoji: emoji,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("toggle_message_reaction (anon):", error.message);
+          setAnonMsgs((prev) => ({
+            ...prev,
+            [key]: applyReactionToMessages(
+              prev[key] ?? [],
+              messageId,
+              emoji,
+              me,
+              !add
+            ),
+          }));
+        }
+      });
+  }
+
   if (lateJoiner) {
     return (
       <p className="mt-1 text-sm text-muted">
@@ -1097,7 +1464,7 @@ export function ChatsPanel({
     );
   }
 
-  if (!lotteryDone && dmThreads.length === 0) {
+  if (!lotteryDone && dmThreads.length === 0 && anonThreads.length === 0) {
     return (
       <p className="mt-1 text-sm text-muted">
         Czaty pojawią się po losowaniu.
@@ -1107,9 +1474,18 @@ export function ChatsPanel({
 
   const others = participants.filter((p) => p.id !== me);
   const isDm = selectedItem?.kind === "dm";
-  const pending = isDm ? dmPending : lotteryPending;
+  const isAnon = selectedItem?.kind === "anon";
+  const pending = isAnon ? anonPending : isDm ? dmPending : lotteryPending;
   const visibleListItems =
     isDesktop || listExpanded ? listItems : listItems.slice(0, 5);
+  const sendError =
+    !anonState.ok && anonState.error
+      ? anonState.error
+      : !dmState.ok && dmState.error
+        ? dmState.error
+        : !lotteryState.ok && lotteryState.error
+          ? lotteryState.error
+          : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -1142,9 +1518,11 @@ export function ChatsPanel({
                 onClick={() =>
                   item.kind === "dm"
                     ? openDm(item.peerId!)
-                    : openLottery(
-                        threads.find((x) => ltKey(x) === item.key)!
-                      )
+                    : item.kind === "anon"
+                      ? openAnon(item.conversationId!)
+                      : openLottery(
+                          threads.find((x) => ltKey(x) === item.key)!
+                        )
                 }
                 aria-current={selectedKey === item.key}
                 className={`w-full shrink-0 rounded-[14px] border p-3 px-3.5 text-left transition-colors ${
@@ -1155,7 +1533,7 @@ export function ChatsPanel({
               >
                 <span className="flex items-center justify-between gap-2 leading-5">
                   <span className="flex min-w-0 flex-1 items-center gap-2">
-                    {item.kind === "dm" && (
+                    {(item.kind === "dm" || item.kind === "anon") && (
                       <Avatar
                         name={item.name}
                         src={item.avatarUrl ?? null}
@@ -1243,11 +1621,25 @@ export function ChatsPanel({
           )}
           <button
             type="button"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => {
+              setPickerMode("dm");
+              setPickerOpen(true);
+            }}
             className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-[#14532d] bg-surface text-base font-semibold text-[#14532d] hover:bg-mist dark:border-accent dark:text-accent"
           >
             <PlusIcon />
             Nowy czat
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPickerMode("anon");
+              setPickerOpen(true);
+            }}
+            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-violet-800/40 bg-surface text-base font-semibold text-violet-800 hover:bg-mist"
+          >
+            <MaskIcon />
+            Anonimowy czat
           </button>
         </div>
         )}
@@ -1284,6 +1676,13 @@ export function ChatsPanel({
                       Ta osoba kupuje Ci prezent. Nie wiesz, kim jest.
                     </p>
                   )}
+                {selectedItem.kind === "anon" && (
+                  <p className="text-sm text-[var(--chat-header-sub)]">
+                    {selectedItem.isAnonSender
+                      ? "Piszesz anonimowo — ta osoba nie widzi, kim jesteś."
+                      : "Nie wiesz, kim jest ta osoba."}
+                  </p>
+                )}
               </div>
               <div
                 ref={boxRef}
@@ -1320,20 +1719,30 @@ export function ChatsPanel({
                           isOwn={m.senderId === me}
                           meId={me}
                           onToggleReaction={(messageId, emoji) =>
-                            isDm
-                              ? toggleDmReaction(
-                                  selectedItem.peerId,
+                            isAnon
+                              ? toggleAnonReaction(
+                                  selectedItem.conversationId,
                                   messageId,
                                   emoji
                                 )
-                              : toggleLotteryReaction(
-                                  selectedItem.key,
-                                  messageId,
-                                  emoji
-                                )
+                              : isDm
+                                ? toggleDmReaction(
+                                    selectedItem.peerId,
+                                    messageId,
+                                    emoji
+                                  )
+                                : toggleLotteryReaction(
+                                    selectedItem.key,
+                                    messageId,
+                                    emoji
+                                  )
                           }
-                          editAction={isDm ? editDm : editMessage}
-                          deleteAction={isDm ? deleteDm : deleteMessage}
+                          editAction={
+                            isAnon ? editAnonDm : isDm ? editDm : editMessage
+                          }
+                          deleteAction={
+                            isAnon ? deleteAnonDm : isDm ? deleteDm : deleteMessage
+                          }
                         />
                       </div>
                     </Fragment>
@@ -1342,11 +1751,11 @@ export function ChatsPanel({
                   </div>
                 </div>
                 <form
-                  action={isDm ? dmSend : lotterySend}
+                  action={isAnon ? anonSend : isDm ? dmSend : lotterySend}
                   onSubmit={(e) => {
                     lastSentRef.current = value;
                     setValue("");
-                    if (photo.file) {
+                    if (photo.file && !isAnon) {
                       e.preventDefault();
                       const fd = new FormData(e.currentTarget);
                       fd.set("image", photo.file);
@@ -1355,7 +1764,7 @@ export function ChatsPanel({
                   }}
                   className="flex flex-col gap-2"
                 >
-                {photo.previewUrl && (
+                {!isAnon && photo.previewUrl && (
                   <span className="relative inline-block">
                     <img
                       src={photo.previewUrl}
@@ -1372,11 +1781,17 @@ export function ChatsPanel({
                     </button>
                   </span>
                 )}
-                {photo.error && (
+                {!isAnon && photo.error && (
                   <p className="text-sm text-red-600">{photo.error}</p>
                 )}
                 <div className="flex gap-3">
-                {isDm ? (
+                {isAnon ? (
+                  <input
+                    type="hidden"
+                    name="conversation_id"
+                    value={selectedItem.conversationId}
+                  />
+                ) : isDm ? (
                   <input
                     type="hidden"
                     name="recipient_id"
@@ -1401,13 +1816,15 @@ export function ChatsPanel({
                     />
                   </>
                 )}
-                <input
-                  ref={photo.inputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => photo.pick(e.target.files?.[0] ?? null)}
-                />
+                {!isAnon && (
+                  <input
+                    ref={photo.inputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => photo.pick(e.target.files?.[0] ?? null)}
+                  />
+                )}
                 <input
                   name="text"
                   value={value}
@@ -1417,14 +1834,16 @@ export function ChatsPanel({
                   autoComplete="off"
                   className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--chat-composer-line)] bg-surface px-[18px] text-base text-ink placeholder:text-[var(--chat-placeholder)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
                 />
-                <button
-                  type="button"
-                  onClick={() => photo.inputRef.current?.click()}
-                  aria-label="Dodaj zdjęcie"
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[var(--chat-composer-line)] bg-surface text-ink hover:bg-sage-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
-                >
-                  <ImageIcon />
-                </button>
+                {!isAnon && (
+                  <button
+                    type="button"
+                    onClick={() => photo.inputRef.current?.click()}
+                    aria-label="Dodaj zdjęcie"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[var(--chat-composer-line)] bg-surface text-ink hover:bg-sage-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
+                  >
+                    <ImageIcon />
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={pending || (!value.trim() && !photo.hasPhoto)}
@@ -1452,29 +1871,26 @@ export function ChatsPanel({
         )}
       </div>
 
-      {(!lotteryState.ok && lotteryState.error) ||
-        (!dmState.ok && dmState.error) ? (
-        <p className="mt-2 text-sm text-red-600">
-          {dmState.ok ? lotteryState.error : dmState.error}
-        </p>
-      ) : null}
+      {sendError && <p className="mt-2 text-sm text-red-600">{sendError}</p>}
 
       {!isDesktop && (
         <BottomSheet
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
-          title="Nowy czat"
+          title={pickerMode === "anon" ? "Anonimowy czat" : "Nowy czat"}
           closeOnBackdrop
         >
+          {pickerMode === "anon" && (
+            <p className="px-3 pb-1 text-xs text-faint">
+              Ta osoba nie dowie się, kim jesteś.
+            </p>
+          )}
           <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
             {others.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                onClick={() => {
-                  openDm(p.id);
-                  setPickerOpen(false);
-                }}
+                onClick={() => pickParticipant(p)}
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
               >
                 <Avatar name={p.fullName} src={p.avatarUrl} size={32} />
@@ -1506,18 +1922,20 @@ export function ChatsPanel({
           sheetOnClick={(e) => e.stopPropagation()}
         >
           <div className="rounded-t-2xl bg-surface p-3 shadow-lg">
-            <p className="mb-2 px-1 text-sm font-semibold text-ink">
-              Nowy czat
+            <p className="mb-1 px-1 text-sm font-semibold text-ink">
+              {pickerMode === "anon" ? "Anonimowy czat" : "Nowy czat"}
             </p>
+            {pickerMode === "anon" && (
+              <p className="mb-1 px-1 text-xs text-faint">
+                Ta osoba nie dowie się, kim jesteś.
+              </p>
+            )}
             <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
               {others.map((p) => (
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => {
-                    openDm(p.id);
-                    setPickerOpen(false);
-                  }}
+                  onClick={() => pickParticipant(p)}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
                 >
                   <Avatar name={p.fullName} src={p.avatarUrl} size={32} />
