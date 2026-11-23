@@ -48,7 +48,7 @@ export default async function Home() {
         "id, full_name, is_organizer, is_ready, gift_ready, avatar_path, avatar_updated_at, oauth_avatar_url"
       )
       .eq("id", user.id)
-      .single(),
+      .maybeSingle(),
     supabase
       .from("profiles")
       .select("id, full_name, is_ready, gift_ready, avatar_path, avatar_updated_at, oauth_avatar_url")

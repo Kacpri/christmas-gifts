@@ -398,7 +398,11 @@ export async function runLottery(
   _prev: ActionResult,
   _formData: FormData
 ): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może uruchomić losowanie." };
+  }
+  const { supabase } = org;
   const photoPaths = await collectTablePhotoPaths(supabase, 1);
   const { error } = await supabase.rpc("run_lottery");
   if (error) return { ok: false, error: error.message };
@@ -839,7 +843,11 @@ export async function cancelLottery(
   _prev: ActionResult,
   _formData: FormData
 ): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może anulować losowanie." };
+  }
+  const { supabase } = org;
   const photoPaths = await collectTablePhotoPaths(supabase, 1);
   const { error } = await supabase.rpc("cancel_lottery");
   if (error) return { ok: false, error: error.message };
@@ -849,7 +857,11 @@ export async function cancelLottery(
 }
 
 export async function removeUser(formData: FormData): Promise<ActionResult> {
-  const { supabase, user } = await requireUser();
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może zarządzać uczestnikami." };
+  }
+  const { supabase, user } = org;
   const id = String(formData.get("id") ?? "");
   if (!id || id === user.id) {
     return { ok: false, error: "Nie można usunąć samego siebie." };
@@ -1287,6 +1299,20 @@ export async function addChild(
   return { ok: true };
 }
 
+async function isChildParent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  childId: number
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("child_parents")
+    .select("child_id")
+    .eq("child_id", childId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data !== null;
+}
+
 export async function editChild(
   _prev: ActionResult,
   formData: FormData
@@ -1300,13 +1326,7 @@ export async function editChild(
   if (!name || name.length > 100) {
     return { ok: false, error: "Imię dziecka: 1–100 znaków." };
   }
-  const { data: parentRow } = await supabase
-    .from("child_parents")
-    .select("child_id")
-    .eq("child_id", childId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!parentRow) {
+  if (!(await isChildParent(supabase, user.id, childId))) {
     return { ok: false, error: "Tylko rodzic może edytować dziecko." };
   }
   const patch: {
@@ -1407,10 +1427,13 @@ export async function deleteChild(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const childId = Number(formData.get("child_id"));
   if (!Number.isInteger(childId)) {
     return { ok: false, error: "Nieprawidłowe dziecko." };
+  }
+  if (!(await isChildParent(supabase, user.id, childId))) {
+    return { ok: false, error: "Tylko rodzic może usunąć dziecko." };
   }
   const { data: wishRows } = await supabase
     .from("child_wishes")
@@ -1455,13 +1478,16 @@ export async function addChildWish(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const childId = Number(formData.get("child_id"));
   const text = String(formData.get("text") ?? "").trim();
   const link = String(formData.get("link") ?? "").trim();
   const priceRaw = String(formData.get("price") ?? "").trim();
   if (!Number.isInteger(childId)) {
     return { ok: false, error: "Nieprawidłowe dziecko." };
+  }
+  if (!(await isChildParent(supabase, user.id, childId))) {
+    return { ok: false, error: "Tylko rodzic może zarządzać życzeniami dziecka." };
   }
   if (!text) return { ok: false, error: "Wpisz, czego dziecko sobie życzy." };
   if (link && !/^https?:\/\/\S+$/i.test(link)) {
@@ -1495,13 +1521,22 @@ export async function editChildWish(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const id = Number(formData.get("id"));
   const text = String(formData.get("text") ?? "").trim();
   const link = String(formData.get("link") ?? "").trim();
   const priceRaw = String(formData.get("price") ?? "").trim();
   if (!Number.isInteger(id)) {
     return { ok: false, error: "Nieprawidłowe życzenie." };
+  }
+  const { data: wishRow } = await supabase
+    .from("child_wishes")
+    .select("child_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!wishRow) return { ok: false, error: "Nieprawidłowe życzenie." };
+  if (!(await isChildParent(supabase, user.id, wishRow.child_id))) {
+    return { ok: false, error: "Tylko rodzic może zarządzać życzeniami dziecka." };
   }
   if (!text) return { ok: false, error: "Wpisz, czego dziecko sobie życzy." };
   if (link && !/^https?:\/\/\S+$/i.test(link)) {
@@ -1524,10 +1559,19 @@ export async function editChildWish(
 export async function removeChildWish(
   formData: FormData
 ): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id)) {
     return { ok: false, error: "Nieprawidłowe życzenie." };
+  }
+  const { data: wishRow } = await supabase
+    .from("child_wishes")
+    .select("child_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!wishRow) return { ok: false, error: "Nieprawidłowe życzenie." };
+  if (!(await isChildParent(supabase, user.id, wishRow.child_id))) {
+    return { ok: false, error: "Tylko rodzic może zarządzać życzeniami dziecka." };
   }
   const { error } = await supabase.from("child_wishes").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
