@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -359,6 +360,17 @@ export function GroupChatSection({
       });
   }
 
+  // stabilny callback dla memo(MessageBubble) — zawsze woła wersję z
+  // bieżącego renderu (latest ref)
+  const toggleReactionRef = useRef(toggleReaction);
+  toggleReactionRef.current = toggleReaction;
+  const handleToggleReaction = useCallback(
+    (messageId: number, emoji: string) => {
+      toggleReactionRef.current(messageId, emoji);
+    },
+    []
+  );
+
   useLayoutEffect(() => {
     const prev = anchorRef.current;
     if (prev == null) return;
@@ -462,7 +474,7 @@ export function GroupChatSection({
                     message={m}
                     isOwn={m.senderId === me}
                     meId={me}
-                    onToggleReaction={toggleReaction}
+                    onToggleReaction={handleToggleReaction}
                     editAction={editGroupMessage}
                     deleteAction={deleteGroupMessage}
                   />

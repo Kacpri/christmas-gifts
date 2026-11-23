@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -92,7 +93,7 @@ function renderMessageText(text: string) {
   return parts;
 }
 
-export function MessageBubble({
+function MessageBubbleBase({
   message,
   isOwn,
   meId,
@@ -512,6 +513,8 @@ export function MessageBubble({
     </>
   );
 }
+
+export const MessageBubble = memo(MessageBubbleBase);
 
 function SmileyIcon() {
   return (

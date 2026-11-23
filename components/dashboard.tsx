@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  memo,
   useCallback,
   useEffect,
   useActionState,
@@ -69,6 +70,18 @@ import {
 import { declineName, possessive } from "@/lib/declension";
 import { formatPrice, participationVerb, plural } from "@/lib/format";
 import { useMediaQuery } from "@/lib/use-media-query";
+
+// panele memoizowane: re-render Dashboardu (scroll, drag, wysokości)
+// nie przebudowuje treści paneli, gdy ich propsy się nie zmieniły
+const MemoChatsPanel = memo(ChatsPanel);
+const MemoChildrenPanel = memo(ChildrenPanel);
+const MemoDishForm = memo(DishForm);
+const MemoGroupChatSection = memo(GroupChatSection);
+const MemoNameForm = memo(NameForm);
+const MemoOrganizerPanel = memo(OrganizerPanel);
+const MemoReadySection = memo(ReadySection);
+const MemoWishForm = memo(WishForm);
+const MemoGiftsBody = memo(GiftsBody);
 
 export type PanelId =
   | "profile"
@@ -1527,7 +1540,9 @@ export function Dashboard({
   visibleIdsRef.current = visible;
 
   useEffect(() => {
-    function onScroll() {
+    let raf = 0;
+    function run() {
+      raf = 0;
       const y = window.scrollY;
       if (y < 8 || y < lastScrollY.current - 4) {
         setTopBarHidden(false);
@@ -1560,9 +1575,17 @@ export function Dashboard({
       }
       setActivePanel((prev) => (prev === current ? prev : current));
     }
+    // rAF: wiele zdarzeń scrolla między klatkami = jedno wywołanie
+    function onScroll() {
+      if (raf) return;
+      raf = requestAnimationFrame(run);
+    }
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [isDesktop]);
 
   const updateChipFades = useCallback(() => {
@@ -1688,7 +1711,7 @@ export function Dashboard({
     profile: {
       title: "Twoje dane",
       body: (
-        <NameForm
+        <MemoNameForm
           fullName={profile.fullName}
           avatarUrl={profile.avatarUrl}
           hasUpload={profile.hasUpload}
@@ -1698,7 +1721,7 @@ export function Dashboard({
     gifts: {
       title: "Prezenty",
       body: (
-        <GiftsBody
+        <MemoGiftsBody
           gifts={gifts}
           listBudget={effectiveListBudget(party.listBudget)}
           themeBudget={effectiveThemeBudget(party.themeBudget)}
@@ -1708,7 +1731,7 @@ export function Dashboard({
     chats: {
       title: "Czaty",
       body: (
-        <ChatsPanel
+        <MemoChatsPanel
           me={chats.me}
           threads={chats.threads}
           lotteryDone={chats.lotteryDone}
@@ -1725,7 +1748,7 @@ export function Dashboard({
     "group-chat": {
       title: "Czat wspólny",
       body: (
-        <GroupChatSection
+        <MemoGroupChatSection
           me={groupChat.me}
           messages={groupChat.messages}
           collapsed={!!collapsed["group-chat"]}
@@ -1737,7 +1760,7 @@ export function Dashboard({
     wishes: {
       title: "Życzenia",
       body: (
-        <WishForm
+        <MemoWishForm
           wishes={wishes.wishes}
           theme={wishes.theme}
           themeLocked={wishes.themeLocked}
@@ -1750,16 +1773,16 @@ export function Dashboard({
     },
     potrawy: {
       title: "Potrawy",
-      body: <DishForm dishes={dishes} narrow={isTwoCol} />,
+      body: <MemoDishForm dishes={dishes} narrow={isTwoCol} />,
     },
     children: {
       title: "Dzieci",
-      body: <ChildrenPanel {...kids} />,
+      body: <MemoChildrenPanel {...kids} />,
     },
     ready: {
       title: "Gotowość",
       body: (
-        <ReadySection
+        <MemoReadySection
           {...ready}
           count={gifts.kind === "waiting" ? gifts.count : 0}
         />
@@ -1768,7 +1791,7 @@ export function Dashboard({
     organizer: {
       title: "Panel organizatora",
       body: organizer ? (
-        <OrganizerPanel {...organizer} hiddenPanels={party.hiddenPanels} />
+        <MemoOrganizerPanel {...organizer} hiddenPanels={party.hiddenPanels} />
       ) : null,
     },
   };

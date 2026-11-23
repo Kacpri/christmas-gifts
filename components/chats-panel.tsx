@@ -1456,6 +1456,29 @@ export function ChatsPanel({
       });
   }
 
+  // stabilny callback dla memo(MessageBubble) — zawsze woła wersję z
+  // bieżącego renderu (latest ref)
+  const toggleReactionRef = useRef<(messageId: number, emoji: string) => void>(
+    () => {}
+  );
+  toggleReactionRef.current = (messageId, emoji) => {
+    const sel = selectedItem;
+    if (!sel) return;
+    if (sel.kind === "anon") {
+      toggleAnonReaction(sel.conversationId, messageId, emoji);
+    } else if (sel.kind === "dm") {
+      toggleDmReaction(sel.peerId, messageId, emoji);
+    } else {
+      toggleLotteryReaction(sel.key, messageId, emoji);
+    }
+  };
+  const handleToggleReaction = useCallback(
+    (messageId: number, emoji: string) => {
+      toggleReactionRef.current(messageId, emoji);
+    },
+    []
+  );
+
   if (lateJoiner) {
     return (
       <p className="mt-1 text-sm text-muted">
@@ -1718,25 +1741,7 @@ export function ChatsPanel({
                           message={m}
                           isOwn={m.senderId === me}
                           meId={me}
-                          onToggleReaction={(messageId, emoji) =>
-                            isAnon
-                              ? toggleAnonReaction(
-                                  selectedItem.conversationId,
-                                  messageId,
-                                  emoji
-                                )
-                              : isDm
-                                ? toggleDmReaction(
-                                    selectedItem.peerId,
-                                    messageId,
-                                    emoji
-                                  )
-                                : toggleLotteryReaction(
-                                    selectedItem.key,
-                                    messageId,
-                                    emoji
-                                  )
-                          }
+                          onToggleReaction={handleToggleReaction}
                           editAction={
                             isAnon ? editAnonDm : isDm ? editDm : editMessage
                           }
