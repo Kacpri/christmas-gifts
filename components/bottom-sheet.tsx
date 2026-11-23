@@ -85,18 +85,18 @@ export function BottomSheet({
           type="button"
           onClick={onClose}
           aria-label="Zamknij"
-          className="flex shrink-0 justify-center pb-2 pt-3 transition-colors active:bg-mist"
+          className="flex shrink-0 touch-none justify-center pb-2 pt-3 transition-colors active:bg-mist"
         >
           <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
         </button>
         {shownTitle != null && (
-          <div className="shrink-0 truncate px-4 pb-2 text-sm font-semibold text-ink">
+          <div className="shrink-0 touch-none truncate px-4 pb-2 text-sm font-semibold text-ink">
             {shownTitle}
           </div>
         )}
         <div className={contentClassName}>{children}</div>
         {footer != null && (
-          <div className="shrink-0 border-t border-line px-4 pb-4 pt-3">
+          <div className="shrink-0 touch-none border-t border-line px-4 pb-4 pt-3">
             {footer}
           </div>
         )}
