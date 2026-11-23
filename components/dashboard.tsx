@@ -2113,6 +2113,7 @@ export function Dashboard({
         onClose={() => setMobileMenuOpen(false)}
         className="md:hidden"
         contentClassName="min-h-0 overflow-y-auto p-2"
+        closeOnBackdrop
       >
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2.5 px-2 py-1.5">

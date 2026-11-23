@@ -678,6 +678,7 @@ export function WishForm({
           open={!!menuWish}
           onClose={() => setMenuWish(null)}
           title={menuWish?.text}
+          closeOnBackdrop
         >
           {menuActions}
         </BottomSheet>

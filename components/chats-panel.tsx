@@ -1463,6 +1463,7 @@ export function ChatsPanel({
           open={pickerOpen}
           onClose={() => setPickerOpen(false)}
           title="Nowy czat"
+          closeOnBackdrop
         >
           <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
             {others.map((p) => (

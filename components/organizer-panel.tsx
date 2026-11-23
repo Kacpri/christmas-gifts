@@ -724,6 +724,7 @@ export function OrganizerPanel({
               </span>
             )
           }
+          closeOnBackdrop
         >
           {menuActions}
         </BottomSheet>

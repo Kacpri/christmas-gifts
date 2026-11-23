@@ -42,29 +42,26 @@ export function ConfirmDialog({
       ? "bg-danger text-white hover:bg-danger-deep"
       : "bg-accent text-white hover:bg-accent/90";
 
-  const content = (
-    <>
-      <p className="text-sm leading-relaxed text-ink">{s.message}</p>
-      <div className="mt-5 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
-        >
-          {s.cancelLabel ?? "Anuluj"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            s.onConfirm();
-            onClose();
-          }}
-          className={`rounded-xl px-4 py-2 text-sm font-medium ${confirmClass}`}
-        >
-          {s.confirmLabel ?? "Potwierdź"}
-        </button>
-      </div>
-    </>
+  const buttons = (
+    <div className="flex justify-end gap-2">
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-xl border border-input-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-mist"
+      >
+        {s.cancelLabel ?? "Anuluj"}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          s.onConfirm();
+          onClose();
+        }}
+        className={`rounded-xl px-4 py-2 text-sm font-medium ${confirmClass}`}
+      >
+        {s.confirmLabel ?? "Potwierdź"}
+      </button>
+    </div>
   );
 
   if (isDesktop) {
@@ -76,15 +73,22 @@ export function ConfirmDialog({
           aria-modal="true"
           className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
         >
-          {content}
+          <p className="text-sm leading-relaxed text-ink">{s.message}</p>
+          <div className="mt-5">{buttons}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <BottomSheet open={!!state} onClose={onClose} zClass="z-[60]">
-      {content}
+    <BottomSheet
+      open={!!state}
+      onClose={onClose}
+      zClass="z-[60]"
+      closeOnBackdrop
+      footer={buttons}
+    >
+      <p className="text-sm leading-relaxed text-ink">{s.message}</p>
     </BottomSheet>
   );
 }

@@ -37,19 +37,23 @@ export function BottomSheet({
   onClose,
   title,
   children,
+  footer,
   tall = false,
   zClass = "z-50",
   className = "",
   contentClassName = "min-h-0 overflow-y-auto px-4 pb-4 pt-1",
+  closeOnBackdrop = false,
 }: {
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
   children: ReactNode;
+  footer?: ReactNode;
   tall?: boolean;
   zClass?: string;
   className?: string;
   contentClassName?: string;
+  closeOnBackdrop?: boolean;
 }) {
   const kbPadding = useVisualViewportPadding(open);
   const lastTitle = useRef<ReactNode>(undefined);
@@ -65,13 +69,17 @@ export function BottomSheet({
       style={{ paddingBottom: kbPadding }}
       onClick={onClose}
       backdrop
-      sheetClassName="relative flex h-full w-full flex-col justify-end"
+      sheetClassName={`relative flex h-full w-full flex-col justify-end${
+        closeOnBackdrop ? " pointer-events-none" : ""
+      }`}
       sheetOnClick={(e) => e.stopPropagation()}
     >
       <div
         className={`flex ${
           tall ? "max-h-[85%]" : "max-h-[60%]"
-        } flex-col rounded-t-2xl bg-surface shadow-lg`}
+        } flex-col rounded-t-2xl bg-surface shadow-lg${
+          closeOnBackdrop ? " pointer-events-auto" : ""
+        }`}
       >
         <button
           type="button"
@@ -87,6 +95,11 @@ export function BottomSheet({
           </div>
         )}
         <div className={contentClassName}>{children}</div>
+        {footer != null && (
+          <div className="shrink-0 border-t border-line px-4 pb-4 pt-3">
+            {footer}
+          </div>
+        )}
       </div>
     </Presence>
   );

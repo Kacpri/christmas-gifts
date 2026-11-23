@@ -773,6 +773,7 @@ export function DishForm({
         open={!!mobileMenuDish}
         onClose={() => setMobileMenuDish(null)}
         title={mobileMenuDish ? capitalizeFirst(mobileMenuDish.name) : undefined}
+        closeOnBackdrop
       >
         {mobileMenuDish && (
           <div className="flex flex-col gap-2">
