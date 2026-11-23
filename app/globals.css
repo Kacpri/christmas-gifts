@@ -326,23 +326,3 @@ a:focus-visible {
 button.no-press-scale:not(:disabled):active {
   transform: none;
 }
-
-.theme-anim,
-.theme-anim *,
-.theme-anim *::before,
-.theme-anim *::after {
-  transition:
-    background-color 300ms ease-out,
-    border-color 300ms ease-out,
-    color 300ms ease-out,
-    fill 300ms ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .theme-anim,
-  .theme-anim *,
-  .theme-anim *::before,
-  .theme-anim *::after {
-    transition: none;
-  }
-}
