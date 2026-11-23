@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 
+const backdropStack: object[] = [];
+
 export function Presence({
   open,
   children,
@@ -35,6 +37,10 @@ export function Presence({
   const [rendered, setRendered] = useState(open);
   const [shown, setShown] = useState(false);
   const lastChildren = useRef<ReactNode>(null);
+  const idRef = useRef<object>(null);
+  if (idRef.current === null) idRef.current = {};
+  const onClickRef = useRef(onClick);
+  onClickRef.current = onClick;
 
   useEffect(() => {
     if (children != null && children !== false) {
@@ -55,6 +61,23 @@ export function Presence({
     return () => window.clearTimeout(t);
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !backdrop) return;
+    const id = idRef.current!;
+    backdropStack.push(id);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && backdropStack[backdropStack.length - 1] === id) {
+        onClickRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      const i = backdropStack.indexOf(id);
+      if (i !== -1) backdropStack.splice(i, 1);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, backdrop]);
+
   if (!rendered) return null;
 
   return (
@@ -68,6 +91,8 @@ export function Presence({
         />
       )}
       <div
+        role={backdrop ? "dialog" : undefined}
+        aria-modal={backdrop ? true : undefined}
         className={`transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sheetClassName} ${
           shown ? sheetTo : sheetFrom
         }`}

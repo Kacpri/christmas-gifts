@@ -272,6 +272,7 @@ function MessageBubbleBase({
               required
               maxLength={500}
               autoComplete="off"
+              aria-label="Edytuj wiadomość"
               className="w-full rounded border border-input-line bg-surface px-2 py-1 text-sm text-ink"
             />
             <div className="flex items-center gap-2">
@@ -319,6 +320,28 @@ function MessageBubbleBase({
               </p>
             )}
             <div className="mt-1 flex items-center justify-end gap-1">
+              {canMenu && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setMenu({ x: rect.right - 112, y: rect.bottom + 6 });
+                  }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
+                  aria-label="Opcje wiadomości"
+                  title="Opcje wiadomości"
+                  className={`-my-1 flex h-6 w-6 items-center justify-center rounded text-white/60 hover:text-white ${
+                    isDesktop
+                      ? "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                      : "opacity-100"
+                  }`}
+                >
+                  <DotsIcon />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={(e) => {
@@ -533,6 +556,26 @@ function SmileyIcon() {
       <path d="M8 14s1.5 2 4 2 4-2 4-2" />
       <line x1="9" x2="9.01" y1="9" y2="9" />
       <line x1="15" x2="15.01" y1="9" y2="9" />
+    </svg>
+  );
+}
+
+function DotsIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
     </svg>
   );
 }

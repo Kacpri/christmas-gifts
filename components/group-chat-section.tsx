@@ -531,6 +531,7 @@ export function GroupChatSection({
               onChange={(e) => setValue(e.target.value)}
               maxLength={500}
               placeholder="Napisz wiadomość…"
+              aria-label="Napisz wiadomość"
               autoComplete="off"
               className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--chat-composer-line)] bg-surface px-3.5 text-sm text-ink placeholder:text-[var(--chat-placeholder)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532d]"
             />

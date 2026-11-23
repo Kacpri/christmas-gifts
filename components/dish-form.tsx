@@ -517,6 +517,7 @@ export function DishForm({
                   setPage(1);
                 }}
                 placeholder="Szukaj potrawy…"
+                aria-label="Szukaj potrawy"
                 autoComplete="off"
                 className="w-full rounded-xl border border-input-line bg-surface py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder:text-placeholder"
               />
@@ -723,6 +724,24 @@ export function DishForm({
                       </div>
                     )}
                   </div>
+                  {dish.isMine && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        if (longPressFired.current) {
+                          e.preventDefault();
+                          longPressFired.current = false;
+                          return;
+                        }
+                        setMobileMenuDish(dish);
+                      }}
+                      aria-label={`Opcje potrawy: ${dish.name}`}
+                      title="Opcje"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover [@media(hover:hover)]:hidden"
+                    >
+                      <MoreIcon />
+                    </button>
+                  )}
                 </li>
               );
             })}
@@ -875,6 +894,26 @@ function TrashIcon() {
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
     </svg>
   );
 }

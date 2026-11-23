@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+import { RetryButton } from "./retry-button";
+
+export const metadata: Metadata = {
+  title: "Brak internetu",
+};
+
 export default function OfflinePage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center">
@@ -9,6 +17,7 @@ export default function OfflinePage() {
         Wygląda na to, że nie masz połączenia z siecią. Spróbuj ponownie za
         chwilę.
       </p>
+      <RetryButton />
     </main>
   );
 }

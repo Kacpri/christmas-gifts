@@ -853,6 +853,7 @@ export function OrganizerPanel({
                     onChange={(e) => setEditNameValue(e.target.value)}
                     required
                     maxLength={100}
+                    aria-label={`Zmień nazwę: ${p.full_name}`}
                     className="flex-1 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-sm text-ink"
                   />
                   <div className="flex items-center gap-2">

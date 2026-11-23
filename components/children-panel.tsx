@@ -558,6 +558,9 @@ function ChildDetail({
   const [deleteConfirm, setDeleteConfirm] = useState<ConfirmState | null>(
     null
   );
+  const [detachConfirm, setDetachConfirm] = useState<ConfirmState | null>(
+    null
+  );
 
   useEffect(() => {
     setLocalWishes(child.wishes);
@@ -637,17 +640,17 @@ function ChildDetail({
   }
 
   function detachParent(userId: string, userName: string) {
-    if (
-      !window.confirm(
-        `Odłączyć ${userName} od tego dziecka? Jego rezerwacje na tym dziecku zostaną anulowane.`
-      )
-    ) {
-      return;
-    }
-    const fd = new FormData();
-    fd.set("child_id", String(child.id));
-    fd.set("user_id", userId);
-    detachAction(fd);
+    setDetachConfirm({
+      message: `Odłączyć ${userName} od tego dziecka? Jego rezerwacje na tym dziecku zostaną anulowane.`,
+      confirmLabel: "Odłącz",
+      tone: "danger",
+      onConfirm: () => {
+        const fd = new FormData();
+        fd.set("child_id", String(child.id));
+        fd.set("user_id", userId);
+        detachAction(fd);
+      },
+    });
   }
 
   function handleDelete() {
@@ -1119,6 +1122,10 @@ function ChildDetail({
         onClose={() => setDeleteConfirm(null)}
       />
       <ConfirmDialog state={clearConfirm} onClose={() => setClearConfirm(null)} />
+      <ConfirmDialog
+        state={detachConfirm}
+        onClose={() => setDetachConfirm(null)}
+      />
     </div>
   );
 }
@@ -1132,17 +1139,9 @@ function ChildWishRow({
   index: number;
   onOptimistic: (r: ChildReservation | null) => void;
 }) {
-  const link = wish.link;
   const purchased = wish.reservation?.state === "purchased";
   return (
-    <li
-      className={`flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3 ${
-        link
-          ? "cursor-pointer transition-colors hover:bg-[#f3f8f4] dark:hover:bg-sage-150"
-          : ""
-      }`}
-      onClick={link ? () => window.open(link, "_blank", "noopener") : undefined}
-    >
+    <li className="flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3">
       <div className="flex min-h-[36px] items-center justify-between gap-3">
         <span className="min-w-0 text-[15px] leading-snug">
           <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
@@ -1213,7 +1212,6 @@ function SortableChildWishRow({
     );
   }
 
-  const link = wish.link;
   const purchased = wish.reservation?.state === "purchased";
   return (
     <li
@@ -1221,12 +1219,7 @@ function SortableChildWishRow({
       style={style}
       className={`flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3 ${
         isDragging ? "relative z-10 opacity-50" : ""
-      } ${
-        link
-          ? "cursor-pointer transition-colors hover:bg-[#f3f8f4] dark:hover:bg-sage-150"
-          : ""
       }`}
-      onClick={link ? () => window.open(link, "_blank", "noopener") : undefined}
     >
       <div className="flex min-h-[36px] items-center gap-2">
         <button
