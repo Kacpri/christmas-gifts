@@ -1070,25 +1070,24 @@ function CollapsibleSection({
 
   return (
     <section className="border-t border-line">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={!collapsed}
-        aria-label={
-          collapsed ? `Rozwiń sekcję ${title}` : `Zwiń sekcję ${title}`
-        }
-        className="flex w-full items-center justify-between gap-2 py-3 text-left"
-      >
-        <h3 className="text-sm font-medium text-muted">{title}</h3>
-        <span
-          aria-hidden
-          className={`shrink-0 text-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${
-            collapsed ? "rotate-0" : "rotate-180"
-          }`}
+      <h3>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          className="no-press-scale flex w-full select-none items-center justify-between gap-2 py-3 text-left"
         >
-          <ChevronIcon />
-        </span>
-      </button>
+          <span className="text-sm font-medium text-muted">{title}</span>
+          <span
+            aria-hidden
+            className={`shrink-0 text-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${
+              collapsed ? "rotate-0" : "rotate-180"
+            }`}
+          >
+            <ChevronIcon />
+          </span>
+        </button>
+      </h3>
       <div
         ref={wrapRef}
         style={{

@@ -319,6 +319,10 @@ a:focus-visible {
   }
 }
 
+button.no-press-scale:not(:disabled):active {
+  transform: none;
+}
+
 .theme-anim,
 .theme-anim *,
 .theme-anim *::before,
