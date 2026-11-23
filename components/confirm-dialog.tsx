@@ -74,7 +74,9 @@ export function ConfirmDialog({
           aria-modal="true"
           className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
         >
-          <p className="text-sm leading-relaxed text-ink">{s.message}</p>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-ink">
+            {s.message}
+          </p>
           <div className="mt-5">{buttons}</div>
         </div>
       </div>
@@ -89,7 +91,9 @@ export function ConfirmDialog({
       closeOnBackdrop
       footer={buttons}
     >
-      <p className="text-sm leading-relaxed text-ink">{s.message}</p>
+      <p className="whitespace-pre-line text-sm leading-relaxed text-ink">
+        {s.message}
+      </p>
     </BottomSheet>
   );
 }

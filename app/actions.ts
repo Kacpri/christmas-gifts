@@ -854,7 +854,7 @@ export async function removeUser(formData: FormData): Promise<ActionResult> {
   if (!id || id === user.id) {
     return { ok: false, error: "Nie można usunąć samego siebie." };
   }
-  const { error } = await supabase.from("profiles").delete().eq("id", id);
+  const { error } = await supabase.rpc("remove_participant", { p_id: id });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };

@@ -29,6 +29,7 @@ import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { Presence } from "@/components/presence";
 import { ToggleSwitch } from "@/components/toggle-switch";
 import { declineName } from "@/lib/declension";
+import { createClient } from "@/lib/supabase/client";
 import { useMediaQuery } from "@/lib/use-media-query";
 
 const empty: ActionResult = { ok: false };
@@ -296,16 +297,61 @@ export function OrganizerPanel({
         onClick={() => {
           const target = menuParticipant;
           setMenuParticipant(null);
-          setConfirm({
-            message: `Usunąć ${declineName(target.full_name, "acc")} z losowania?`,
-            confirmLabel: "Usuń",
-            tone: "danger",
-            onConfirm: () => {
-              const fd = new FormData();
-              fd.set("id", target.id);
-              removeUser(fd);
-            },
-          });
+          const doRemove = () => {
+            const fd = new FormData();
+            fd.set("id", target.id);
+            removeUser(fd);
+          };
+          void (async () => {
+            const { data, error } = await createClient().rpc("removal_plan", {
+              p_id: target.id,
+            });
+            if (error || !data) {
+              setConfirm({
+                message: `Nie udało się przygotować planu usunięcia: ${
+                  error?.message ?? "błąd"
+                }.`,
+                confirmLabel: "OK",
+                tone: "primary",
+                onConfirm: () => {},
+              });
+              return;
+            }
+            if (data.length === 0) {
+              setConfirm({
+                message: `Usunąć ${declineName(target.full_name, "acc")} z losowania?`,
+                confirmLabel: "Usuń",
+                tone: "danger",
+                onConfirm: doRemove,
+              });
+              return;
+            }
+            const lines = data.map(
+              (r: {
+                lottery_type: number;
+                drawee_id: string;
+                drawee_name: string;
+                new_drawer_id: string;
+                new_drawer_name: string;
+              }) =>
+                r.drawee_id === r.new_drawer_id
+                  ? `${r.new_drawer_name} kupi prezent dla siebie (${
+                      r.lottery_type === 1 ? "lista" : "temat"
+                    }).`
+                  : `Prezent dla ${r.drawee_name} (${
+                      r.lottery_type === 1 ? "lista" : "temat"
+                    }) przejmie ${r.new_drawer_name}.`
+            );
+            setConfirm({
+              message: `Usunąć ${declineName(
+                target.full_name,
+                "acc"
+              )} z losowania?\n${lines.join("\n")}`,
+              confirmLabel: "Usuń",
+              tone: "danger",
+              onConfirm: doRemove,
+            });
+          })();
         }}
         className="flex items-center gap-2 rounded-xl border border-danger-soft bg-danger-soft px-4 py-2.5 text-sm font-medium text-danger hover:opacity-80"
       >
