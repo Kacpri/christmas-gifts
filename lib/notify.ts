@@ -36,7 +36,7 @@ export function notify(title: string, body: string) {
   if (isNotifyMuted()) return;
   if (typeof document !== "undefined" && !document.hidden) return;
   try {
-    const n = new Notification(title, { body, icon: "/icon.svg" });
+    const n = new Notification(title, { body, icon: "/icon-192.png" });
     n.onclick = () => {
       window.focus();
       n.close();

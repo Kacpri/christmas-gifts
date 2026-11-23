@@ -1,15 +1,31 @@
-const VERSION = "v1";
+// Bump VERSION przy każdej zmianie tego pliku — activate czyści stare cache.
+const VERSION = "v2";
 const STATIC_CACHE = `cg-static-${VERSION}`;
 const PAGE_CACHE = `cg-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
 
+// Strona offline + jej chunki/_next/static w jednym spójnym zestawie —
+// bez tego zakaszowany HTML referowałby hashowane chunki, których cache
+// nigdy nie widział (strona offline nie ładuje się online).
+async function precacheOfflineShell() {
+  const pageCache = await caches.open(PAGE_CACHE);
+  const staticCache = await caches.open(STATIC_CACHE);
+  const res = await fetch(OFFLINE_URL);
+  if (!res.ok) return;
+  const html = await res.text();
+  const urls = new Set();
+  for (const m of html.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+)"/g)) {
+    urls.add(m[1]);
+  }
+  await pageCache.put(OFFLINE_URL, res);
+  for (const url of urls) {
+    const r = await fetch(url);
+    if (r.ok) await staticCache.put(url, r);
+  }
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(PAGE_CACHE)
-      .then((cache) => cache.add(OFFLINE_URL))
-      .catch(() => {})
-  );
+  event.waitUntil(precacheOfflineShell().catch(() => {}));
   self.skipWaiting();
 });
 
