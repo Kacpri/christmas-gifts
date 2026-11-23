@@ -19,7 +19,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Select } from "@/components/select";
-import { Presence } from "@/components/presence";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import {
@@ -502,7 +501,7 @@ export function DishForm({
         <p className="text-sm text-muted">
           Wspólna lista potraw — każdy dodaje to, co przynosi.
         </p>
-        <div className="mt-2 flex flex-col gap-2">
+        <div className="mt-2 flex flex-col">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <span
@@ -542,12 +541,15 @@ export function DishForm({
               )}
             </button>
           </div>
-          <Presence
-            open={filtersOpen}
-            sheetFrom="opacity-0 -translate-y-1"
-            sheetTo="opacity-100 translate-y-0"
-            sheetClassName="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+          <div
+            className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+              filtersOpen
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
+            }`}
           >
+            <div className="overflow-hidden" inert={!filtersOpen}>
+              <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap">
             <Select
               leadingIcon={<UserIcon />}
               value={personFilter}
@@ -592,8 +594,10 @@ export function DishForm({
               >
                 <SortDirIcon dir={sortDir} />
               </button>
+              </div>
+              </div>
             </div>
-          </Presence>
+          </div>
         </div>
       </div>
 
