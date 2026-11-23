@@ -884,7 +884,10 @@ export async function sendLotteryEmails(
     results?: { to: string; ok: boolean; error?: string }[];
   };
   if (!res.ok) {
-    return { ok: false, error: payload.error ?? "Błąd wysyłki." };
+    return {
+      ok: false,
+      error: payload.error ?? `Błąd wysyłki (HTTP ${res.status}).`,
+    };
   }
   const failed = (payload.results ?? []).filter((r) => !r.ok);
   if (failed.length > 0) {
@@ -1072,7 +1075,10 @@ export async function sendReadyReminders(
     results?: { to: string; ok: boolean; error?: string }[];
   };
   if (!res.ok) {
-    return { ok: false, error: payload.error ?? "Błąd wysyłki." };
+    return {
+      ok: false,
+      error: payload.error ?? `Błąd wysyłki (HTTP ${res.status}).`,
+    };
   }
   const failed = (payload.results ?? []).filter((r) => !r.ok);
   if (failed.length > 0) {
