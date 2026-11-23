@@ -518,6 +518,7 @@ export function DishForm({
                   setPage(1);
                 }}
                 placeholder="Szukaj potrawy…"
+                autoComplete="off"
                 className="w-full rounded-xl border border-input-line bg-surface py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder:text-placeholder"
               />
             </div>

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useActionState, useState } from "react";
+import {
+  useEffect,
+  useActionState,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import {
   cancelLottery,
@@ -8,6 +15,7 @@ import {
   removeUser,
   runLottery,
   savePanelVisibility,
+  saveParty,
   savePartyBudgets,
   sendLotteryEmails,
   sendReadyReminders,
@@ -24,6 +32,33 @@ import { declineName } from "@/lib/declension";
 import { useMediaQuery } from "@/lib/use-media-query";
 
 const empty: ActionResult = { ok: false };
+
+const SECTIONS_KEY = "organizer-sections-v1";
+
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("pl-PL", {
+    dateStyle: "full",
+    timeStyle: "short",
+  });
+}
+
+function LocalDateTime({ iso }: { iso: string }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    setText(formatDateTime(iso));
+  }, [iso]);
+  if (!text) return null;
+  return <>{text}</>;
+}
 
 const plural = (n: number, forms: [string, string, string]) => {
   if (n === 1) return forms[0];
@@ -48,6 +83,10 @@ export function OrganizerPanel({
   themeBudget,
   errorReports,
   hiddenPanels,
+  startsAt,
+  location,
+  notes,
+  label,
 }: {
   participants: {
     id: string;
@@ -72,7 +111,32 @@ export function OrganizerPanel({
     avatar_url: string | null;
   }[];
   hiddenPanels: string[];
+  startsAt: string | null;
+  location: string | null;
+  notes: string | null;
+  label: string;
 }) {
+  const [partyState, partyAction, partyPending] = useActionState(
+    saveParty,
+    empty
+  );
+  const [partySaved, setPartySaved] = useState(false);
+  const [startsValue, setStartsValue] = useState(toLocalInput(startsAt));
+  const [sectionCollapsed, setSectionCollapsed] = useState<
+    Record<string, boolean>
+  >(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(SECTIONS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        if (parsed && typeof parsed === "object") return parsed;
+      }
+    } catch {
+      // localStorage niedostępny — ignoruj
+    }
+    return {};
+  });
   const [state, formAction, pending] = useActionState(runLottery, empty);
   const [cancelState, cancelAction, cancelPending] = useActionState(
     cancelLottery,
@@ -112,8 +176,49 @@ export function OrganizerPanel({
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
+    if (partyState.ok) setPartySaved(true);
+  }, [partyState.ok]);
+
+  useEffect(() => {
     if (budgetState.ok) setBudgetSaved(true);
   }, [budgetState]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        SECTIONS_KEY,
+        JSON.stringify(sectionCollapsed)
+      );
+    } catch {
+      // localStorage niedostępny — ignoruj
+    }
+  }, [sectionCollapsed]);
+
+  function toggleSection(id: string) {
+    setSectionCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function handlePartySubmit(e: FormEvent<HTMLFormElement>) {
+    if (partyPending) {
+      e.preventDefault();
+      return;
+    }
+    const form = e.currentTarget;
+    const localInput = form.elements.namedItem(
+      "starts_at_local"
+    ) as HTMLInputElement | null;
+    const hidden = form.elements.namedItem(
+      "starts_at"
+    ) as HTMLInputElement | null;
+    if (localInput && hidden) {
+      if (localInput.value) {
+        const d = new Date(localInput.value);
+        hidden.value = Number.isNaN(d.getTime()) ? "" : d.toISOString();
+      } else {
+        hidden.value = "";
+      }
+    }
+  }
 
   useEffect(() => {
     if (nameState.ok) setEditingNameId(null);
@@ -218,8 +323,8 @@ export function OrganizerPanel({
   ) : null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
+    <div className="flex flex-col">
+      <div className="pb-2">
         <p className="text-sm text-muted">
           {participants.length}{" "}
           {plural(participants.length, ["osoba", "osoby", "osób"])} w losowaniu,{" "}
@@ -236,6 +341,129 @@ export function OrganizerPanel({
         )}
       </div>
 
+      <CollapsibleSection
+        title="Szczegóły imprezy"
+        collapsed={!!sectionCollapsed["party"]}
+        onToggle={() => toggleSection("party")}
+      >
+        <form
+          action={partyAction}
+          className="flex flex-col gap-3"
+          onSubmit={handlePartySubmit}
+        >
+          <input type="hidden" name="starts_at" defaultValue={startsAt ?? ""} />
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="party-label"
+              className="text-[13px] font-medium text-faint"
+            >
+              Do czego odliczamy?
+            </label>
+            <input
+              id="party-label"
+              name="label"
+              type="text"
+              defaultValue={label}
+              maxLength={100}
+              placeholder="np. sylwester, urodziny"
+              autoComplete="off"
+              onChange={() => setPartySaved(false)}
+              className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="party-starts"
+              className="text-[13px] font-medium text-faint"
+            >
+              Data i godzina
+            </label>
+            <input
+              id="party-starts"
+              name="starts_at_local"
+              type="datetime-local"
+              value={startsValue}
+              autoComplete="off"
+              onChange={(e) => {
+                setStartsValue(e.target.value);
+                setPartySaved(false);
+              }}
+              className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink"
+            />
+            {startsValue && (
+              <p className="text-xs text-faint">
+                <LocalDateTime iso={startsValue} />
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="party-location"
+              className="text-[13px] font-medium text-faint"
+            >
+              Lokalizacja
+            </label>
+            <input
+              id="party-location"
+              name="location"
+              type="text"
+              defaultValue={location ?? ""}
+              maxLength={200}
+              placeholder="np. u Ani, ul. Świerkowa 12"
+              autoComplete="off"
+              onChange={() => setPartySaved(false)}
+              className="rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="party-notes"
+              className="text-[13px] font-medium text-faint"
+            >
+              Notatki (opcjonalnie)
+            </label>
+            <textarea
+              id="party-notes"
+              name="notes"
+              defaultValue={notes ?? ""}
+              maxLength={1000}
+              rows={3}
+              placeholder="np. strój świąteczny, weź coś do picia"
+              autoComplete="off"
+              onChange={() => setPartySaved(false)}
+              className="resize-y rounded-xl border border-input-line bg-input-bg px-3.5 py-2.5 text-sm text-ink placeholder:text-faint"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={partyPending || partySaved}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep disabled:hover:bg-sage-150"
+          >
+            {partyPending ? (
+              <>
+                <SpinnerIcon />
+                Zapisywanie…
+              </>
+            ) : partySaved ? (
+              <>
+                <CheckIcon />
+                Zapisano
+              </>
+            ) : (
+              "Zapisz szczegóły"
+            )}
+          </button>
+          {!partyState.ok && partyState.error && (
+            <p className="text-sm text-red-600">{partyState.error}</p>
+          )}
+        </form>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Losowanie"
+        collapsed={!!sectionCollapsed["lottery"]}
+        onToggle={() => toggleSection("lottery")}
+      >
       <div className={lotteryDone ? "grid gap-2 md:grid-cols-3" : undefined}>
         <form
           className="flex flex-col items-start gap-2"
@@ -351,8 +579,14 @@ export function OrganizerPanel({
       {!emailState.ok && emailState.error && (
         <p className="text-sm text-red-600">{emailState.error}</p>
       )}
+      </CollapsibleSection>
 
       {!lotteryDone && notReadyNames.length > 0 && (
+        <CollapsibleSection
+          title="Przypomnienia"
+          collapsed={!!sectionCollapsed["reminders"]}
+          onToggle={() => toggleSection("reminders")}
+        >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -382,19 +616,25 @@ export function OrganizerPanel({
             )}
           </button>
         </form>
-      )}
-      {remindState.ok && (
-        <p className="text-sm font-medium text-accent">Przypomnienia wysłane ✓</p>
-      )}
-      {!remindState.ok && remindState.error && (
-        <p className="text-sm text-red-600">{remindState.error}</p>
+        {remindState.ok && (
+          <p className="mt-2 text-sm font-medium text-accent">
+            Przypomnienia wysłane ✓
+          </p>
+        )}
+        {!remindState.ok && remindState.error && (
+          <p className="mt-2 text-sm text-red-600">{remindState.error}</p>
+        )}
+        </CollapsibleSection>
       )}
 
-      <div>
-        <h3 className="text-sm font-medium text-muted">Budżety</h3>
+      <CollapsibleSection
+        title="Budżety"
+        collapsed={!!sectionCollapsed["budgets"]}
+        onToggle={() => toggleSection("budgets")}
+      >
         <form
           action={(formData) => budgetAction(formData)}
-          className="mt-2 flex flex-col gap-2"
+          className="flex flex-col gap-2"
         >
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -463,11 +703,14 @@ export function OrganizerPanel({
             <p className="text-sm text-red-600">{budgetState.error}</p>
           )}
         </form>
-      </div>
+      </CollapsibleSection>
 
-      <div>
-        <h3 className="text-sm font-medium text-muted">Widoczność paneli</h3>
-        <p className="mt-1 text-xs text-faint">
+      <CollapsibleSection
+        title="Widoczność paneli"
+        collapsed={!!sectionCollapsed["visibility"]}
+        onToggle={() => toggleSection("visibility")}
+      >
+        <p className="text-xs text-faint">
           Ukryte panele znikają u uczestników — u Ciebie zostają widoczne.
         </p>
         <div className="mt-2 flex flex-col gap-1">
@@ -500,11 +743,14 @@ export function OrganizerPanel({
         {!visibilityState.ok && visibilityState.error && (
           <p className="mt-2 text-sm text-red-600">{visibilityState.error}</p>
         )}
-      </div>
+      </CollapsibleSection>
 
-      <div>
-        <h3 className="text-sm font-medium text-muted">Uczestnicy</h3>
-        <ul className="mt-2 flex flex-col gap-2">
+      <CollapsibleSection
+        title="Uczestnicy"
+        collapsed={!!sectionCollapsed["participants"]}
+        onToggle={() => toggleSection("participants")}
+      >
+        <ul className="flex flex-col gap-2">
           {participants.map((p) => (
             <li
               key={p.id}
@@ -591,14 +837,15 @@ export function OrganizerPanel({
         {readyState.error && (
           <p className="mt-2 text-sm text-red-600">{readyState.error}</p>
         )}
-      </div>
+      </CollapsibleSection>
 
       {lateJoiners.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-muted">
-            Dołączyli po losowaniu
-          </h3>
-          <ul className="mt-2 flex flex-col gap-1">
+        <CollapsibleSection
+          title="Dołączyli po losowaniu"
+          collapsed={!!sectionCollapsed["lateJoiners"]}
+          onToggle={() => toggleSection("lateJoiners")}
+        >
+          <ul className="flex flex-col gap-1">
             {lateJoiners.map((p) => (
               <li
                 key={p.id}
@@ -633,11 +880,14 @@ export function OrganizerPanel({
               </li>
             ))}
           </ul>
-        </div>
+        </CollapsibleSection>
       )}
 
-      <div>
-        <h3 className="text-sm font-medium text-muted">Zgłoszenia błędów</h3>
+      <CollapsibleSection
+        title="Zgłoszenia błędów"
+        collapsed={!!sectionCollapsed["reports"]}
+        onToggle={() => toggleSection("reports")}
+      >
         {errorReports.length === 0 ? (
           <p className="mt-2 text-sm text-faint">Brak zgłoszeń.</p>
         ) : (
@@ -704,7 +954,7 @@ export function OrganizerPanel({
         {!reportState.ok && reportState.error && (
           <p className="mt-2 text-sm text-red-600">{reportState.error}</p>
         )}
-      </div>
+      </CollapsibleSection>
 
       {!isDesktop && (
         <BottomSheet
@@ -758,6 +1008,118 @@ export function OrganizerPanel({
 
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
     </div>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  collapsed,
+  onToggle,
+  children,
+}: {
+  title: string;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const rafRef = useRef(0);
+  const prevRef = useRef(collapsed);
+  const [displayCollapsed, setDisplayCollapsed] = useState(collapsed);
+  const [animH, setAnimH] = useState<number | null>(null);
+
+  useEffect(() => {
+    const prev = prevRef.current;
+    prevRef.current = collapsed;
+    if (prev === collapsed) return;
+    const wrap = wrapRef.current;
+    if (
+      !wrap ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setAnimH(null);
+      setDisplayCollapsed(collapsed);
+      return;
+    }
+    cancelAnimationFrame(rafRef.current);
+    const from = wrap.getBoundingClientRect().height;
+    const to = collapsed ? 0 : wrap.scrollHeight;
+    if (from === to) {
+      setAnimH(null);
+      setDisplayCollapsed(collapsed);
+      return;
+    }
+    const start = performance.now();
+    const DURATION = 200;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / DURATION);
+      const e = 1 - Math.pow(1 - t, 3);
+      setAnimH(from + (to - from) * e);
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        setAnimH(null);
+        setDisplayCollapsed(collapsed);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [collapsed]);
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  return (
+    <section className="border-t border-line">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+        aria-label={
+          collapsed ? `Rozwiń sekcję ${title}` : `Zwiń sekcję ${title}`
+        }
+        className="flex w-full items-center justify-between gap-2 py-3 text-left"
+      >
+        <h3 className="text-sm font-medium text-muted">{title}</h3>
+        <span
+          aria-hidden
+          className={`shrink-0 text-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${
+            collapsed ? "rotate-0" : "rotate-180"
+          }`}
+        >
+          <ChevronIcon />
+        </span>
+      </button>
+      <div
+        ref={wrapRef}
+        style={{
+          height:
+            animH != null ? `${animH}px` : displayCollapsed ? "0px" : undefined,
+          overflow: animH != null || displayCollapsed ? "hidden" : "visible",
+          visibility:
+            displayCollapsed && animH == null ? "hidden" : undefined,
+        }}
+      >
+        <div className="pb-4">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }
 

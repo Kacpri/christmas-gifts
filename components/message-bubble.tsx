@@ -270,6 +270,7 @@ export function MessageBubble({
               onChange={(e) => setEditValue(e.target.value)}
               required
               maxLength={500}
+              autoComplete="off"
               className="w-full rounded border border-input-line bg-surface px-2 py-1 text-sm text-ink"
             />
             <div className="flex items-center gap-2">

@@ -557,8 +557,6 @@ export default async function Home() {
       }}
       party={{
         startsAt: partyRow?.starts_at ?? null,
-        location: partyRow?.location ?? null,
-        notes: partyRow?.notes ?? null,
         label: partyRow?.label ?? "imprezy",
         isOrganizer: Boolean(profile?.is_organizer),
         listBudget: partyRow?.list_budget ?? null,
@@ -582,6 +580,10 @@ export default async function Home() {
               participants: lotteryParticipants,
               lateJoiners,
               lotteryDone,
+              startsAt: partyRow?.starts_at ?? null,
+              location: partyRow?.location ?? null,
+              notes: partyRow?.notes ?? null,
+              label: partyRow?.label ?? "imprezy",
               listBudget: partyRow?.list_budget ?? null,
               themeBudget: partyRow?.theme_budget ?? null,
               errorReports,

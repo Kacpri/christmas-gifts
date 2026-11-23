@@ -59,7 +59,6 @@ import { NameForm } from "@/components/name-form";
 import { NotificationToggle } from "@/components/notification-toggle";
 import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
-import { PartyPanel } from "@/components/party-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
 import {
@@ -79,13 +78,11 @@ export type PanelId =
   | "potrawy"
   | "children"
   | "ready"
-  | "impreza"
   | "organizer";
 
 const ALL_PANELS: PanelId[] = [
   "profile",
   "ready",
-  "impreza",
   "gifts",
   "chats",
   "group-chat",
@@ -109,7 +106,6 @@ const DEFAULT_LAYOUT: Layout = {
     "potrawy",
     "children",
     "group-chat",
-    "impreza",
     "organizer",
   ],
 };
@@ -549,15 +545,6 @@ function ReadyIcon() {
   );
 }
 
-function PartyIcon() {
-  return (
-    <PanelIconSvg>
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" />
-    </PanelIconSvg>
-  );
-}
-
 function GiftsIcon() {
   return (
     <PanelIconSvg>
@@ -636,7 +623,6 @@ function ChildrenIcon() {
 const PANEL_ICONS: Record<PanelId, ReactNode> = {
   profile: <ProfileIcon />,
   ready: <ReadyIcon />,
-  impreza: <PartyIcon />,
   gifts: <GiftsIcon />,
   chats: <ChatsIcon />,
   "group-chat": <GroupChatIcon />,
@@ -1302,8 +1288,6 @@ export function Dashboard({
   kids: ChildrenData;
   party: {
     startsAt: string | null;
-    location: string | null;
-    notes: string | null;
     label: string;
     isOrganizer: boolean;
     listBudget: number | null;
@@ -1330,6 +1314,10 @@ export function Dashboard({
     }[];
     lateJoiners: { id: string; full_name: string; avatar_url: string | null }[];
     lotteryDone: boolean;
+    startsAt: string | null;
+    location: string | null;
+    notes: string | null;
+    label: string;
     listBudget: number | null;
     themeBudget: number | null;
     errorReports: {
@@ -1527,7 +1515,6 @@ export function Dashboard({
 
   const isVisible = (id: PanelId) =>
     (id !== "organizer" || organizer) &&
-    (id !== "impreza" || organizer) &&
     (id !== "ready" || !(ready.lotteryDone || ready.lateJoiner)) &&
     (id !== "gifts" || gifts.kind !== "waiting") &&
     (id !== "chats" || chats.lotteryDone) &&
@@ -1774,10 +1761,6 @@ export function Dashboard({
           count={gifts.kind === "waiting" ? gifts.count : 0}
         />
       ),
-    },
-    impreza: {
-      title: "Odliczanie",
-      body: <PartyPanel {...party} />,
     },
     organizer: {
       title: "Panel organizatora",
