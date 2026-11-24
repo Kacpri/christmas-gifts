@@ -44,7 +44,8 @@ type SortField = "time" | "name" | "person" | "category" | "likes";
 type SortDir = "asc" | "desc";
 
 const empty: ActionResult = { ok: false };
-const PER_PAGE = 10;
+const PER_PAGE_DESKTOP = 10;
+const PER_PAGE_MOBILE = 8;
 
 const CATEGORY_OPTIONS = DISH_CATEGORIES.map((c) => ({
   value: c.value,
@@ -115,6 +116,7 @@ export function DishForm({
   const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const perPage = isDesktop ? PER_PAGE_DESKTOP : PER_PAGE_MOBILE;
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
@@ -224,11 +226,11 @@ export function DishForm({
     setPage(1);
   }
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice(
-    (currentPage - 1) * PER_PAGE,
-    currentPage * PER_PAGE
+    (currentPage - 1) * perPage,
+    currentPage * perPage
   );
 
   function startEdit(dish: Dish) {
@@ -691,6 +693,7 @@ export function DishForm({
                       <LikeButton
                         likedByMe={like.likedByMe}
                         likeCount={like.likeCount}
+                        isDesktop={isDesktop}
                         onClick={(e) => {
                           if (longPressFired.current) {
                             e.preventDefault();
@@ -748,9 +751,8 @@ export function DishForm({
             {!addOpen && <li>{addButton}</li>}
             {addOpen && isDesktop && <li>{addForm}</li>}
             {totalPages > 1 &&
-              currentPage === totalPages &&
-              pageItems.length < PER_PAGE &&
-              Array.from({ length: PER_PAGE - pageItems.length }).map(
+              pageItems.length < perPage &&
+              Array.from({ length: perPage - pageItems.length }).map(
                 (_, i) => (
                   <li
                     key={`ph-${i}`}
@@ -777,11 +779,16 @@ export function DishForm({
                 disabled={currentPage === 1}
                 className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
               >
-                ← Poprzednia
+                {isDesktop ? "← Poprzednia" : "←"}
               </button>
               <span className="text-xs text-muted">
-                Strona {currentPage} z {totalPages} · {filtered.length}{" "}
-                {plural(filtered.length, ["potrawa", "potrawy", "potraw"])}
+                {isDesktop
+                  ? `Strona ${currentPage} z ${totalPages} · ${filtered.length} ${plural(filtered.length, [
+                      "potrawa",
+                      "potrawy",
+                      "potraw",
+                    ])}`
+                  : `${currentPage}/${totalPages}`}
               </span>
               <button
                 type="button"
@@ -789,7 +796,7 @@ export function DishForm({
                 disabled={currentPage === totalPages}
                 className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
               >
-                Następna →
+                {isDesktop ? "Następna →" : "→"}
               </button>
             </div>
           )}
@@ -1119,34 +1126,52 @@ function LikeButton({
   likedByMe,
   likeCount,
   onClick,
+  isDesktop,
 }: {
   likedByMe: boolean;
   likeCount: number;
   onClick: (e: MouseEvent<HTMLButtonElement>) => void;
+  isDesktop: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const clickedSinceHoverRef = useRef(false);
   const freshHover = hovered && !clickedSinceHoverRef.current;
   const filled = likedByMe ? !freshHover : freshHover;
-  return (
+  const heart = (
+    <span aria-hidden className={likedByMe ? "text-danger" : "text-muted"}>
+      <HeartIcon filled={filled} className={isDesktop ? undefined : "size-5"} />
+    </span>
+  );
+  const shared = {
+    type: "button" as const,
+    onClick: (e: MouseEvent<HTMLButtonElement>) => {
+      clickedSinceHoverRef.current = true;
+      onClick(e);
+    },
+    onMouseEnter: () => {
+      clickedSinceHoverRef.current = false;
+      setHovered(true);
+    },
+    onMouseLeave: () => setHovered(false),
+    "aria-label": likedByMe ? "Odpolub potrawę" : "Polub potrawę",
+    title: likedByMe ? "Odpolub" : "Polub",
+  };
+  return isDesktop ? (
     <button
-      type="button"
-      onClick={(e) => {
-        clickedSinceHoverRef.current = true;
-        onClick(e);
-      }}
-      onMouseEnter={() => {
-        clickedSinceHoverRef.current = false;
-        setHovered(true);
-      }}
-      onMouseLeave={() => setHovered(false)}
-      aria-label={likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
-      title={likedByMe ? "Odpolub" : "Polub"}
+      {...shared}
+      className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted"
+    >
+      {heart}
+      <span className="w-4 text-right tabular-nums text-xs">
+        {likeCount > 0 ? (likeCount > 99 ? "99+" : likeCount) : ""}
+      </span>
+    </button>
+  ) : (
+    <button
+      {...shared}
       className="flex h-8 w-8 shrink-0 flex-col items-center justify-start rounded-lg text-muted"
     >
-      <span aria-hidden className={likedByMe ? "text-danger" : "text-muted"}>
-        <HeartIcon filled={filled} className="size-5" />
-      </span>
+      {heart}
       {likeCount > 0 && (
         <span className="text-xs leading-none tabular-nums">
           {likeCount > 99 ? "99+" : likeCount}
