@@ -586,6 +586,10 @@ export async function sendMessage(
   if (!text && !photo.path) {
     return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
+  const imageWidth =
+    Math.floor(Number(formData.get("image_width") ?? 0)) || null;
+  const imageHeight =
+    Math.floor(Number(formData.get("image_height") ?? 0)) || null;
   const { error } = await supabase.from("messages").insert({
     lottery_type: lotteryType,
     drawer_id: drawerId,
@@ -593,6 +597,8 @@ export async function sendMessage(
     sender_id: user.id,
     text,
     image_path: photo.path,
+    image_width: imageWidth,
+    image_height: imageHeight,
   });
   if (error) return { ok: false, error: error.message };
   await touchThreadRead(supabase, user.id, lotteryType, drawerId, draweeId);
@@ -653,9 +659,17 @@ export async function sendGroupMessage(
   if (!text && !photo.path) {
     return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
-  const { error } = await supabase
-    .from("group_messages")
-    .insert({ sender_id: user.id, text, image_path: photo.path });
+  const imageWidth =
+    Math.floor(Number(formData.get("image_width") ?? 0)) || null;
+  const imageHeight =
+    Math.floor(Number(formData.get("image_height") ?? 0)) || null;
+  const { error } = await supabase.from("group_messages").insert({
+    sender_id: user.id,
+    text,
+    image_path: photo.path,
+    image_width: imageWidth,
+    image_height: imageHeight,
+  });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
@@ -746,14 +760,18 @@ export async function sendDm(
   if (!text && !photo.path) {
     return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
-  const { error } = await supabase
-    .from("dm_messages")
-    .insert({
-      sender_id: user.id,
-      recipient_id: recipientId,
-      text,
-      image_path: photo.path,
-    });
+  const imageWidth =
+    Math.floor(Number(formData.get("image_width") ?? 0)) || null;
+  const imageHeight =
+    Math.floor(Number(formData.get("image_height") ?? 0)) || null;
+  const { error } = await supabase.from("dm_messages").insert({
+    sender_id: user.id,
+    recipient_id: recipientId,
+    text,
+    image_path: photo.path,
+    image_width: imageWidth,
+    image_height: imageHeight,
+  });
   if (error) return { ok: false, error: error.message };
   await supabase
     .from("dm_reads")

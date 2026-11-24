@@ -111,6 +111,8 @@ type DbMessage = {
   sender_id: string;
   text: string;
   image_path: string | null;
+  image_width: number | null;
+  image_height: number | null;
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
@@ -614,6 +616,8 @@ export function ChatsPanel({
               sender_id: string;
               text: string;
               image_path: string | null;
+              image_width: number | null;
+              image_height: number | null;
               created_at: string;
             };
             const key = `lt:${m.lottery_type}-${m.drawer_id}-${m.drawee_id}`;
@@ -632,6 +636,8 @@ export function ChatsPanel({
                     editedAt: null,
                     deleted: false,
                     imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    imageWidth: m.image_width,
+                    imageHeight: m.image_height,
                     reactions: [],
                   },
                 ],
@@ -800,6 +806,8 @@ export function ChatsPanel({
               recipient_id: string;
               text: string;
               image_path: string | null;
+              image_width: number | null;
+              image_height: number | null;
               created_at: string;
             };
             const peer = m.sender_id === me ? m.recipient_id : m.sender_id;
@@ -819,6 +827,8 @@ export function ChatsPanel({
                     editedAt: null,
                     deleted: false,
                     imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    imageWidth: m.image_width,
+                    imageHeight: m.image_height,
                     reactions: [],
                   },
                 ],
@@ -962,6 +972,8 @@ export function ChatsPanel({
                     editedAt: null,
                     deleted: false,
                     imageUrl: null,
+                    imageWidth: null,
+                    imageHeight: null,
                     reactions: [],
                   },
                 ],
@@ -1145,7 +1157,7 @@ export function ChatsPanel({
         supabase
           .from("messages")
           .select(
-            "id, lottery_type, drawer_id, drawee_id, sender_id, text, image_path, created_at, edited_at, deleted_at"
+            "id, lottery_type, drawer_id, drawee_id, sender_id, text, image_path, image_width, image_height, created_at, edited_at, deleted_at"
           )
           .or(`drawer_id.eq.${me},drawee_id.eq.${me}`)
           .order("created_at"),
@@ -1177,6 +1189,8 @@ export function ChatsPanel({
               editedAt: m.edited_at,
               deleted: m.deleted_at != null,
               imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+              imageWidth: m.image_width,
+              imageHeight: m.image_height,
               reactions: cur?.reactions ?? [],
             };
             if (
@@ -1804,6 +1818,10 @@ export function ChatsPanel({
                       e.preventDefault();
                       const fd = new FormData(e.currentTarget);
                       fd.set("image", photo.file);
+                      if (photo.dims) {
+                        fd.set("image_width", String(photo.dims.width));
+                        fd.set("image_height", String(photo.dims.height));
+                      }
                       (isDm ? dmSend : lotterySend)(fd);
                     }
                   }}

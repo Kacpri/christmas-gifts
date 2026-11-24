@@ -8,6 +8,10 @@ export function usePhotoAttachment() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [dims, setDims] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,13 +35,20 @@ export function usePhotoAttachment() {
     }
     setError(null);
     setFile(f);
-    setPreviewUrl(URL.createObjectURL(f));
+    setDims(null);
+    const url = URL.createObjectURL(f);
+    setPreviewUrl(url);
+    const img = new Image();
+    img.onload = () =>
+      setDims({ width: img.naturalWidth, height: img.naturalHeight });
+    img.src = url;
   }
 
   function clear() {
     setFile(null);
     setError(null);
     setPreviewUrl(null);
+    setDims(null);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -45,6 +56,7 @@ export function usePhotoAttachment() {
     file,
     error,
     previewUrl,
+    dims,
     inputRef,
     pick,
     clear,

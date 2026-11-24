@@ -70,7 +70,7 @@ export default async function Home() {
     supabase
       .from("messages")
       .select(
-        "id, lottery_type, drawer_id, drawee_id, sender_id, text, image_path, created_at, edited_at, deleted_at"
+        "id, lottery_type, drawer_id, drawee_id, sender_id, text, image_path, image_width, image_height, created_at, edited_at, deleted_at"
       )
       .or(`drawer_id.eq.${user.id},drawee_id.eq.${user.id}`)
       .order("created_at"),
@@ -93,7 +93,7 @@ export default async function Home() {
     supabase
       .from("dm_messages")
       .select(
-        "id, sender_id, recipient_id, text, image_path, created_at, edited_at, deleted_at"
+        "id, sender_id, recipient_id, text, image_path, image_width, image_height, created_at, edited_at, deleted_at"
       )
       .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
       .order("created_at"),
@@ -317,13 +317,17 @@ export default async function Home() {
 
   const { data: groupMessagesData } = await supabase
     .from("group_messages")
-    .select("id, sender_id, text, image_path, created_at, edited_at, deleted_at")
+    .select(
+      "id, sender_id, text, image_path, image_width, image_height, created_at, edited_at, deleted_at"
+    )
     .order("created_at");
   const groupMessages = (groupMessagesData ?? []) as {
     id: number;
     sender_id: string;
     text: string;
     image_path: string | null;
+    image_width: number | null;
+    image_height: number | null;
     created_at: string;
     edited_at: string | null;
     deleted_at: string | null;
@@ -449,6 +453,8 @@ export default async function Home() {
           editedAt: m.edited_at,
           deleted: m.deleted_at != null,
           imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+          imageWidth: m.image_width,
+          imageHeight: m.image_height,
           reactions: reactionsFor(lotteryReactionsByMsg, m.id),
         })),
         unread: msgs.filter(
@@ -492,6 +498,8 @@ export default async function Home() {
     recipient_id: string;
     text: string;
     image_path: string | null;
+    image_width: number | null;
+    image_height: number | null;
     created_at: string;
     edited_at: string | null;
     deleted_at: string | null;
@@ -521,6 +529,8 @@ export default async function Home() {
         editedAt: m.edited_at,
         deleted: m.deleted_at != null,
         imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+        imageWidth: m.image_width,
+        imageHeight: m.image_height,
         reactions: reactionsFor(dmReactionsByMsg, m.id),
       })),
       unread: peerMsgs.filter(
@@ -568,6 +578,8 @@ export default async function Home() {
         editedAt: m.edited_at,
         deleted: m.deleted_at != null,
         imageUrl: null,
+        imageWidth: null,
+        imageHeight: null,
         reactions: reactionsFor(anonReactionsByMsg, m.id),
       })),
       unread: convMsgs.filter(
@@ -614,6 +626,8 @@ export default async function Home() {
           editedAt: m.edited_at,
           deleted: m.deleted_at != null,
           imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+          imageWidth: m.image_width,
+          imageHeight: m.image_height,
           reactions: reactionsFor(groupReactionsByMsg, m.id),
         })),
       }}

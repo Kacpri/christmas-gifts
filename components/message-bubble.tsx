@@ -25,6 +25,8 @@ export type ChatMessage = {
   editedAt: string | null;
   deleted: boolean;
   imageUrl: string | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
   reactions: ReactionGroup[];
 };
 
@@ -310,7 +312,9 @@ function MessageBubbleBase({
                   src={message.imageUrl}
                   alt=""
                   loading="lazy"
-                  className="max-h-52 w-auto max-w-full"
+                  width={message.imageWidth ?? undefined}
+                  height={message.imageHeight ?? undefined}
+                  className="block max-h-52 w-auto max-w-full"
                 />
               </button>
             )}

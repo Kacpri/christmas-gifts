@@ -101,7 +101,7 @@ export function GroupChatSection({
       const { data } = await supabase
         .from("group_messages")
         .select(
-          "id, sender_id, text, image_path, created_at, edited_at, deleted_at"
+          "id, sender_id, text, image_path, image_width, image_height, created_at, edited_at, deleted_at"
         )
         .order("created_at");
       if (cancelled || !data) return;
@@ -117,6 +117,8 @@ export function GroupChatSection({
             editedAt: m.edited_at,
             deleted: m.deleted_at != null,
             imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+            imageWidth: m.image_width,
+            imageHeight: m.image_height,
             reactions: cur?.reactions ?? [],
           });
         }
@@ -163,6 +165,8 @@ export function GroupChatSection({
               sender_id: string;
               text: string;
               image_path: string | null;
+              image_width: number | null;
+              image_height: number | null;
               created_at: string;
             };
               setLocal((prev) => {
@@ -177,6 +181,8 @@ export function GroupChatSection({
                     editedAt: null,
                     deleted: false,
                     imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    imageWidth: m.image_width,
+                    imageHeight: m.image_height,
                     reactions: [],
                   },
                 ];
@@ -492,6 +498,10 @@ export function GroupChatSection({
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               fd.set("image", photo.file);
+              if (photo.dims) {
+                fd.set("image_width", String(photo.dims.width));
+                fd.set("image_height", String(photo.dims.height));
+              }
               sendAction(fd);
             }
           }}
