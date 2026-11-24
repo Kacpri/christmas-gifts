@@ -317,6 +317,25 @@ export async function removeDish(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+export async function restoreDish(formData: FormData): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  const category = String(formData.get("category") ?? "");
+  const quantity = String(formData.get("quantity") ?? "").trim();
+  if (!name || name.length > 120) {
+    return { ok: false, error: "Nazwa potrawy: 1–120 znaków." };
+  }
+  if (!(DISH_CATEGORY_VALUES as string[]).includes(category)) {
+    return { ok: false, error: "Wybierz kategorię." };
+  }
+  const { error } = await supabase
+    .from("dishes")
+    .insert({ user_id: user.id, name, category, quantity: quantity || null });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function saveName(
   _prev: ActionResult,
   formData: FormData

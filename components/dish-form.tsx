@@ -14,6 +14,7 @@ import {
   addDish,
   editDish,
   removeDish,
+  restoreDish,
   type ActionResult,
 } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -121,6 +122,14 @@ export function DishForm({
   const [editQuantity, setEditQuantity] = useState("");
   const [editCategory, setEditCategory] = useState<DishCategory>("glowne");
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [removedIds, setRemovedIds] = useState<Record<number, boolean>>({});
+  const [undoDish, setUndoDish] = useState<Dish | null>(null);
+
+  useEffect(() => {
+    if (!undoDish) return;
+    const t = setTimeout(() => setUndoDish(null), 5000);
+    return () => clearTimeout(t);
+  }, [undoDish]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addName, setAddName] = useState("");
@@ -230,6 +239,7 @@ export function DishForm({
 
   const q = query.trim().toLowerCase();
   const filtered = dishes
+    .filter((d) => !removedIds[d.id])
     .filter((d) => {
       if (q && !d.name.toLowerCase().includes(q)) return false;
       if (personFilter !== "all" && d.author !== personFilter) return false;
@@ -274,17 +284,43 @@ export function DishForm({
 
   function handleRemove(dish: Dish) {
     setConfirm({
-      message: `Usunąć potrawę „${capitalizeFirst(
-        dish.name
-      )}"? Tej operacji nie można cofnąć.`,
+      message: `Usunąć potrawę „${capitalizeFirst(dish.name)}"?`,
       confirmLabel: "Usuń",
       tone: "danger",
       onConfirm: () => {
+        setRemovedIds((prev) => ({ ...prev, [dish.id]: true }));
+        setUndoDish(dish);
         const fd = new FormData();
         fd.set("id", String(dish.id));
-        removeDish(fd);
+        removeDish(fd).then((res) => {
+          if (!res.ok) {
+            setRemovedIds((prev) => {
+              if (!(dish.id in prev)) return prev;
+              const next = { ...prev };
+              delete next[dish.id];
+              return next;
+            });
+            setUndoDish(null);
+          }
+        });
       },
     });
+  }
+
+  function handleUndoDish() {
+    if (!undoDish) return;
+    setRemovedIds((prev) => {
+      if (!(undoDish.id in prev)) return prev;
+      const next = { ...prev };
+      delete next[undoDish.id];
+      return next;
+    });
+    const fd = new FormData();
+    fd.set("name", undoDish.name);
+    fd.set("category", undoDish.category);
+    fd.set("quantity", undoDish.quantity ?? "");
+    restoreDish(fd);
+    setUndoDish(null);
   }
 
   function handleSortField(v: string) {
@@ -908,6 +944,24 @@ export function DishForm({
         state={clearConfirm}
         onClose={() => setClearConfirm(null)}
       />
+
+      <div
+        aria-live="polite"
+        className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2"
+      >
+        {undoDish && (
+          <div className="flex items-center gap-3 rounded-xl bg-ink px-4 py-2.5 text-sm text-white shadow-lg dark:bg-surface dark:text-foreground">
+            Usunięto
+            <button
+              type="button"
+              onClick={handleUndoDish}
+              className="font-semibold underline underline-offset-2 hover:text-cream"
+            >
+              Cofnij
+            </button>
+          </div>
+        )}
+      </div>
 
       <BottomSheet
         open={!!mobileMenuDish}
