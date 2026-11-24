@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Presence } from "./presence";
@@ -35,11 +41,43 @@ export function Select({
   id?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropStyle, setDropStyle] = useState<{
+    left: number;
+    top: number;
+    topUp: number;
+    width: number;
+  } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const dropRef = useRef<HTMLUListElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  function toggle() {
+    if (open) {
+      setOpen(false);
+      setDropStyle(null);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setDropStyle({
+      left: r.left,
+      top: r.bottom + 4,
+      topUp: r.top - 4,
+      width: r.width,
+    });
+    setOpen(true);
+  }
+
+  useLayoutEffect(() => {
+    if (!open || !isDesktop || direction !== "up") return;
+    const node = dropRef.current;
+    if (!node) return;
+    setDropStyle((s) => (s ? { ...s, top: s.topUp - node.offsetHeight } : s));
+  }, [open, isDesktop, direction]);
 
   useEffect(() => {
     if (!open) return;
@@ -48,7 +86,8 @@ export function Select({
       if (
         ref.current &&
         !ref.current.contains(target) &&
-        (!sheetRef.current || !sheetRef.current.contains(target))
+        (!sheetRef.current || !sheetRef.current.contains(target)) &&
+        (!dropRef.current || !dropRef.current.contains(target))
       ) {
         setOpen(false);
       }
@@ -63,6 +102,19 @@ export function Select({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !isDesktop) return;
+    function close() {
+      setOpen(false);
+    }
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open, isDesktop]);
 
   useEffect(() => {
     if (!open || isDesktop) return;
@@ -115,7 +167,7 @@ export function Select({
       <button
         type="button"
         id={id}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         aria-haspopup="listbox"
         aria-expanded={open}
         className="flex w-full items-center gap-2 rounded-xl border border-input-line bg-surface px-3.5 py-2.5 text-left text-sm text-ink"
@@ -155,17 +207,26 @@ export function Select({
           <path d="M4 6l4 4 4-4" />
         </svg>
       </button>
-      {open && isDesktop && (
-        <ul
-          role="listbox"
-          ref={listRef}
-          className={`absolute z-30 ${
-            direction === "up" ? "bottom-full mb-1" : "mt-1"
-          } ${scrollable ? "max-h-64 overflow-auto" : ""} w-full rounded-xl border border-line bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
-        >
-          {optionItems}
-        </ul>
-      )}
+      {open &&
+        isDesktop &&
+        dropStyle &&
+        createPortal(
+          <ul
+            role="listbox"
+            ref={dropRef}
+            style={{
+              left: dropStyle.left,
+              top: dropStyle.top,
+              width: dropStyle.width,
+            }}
+            className={`fixed z-50 ${
+              scrollable ? "max-h-64 overflow-auto" : ""
+            } rounded-xl border border-line bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)]`}
+          >
+            {optionItems}
+          </ul>,
+          document.body
+        )}
       {open &&
         !isDesktop &&
         createPortal(

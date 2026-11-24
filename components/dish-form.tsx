@@ -553,6 +553,19 @@ export function DishForm({
                 className="w-full rounded-xl border border-input-line bg-surface py-2.5 pl-10 pr-3.5 text-sm text-ink placeholder:text-placeholder"
               />
             </div>
+            {isDesktop && (
+              <Select
+                leadingIcon={<RowsIcon />}
+                value={perPageChoice}
+                onChange={(v) => {
+                  setPerPageChoice(v);
+                  setPage(1);
+                }}
+                options={PER_PAGE_OPTIONS}
+                scrollable={false}
+                className="w-36 shrink-0"
+              />
+            )}
             <button
               type="button"
               onClick={() => setFiltersOpen((o) => !o)}
@@ -627,19 +640,6 @@ export function DishForm({
                   <SortDirIcon dir={sortDir} />
                 </button>
                 </div>
-                {isDesktop && (
-                  <Select
-                    leadingIcon={<RowsIcon />}
-                    value={perPageChoice}
-                    onChange={(v) => {
-                      setPerPageChoice(v);
-                      setPage(1);
-                    }}
-                    options={PER_PAGE_OPTIONS}
-                    scrollable={false}
-                    className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
-                  />
-                )}
                 </div>
             </div>
           </div>
