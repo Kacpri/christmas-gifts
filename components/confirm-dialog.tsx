@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -66,7 +67,7 @@ export function ConfirmDialog({
 
   if (isDesktop) {
     if (!state) return null;
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
         <div
@@ -79,11 +80,12 @@ export function ConfirmDialog({
           </p>
           <div className="mt-5">{buttons}</div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
+  return createPortal(
     <BottomSheet
       open={!!state}
       onClose={onClose}
@@ -94,6 +96,7 @@ export function ConfirmDialog({
       <p className="whitespace-pre-line text-sm leading-relaxed text-ink">
         {s.message}
       </p>
-    </BottomSheet>
+    </BottomSheet>,
+    document.body
   );
 }
