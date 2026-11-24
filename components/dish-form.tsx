@@ -100,9 +100,11 @@ function compareDishes(a: Dish, b: Dish, field: SortField): number {
 export function DishForm({
   dishes,
   narrow = false,
+  onAnimState,
 }: {
   dishes: Dish[];
   narrow?: boolean;
+  onAnimState?: (on: boolean) => void;
 }) {
   const [addState, addAction, adding] = useActionState(addDish, empty);
   const [editState, editAction, editing] = useActionState(editDish, empty);
@@ -129,6 +131,12 @@ export function DishForm({
   const { mounted: addFormMounted, shown: addFormShown } = useCollapse(
     addOpen && isDesktop
   );
+  useEffect(() => {
+    if (!isDesktop || !onAnimState) return;
+    onAnimState(true);
+    const t = setTimeout(() => onAnimState(false), 250);
+    return () => clearTimeout(t);
+  }, [addFormShown, isDesktop, onAnimState]);
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);

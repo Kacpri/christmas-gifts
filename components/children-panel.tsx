@@ -84,7 +84,12 @@ export type ChildrenData = {
 
 const empty: ActionResult = { ok: false };
 
-export function ChildrenPanel({ me, kids, users }: ChildrenData) {
+export function ChildrenPanel({
+  me,
+  kids,
+  users,
+  onAnimState,
+}: ChildrenData & { onAnimState?: (on: boolean) => void }) {
   const [selectedId, setSelectedId] = useState<number | null>(
     kids[0]?.id ?? null
   );
@@ -93,6 +98,12 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
   const { mounted: addFormMounted, shown: addFormShown } = useCollapse(
     addOpen && isDesktop
   );
+  useEffect(() => {
+    if (!isDesktop || !onAnimState) return;
+    onAnimState(true);
+    const t = setTimeout(() => onAnimState(false), 250);
+    return () => clearTimeout(t);
+  }, [addFormShown, isDesktop, onAnimState]);
   const [childName, setChildName] = useState("");
   const [childPhoto, setChildPhoto] = useState<File | null>(null);
   const [childPhotoUrl, setChildPhotoUrl] = useState<string | null>(null);

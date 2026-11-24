@@ -1418,6 +1418,19 @@ export function Dashboard({
     });
   }, []);
 
+  const dishesFormAnim = useCallback(
+    (on: boolean) => handleAnimState("form-dishes", on),
+    [handleAnimState]
+  );
+  const wishesFormAnim = useCallback(
+    (on: boolean) => handleAnimState("form-wishes", on),
+    [handleAnimState]
+  );
+  const childrenFormAnim = useCallback(
+    (on: boolean) => handleAnimState("form-children", on),
+    [handleAnimState]
+  );
+
   useEffect(() => {
     const saved = loadLayout();
     if (saved) {
@@ -1772,16 +1785,23 @@ export function Dashboard({
           listBudget={effectiveListBudget(party.listBudget)}
           themeBudget={effectiveThemeBudget(party.themeBudget)}
           onCountChange={setWishCount}
+          onAnimState={wishesFormAnim}
         />
       ),
     },
     potrawy: {
       title: "Potrawy",
-      body: <MemoDishForm dishes={dishes} narrow={isTwoCol} />,
+      body: (
+        <MemoDishForm
+          dishes={dishes}
+          narrow={isTwoCol}
+          onAnimState={dishesFormAnim}
+        />
+      ),
     },
     children: {
       title: "Dzieci",
-      body: <MemoChildrenPanel {...kids} />,
+      body: <MemoChildrenPanel {...kids} onAnimState={childrenFormAnim} />,
     },
     ready: {
       title: "Gotowość",

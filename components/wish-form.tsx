@@ -56,6 +56,7 @@ export function WishForm({
   listBudget,
   themeBudget,
   onCountChange,
+  onAnimState,
 }: {
   wishes: Wish[];
   theme: string | null;
@@ -64,6 +65,7 @@ export function WishForm({
   listBudget: number;
   themeBudget: number;
   onCountChange?: (count: number) => void;
+  onAnimState?: (on: boolean) => void;
 }) {
   const [wishState, addWishAction, addingWish] = useActionState(addWish, empty);
   const [themeState, saveThemeAction, savingTheme] = useActionState(
@@ -98,6 +100,12 @@ export function WishForm({
   const { mounted: addFormMounted, shown: addFormShown } = useCollapse(
     addOpen && isDesktop
   );
+  useEffect(() => {
+    if (!isDesktop || !onAnimState) return;
+    onAnimState(true);
+    const t = setTimeout(() => onAnimState(false), 250);
+    return () => clearTimeout(t);
+  }, [addFormShown, isDesktop, onAnimState]);
 
   const addParsed = parsePrice(addPrice);
   const addOverBudget =
