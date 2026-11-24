@@ -1090,7 +1090,13 @@ function PlusCircleIcon() {
   );
 }
 
-function HeartIcon({ filled = false }: { filled?: boolean }) {
+function HeartIcon({
+  filled = false,
+  className,
+}: {
+  filled?: boolean;
+  className?: string;
+}) {
   return (
     <svg
       width="16"
@@ -1102,6 +1108,7 @@ function HeartIcon({ filled = false }: { filled?: boolean }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
+      className={className}
     >
       <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
     </svg>
@@ -1135,14 +1142,16 @@ function LikeButton({
       onMouseLeave={() => setHovered(false)}
       aria-label={likedByMe ? "Odpolub potrawę" : "Polub potrawę"}
       title={likedByMe ? "Odpolub" : "Polub"}
-      className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted"
+      className="flex h-8 w-8 shrink-0 flex-col items-center justify-start rounded-lg text-muted"
     >
       <span aria-hidden className={likedByMe ? "text-danger" : "text-muted"}>
-        <HeartIcon filled={filled} />
+        <HeartIcon filled={filled} className="size-5" />
       </span>
-      <span className="w-4 text-right tabular-nums text-xs">
-        {likeCount > 0 ? likeCount : ""}
-      </span>
+      {likeCount > 0 && (
+        <span className="text-xs leading-none tabular-nums">
+          {likeCount > 99 ? "99+" : likeCount}
+        </span>
+      )}
     </button>
   );
 }
