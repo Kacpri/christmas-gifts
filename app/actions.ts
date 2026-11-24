@@ -172,6 +172,89 @@ export async function removeWish(formData: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+export async function restoreWish(formData: FormData): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const text = String(formData.get("text") ?? "").trim();
+  const link = String(formData.get("link") ?? "").trim();
+  const priceRaw = String(formData.get("price") ?? "").trim();
+  const beforeIdRaw = String(formData.get("before_id") ?? "").trim();
+
+  if (!text) return { ok: false, error: "Wpisz, czego sobie życzysz." };
+  if (link && !/^https?:\/\/\S+$/i.test(link)) {
+    return { ok: false, error: "Link musi zaczynać się od http:// lub https://" };
+  }
+  const parsedPrice = parsePrice(priceRaw);
+  if (parsedPrice.kind === "invalid") {
+    return { ok: false, error: "Cena musi być dodatnią liczbą." };
+  }
+  const listBudget = await getListBudget(supabase);
+  if (parsedPrice.kind === "value" && parsedPrice.grosze > listBudget * 100) {
+    return { ok: false, error: budgetError(listBudget) };
+  }
+  const price = parsedPrice.kind === "value" ? parsedPrice.grosze / 100 : null;
+
+  const { count, error: countError } = await supabase
+    .from("wishes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  if (countError) return { ok: false, error: countError.message };
+  if ((count ?? 0) >= 5) {
+    return { ok: false, error: "Maksymalnie 5 życzeń." };
+  }
+
+  const { data: top } = await supabase
+    .from("wishes")
+    .select("pos")
+    .eq("user_id", user.id)
+    .order("pos", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const { data: inserted, error: insertError } = await supabase
+    .from("wishes")
+    .insert({
+      user_id: user.id,
+      text,
+      link: link || null,
+      price,
+      pos: (top?.pos ?? 0) + 1,
+    })
+    .select("id")
+    .single();
+  if (insertError || !inserted) {
+    return {
+      ok: false,
+      error: insertError?.message ?? "Nie udało się przywrócić życzenia.",
+    };
+  }
+  const newId = inserted.id as number;
+
+  const { data: all, error: allError } = await supabase
+    .from("wishes")
+    .select("id")
+    .eq("user_id", user.id)
+    .order("pos", { ascending: true });
+  if (allError) return { ok: false, error: allError.message };
+  const ids = (all ?? []).map((w) => w.id as number);
+  const withoutNew = ids.filter((id) => id !== newId);
+  const beforeId = beforeIdRaw !== "" ? Number(beforeIdRaw) : null;
+  let target = beforeId != null ? withoutNew.indexOf(beforeId) : -1;
+  if (target === -1) target = withoutNew.length;
+  const ordered = [
+    ...withoutNew.slice(0, target),
+    newId,
+    ...withoutNew.slice(target),
+  ];
+
+  const { error: reorderError } = await supabase.rpc("reorder_wishes", {
+    p_ids: ordered,
+  });
+  if (reorderError) {
+    return { ok: false, error: "Nie udało się zapisać kolejności życzeń." };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function addDish(
   _prev: ActionResult,
   formData: FormData

@@ -4,6 +4,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -382,9 +383,11 @@ export function ChatsPanel({
   const [anonNewPeers, setAnonNewPeers] = useState<Record<number, string>>({});
   const [listFade, setListFade] = useState(false);
   const [listExpanded, setListExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(30);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const useMobileLayout = !isDesktop || narrow;
   const boxRef = useRef<HTMLDivElement>(null);
+  const loadOlderAnchorRef = useRef<{ top: number; height: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef("");
   const selectedRef = useRef(selectedKey);
@@ -573,6 +576,13 @@ export function ChatsPanel({
     lotteryMsgs,
     nameById,
   ]);
+
+  const visibleMsgs = selectedItem
+    ? selectedItem.messages.slice(-visibleCount)
+    : [];
+  const hasOlder = selectedItem
+    ? selectedItem.messages.length > visibleCount
+    : false;
 
   useEffect(() => {
     const supabase = createClient();
@@ -1268,6 +1278,27 @@ export function ChatsPanel({
   }, [selectedKey, selectedItem?.messages.length, selectedItem, me, collapsed]);
 
   useEffect(() => {
+    setVisibleCount(30);
+  }, [selectedKey]);
+
+  function loadOlder() {
+    const el = boxRef.current;
+    if (el) {
+      loadOlderAnchorRef.current = { top: el.scrollTop, height: el.scrollHeight };
+    }
+    setVisibleCount((c) => c + 30);
+  }
+
+  useLayoutEffect(() => {
+    const anchor = loadOlderAnchorRef.current;
+    if (!anchor) return;
+    loadOlderAnchorRef.current = null;
+    const el = boxRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight - anchor.height + anchor.top;
+  }, [visibleCount]);
+
+  useEffect(() => {
     const total =
       Object.values(lotteryUnread).reduce((a, b) => a + b, 0) +
       Object.values(dmUnread).reduce((a, b) => a + b, 0) +
@@ -1712,13 +1743,22 @@ export function ChatsPanel({
                 className="chat-scroll chat-fade flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] px-3 py-4 dark:bg-sage-100"
               >
                 <div className="mt-auto flex flex-col">
+                  {hasOlder && (
+                    <button
+                      type="button"
+                      onClick={loadOlder}
+                      className="mx-auto mb-3 flex h-11 items-center justify-center rounded-full border border-input-line bg-surface px-4 text-sm font-medium text-muted hover:bg-mist"
+                    >
+                      Załaduj starsze
+                    </button>
+                  )}
                   {selectedItem.messages.length === 0 && (
                     <p className="text-sm text-faint">
                       Brak wiadomości. Napisz pierwszą!
                     </p>
                   )}
-                {selectedItem.messages.map((m, i) => {
-                  const prev = selectedItem.messages[i - 1];
+                {visibleMsgs.map((m, i) => {
+                  const prev = visibleMsgs[i - 1];
                   const sameDay =
                     prev != null && dayKey(prev.createdAt) === dayKey(m.createdAt);
                   return (

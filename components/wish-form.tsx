@@ -24,6 +24,7 @@ import {
   addWish,
   editWish,
   removeWish,
+  restoreWish,
   saveTheme,
   type ActionResult,
 } from "@/app/actions";
@@ -78,7 +79,10 @@ export function WishForm({
   const [editText, setEditText] = useState("");
   const [editLink, setEditLink] = useState("");
   const [editPrice, setEditPrice] = useState("");
-  const [undoWish, setUndoWish] = useState<Wish | null>(null);
+  const [undoWish, setUndoWish] = useState<{
+    wish: Wish;
+    index: number;
+  } | null>(null);
   const [localWishes, setLocalWishes] = useState<Wish[]>(wishes);
   const [menuWish, setMenuWish] = useState<Wish | null>(null);
   const [addPrice, setAddPrice] = useState("");
@@ -140,8 +144,9 @@ export function WishForm({
   }
 
   function handleRemove(wish: Wish) {
+    const index = localWishes.findIndex((w) => w.id === wish.id);
     setLocalWishes((prev) => prev.filter((w) => w.id !== wish.id));
-    setUndoWish(wish);
+    setUndoWish({ wish, index: index === -1 ? localWishes.length - 1 : index });
     const fd = new FormData();
     fd.set("id", String(wish.id));
     removeWish(fd);
@@ -149,12 +154,19 @@ export function WishForm({
 
   function handleUndo() {
     if (!undoWish) return;
-    setLocalWishes((prev) => [...prev, undoWish]);
+    const { wish, index } = undoWish;
+    const beforeId = localWishes[index]?.id ?? null;
+    setLocalWishes((prev) => {
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, wish);
+      return next;
+    });
     const fd = new FormData();
-    fd.set("text", undoWish.text);
-    fd.set("link", undoWish.link ?? "");
-    fd.set("price", undoWish.price != null ? String(undoWish.price) : "");
-    addWishAction(fd);
+    fd.set("text", wish.text);
+    fd.set("link", wish.link ?? "");
+    fd.set("price", wish.price != null ? String(wish.price) : "");
+    if (beforeId != null) fd.set("before_id", String(beforeId));
+    restoreWish(fd);
     setUndoWish(null);
   }
 
