@@ -326,7 +326,7 @@ export function DishForm({
     <form
       ref={addFormRef}
       action={addAction}
-      className="flex flex-col gap-3 rounded-[10px] bg-mist p-3 scroll-mt-[80px] md:scroll-mt-[76px]"
+      className="flex flex-col gap-3 rounded-[10px] bg-mist p-3 scroll-mt-[52px] md:scroll-mt-[61px]"
     >
       <h4 className="text-sm font-semibold text-ink">Dodaj potrawę</h4>
       <div className="flex flex-col gap-1.5">

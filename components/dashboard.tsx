@@ -770,7 +770,7 @@ function PanelCard({
           : {}),
         ...(enterDelay != null ? { animationDelay: `${enterDelay}ms` } : {}),
       }}
-      className={`scroll-mt-[80px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-[76px] ${
+      className={`scroll-mt-[52px] rounded-2xl border shadow-[0_8px_24px_rgba(0,0,0,0.18)] md:scroll-mt-[61px] ${
         compact ? "px-5 py-3.5" : "p-5"
       } ${
         isHole
@@ -882,7 +882,7 @@ function ChipButton({
       onClick={onClick}
       aria-current={active ? "true" : undefined}
       aria-label={compact ? title : undefined}
-      className={`relative flex shrink-0 items-center gap-1.5 rounded-full border text-sm font-semibold ${
+      className={`relative flex shrink-0 items-center gap-1.5 rounded-full border text-sm font-semibold transition-colors duration-200 ${
         compact
           ? "h-9 w-9 justify-center border-cream/55 bg-white/10 text-cream hover:bg-white/20"
           : `px-3.5 py-1.5 ${
@@ -904,7 +904,7 @@ function ChipButton({
             "nieprzeczytane wiadomości",
             "nieprzeczytanych wiadomości",
           ])}`}
-          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold transition-colors duration-200 ${
             compact
               ? "absolute -right-1 -top-1 bg-cream text-[#0d4024]"
               : active
@@ -953,7 +953,7 @@ function SortableChip({
       }}
       {...attributes}
       {...listeners}
-      className={`flex shrink-0 cursor-grab touch-none items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold active:cursor-grabbing ${
+      className={`flex shrink-0 cursor-grab touch-none items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors duration-200 active:cursor-grabbing ${
         active
           ? "border-cream bg-cream text-[#0d4024]"
           : "border-cream/55 bg-white/10 text-cream hover:bg-white/20"
@@ -971,7 +971,7 @@ function SortableChip({
             "nieprzeczytane wiadomości",
             "nieprzeczytanych wiadomości",
           ])}`}
-          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+          className={`badge-pop inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-bold transition-colors duration-200 ${
             active ? "bg-[#0d4024] text-cream" : "bg-cream text-[#0d4024]"
           }`}
         >
@@ -1379,6 +1379,7 @@ export function Dashboard({
   const [topBarHidden, setTopBarHidden] = useState(false);
   const [activePanel, setActivePanel] = useState<PanelId | null>(null);
   const lastScrollY = useRef(0);
+  const chipNavLockUntil = useRef(0);
   const visibleIdsRef = useRef<PanelId[]>([]);
   const chipNavRef = useRef<HTMLElement>(null);
   const desktopChipNavRef = useRef<HTMLElement>(null);
@@ -1546,7 +1547,10 @@ export function Dashboard({
       const y = window.scrollY;
       if (y < 8 || y < lastScrollY.current - 4) {
         setTopBarHidden(false);
-      } else if (y > lastScrollY.current + 4) {
+      } else if (
+        y > lastScrollY.current + 4 &&
+        Date.now() > chipNavLockUntil.current
+      ) {
         setTopBarHidden(true);
       }
       lastScrollY.current = y;
@@ -1868,6 +1872,7 @@ export function Dashboard({
       suppressChipClickRef.current = false;
       return;
     }
+    chipNavLockUntil.current = Date.now() + 1200;
     goToPanel(id);
   }
 
