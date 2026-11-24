@@ -830,9 +830,11 @@ function SortableWishItem({
         {...listeners}
         aria-label={`Przesuń życzenie: ${wish.text}`}
         title="Przesuń"
-        className="flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:bg-icon-hover active:cursor-grabbing"
+        className="group/grip flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink active:cursor-grabbing"
       >
-        <GripIcon />
+        <span className="inline-flex motion-reduce:animate-none group-hover/grip:animate-[grip-nudge_350ms_ease-out]">
+          <GripIcon />
+        </span>
       </button>
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-semibold">
@@ -853,11 +855,11 @@ function SortableWishItem({
                 href={wish.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-[#14532d] dark:text-list-ink"
-              >
-                Zobacz
-                <ExternalLinkIcon />
-              </a>
+          className="inline-flex items-center gap-1 font-semibold text-[#14532d] hover:underline dark:text-list-ink"
+        >
+          Zobacz
+          <ExternalLinkIcon />
+        </a>
             )}
           </p>
         )}
@@ -866,9 +868,11 @@ function SortableWishItem({
         type="button"
         onClick={() => onMenu(wish)}
         aria-label={`Opcje życzenia: ${wish.text}`}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+        className="group/btn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted"
       >
-        <MoreIcon />
+        <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+          <MoreIcon />
+        </span>
       </button>
     </li>
   );
@@ -1051,7 +1055,7 @@ function GripIcon() {
 
 function MoreIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="5" cy="12" r="1.6" fill="currentColor" />
       <circle cx="12" cy="12" r="1.6" fill="currentColor" />
       <circle cx="19" cy="12" r="1.6" fill="currentColor" />

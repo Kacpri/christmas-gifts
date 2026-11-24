@@ -956,9 +956,11 @@ function ChildDetail({
               type="button"
               onClick={() => setMenuChild(true)}
               aria-label={`Opcje: ${child.name}`}
-              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+              className="group/btn ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted"
             >
-              <MoreIcon />
+              <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+                <MoreIcon />
+              </span>
             </button>
           )}
         </div>
@@ -1256,9 +1258,11 @@ function SortableChildWishRow({
           onClick={(e) => e.stopPropagation()}
           aria-label={`Przesuń życzenie: ${wish.text}`}
           title="Przesuń"
-          className="flex h-10 w-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:bg-icon-hover active:cursor-grabbing"
+          className="group/grip flex h-10 w-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink active:cursor-grabbing"
         >
-          <GripIcon />
+          <span className="inline-flex motion-reduce:animate-none group-hover/grip:animate-[grip-nudge_350ms_ease-out]">
+            <GripIcon />
+          </span>
         </button>
         <span className="min-w-0 flex-1 text-[15px] leading-snug">
           <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
@@ -1280,9 +1284,11 @@ function SortableChildWishRow({
             onMenu(wish);
           }}
           aria-label={`Opcje życzenia: ${wish.text}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+          className="group/btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted"
         >
-          <MoreIcon />
+          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+            <MoreIcon />
+          </span>
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pl-12">

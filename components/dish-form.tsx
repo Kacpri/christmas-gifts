@@ -784,18 +784,22 @@ export function DishForm({
                           onClick={() => startEdit(dish)}
                           aria-label="Edytuj potrawę"
                           title="Edytuj"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+                          className="group/btn flex h-9 w-9 items-center justify-center rounded-lg text-muted"
                         >
-                          <PencilIcon />
+                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+                            <PencilIcon />
+                          </span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRemove(dish)}
                           aria-label="Usuń potrawę"
                           title="Usuń"
-                          className="flex h-9 w-9 items-center justify-center rounded-lg text-danger hover:bg-danger-soft"
+                          className="group/btn flex h-9 w-9 items-center justify-center rounded-lg text-danger"
                         >
-                          <TrashIcon />
+                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+                            <TrashIcon />
+                          </span>
                         </button>
                       </div>
                     )}

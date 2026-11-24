@@ -307,6 +307,21 @@ a:focus-visible {
   animation: badge-pop 200ms ease-out;
 }
 
+@keyframes grip-nudge {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.5px);
+  }
+  55% {
+    transform: translateX(1.5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .panel-enter {
     animation: none;
