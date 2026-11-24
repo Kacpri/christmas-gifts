@@ -8,6 +8,7 @@ import {
   useActionState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { type ActionResult } from "@/app/actions";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
@@ -439,89 +440,93 @@ function MessageBubbleBase({
         </div>
       )}
       </div>
-      {menu && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setMenu(null)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setMenu(null);
-            }}
-          />
-          <div
-            className="fixed z-50 min-w-28 overflow-hidden rounded-lg border border-line bg-surface py-1 text-sm shadow-lg"
-            style={{
-              left: Math.max(8, Math.min(menu.x, window.innerWidth - 128)),
-              top: Math.max(8, Math.min(menu.y, window.innerHeight - 96)),
-            }}
-          >
-            <button
-              type="button"
-              className="block w-full px-3 py-1.5 text-left hover:bg-sage-150"
-              onClick={() => {
-                setMenu(null);
-                setEditValue(message.text);
-                setEditing(true);
-              }}
-            >
-              Edytuj
-            </button>
-            <form
-              onSubmit={(e) => {
+      {menu &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setMenu(null)}
+              onContextMenu={(e) => {
                 e.preventDefault();
-                const fd = new FormData(e.currentTarget);
                 setMenu(null);
-                setConfirm({
-                  message: "Usunąć wiadomość?",
-                  confirmLabel: "Usuń",
-                  tone: "danger",
-                  onConfirm: () => deleteAction(fd),
-                });
+              }}
+            />
+            <div
+              className="fixed z-50 min-w-28 overflow-hidden rounded-lg border border-line bg-surface py-1 text-sm shadow-lg"
+              style={{
+                left: Math.max(8, Math.min(menu.x, window.innerWidth - 128)),
+                top: Math.max(8, Math.min(menu.y, window.innerHeight - 96)),
               }}
             >
-              <input type="hidden" name="id" value={message.id} />
               <button
-                type="submit"
-                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-sage-150"
-              >
-                Usuń
-              </button>
-            </form>
-          </div>
-        </>
-      )}
-      {picker && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setPicker(null)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setPicker(null);
-            }}
-          />
-          <div
-            className="fixed z-50 flex gap-0.5 rounded-full border border-line bg-surface p-1 shadow-lg"
-            style={{ left: picker.left, top: picker.top }}
-          >
-            {REACTION_EMOJIS.map((e) => (
-              <button
-                key={e}
                 type="button"
+                className="block w-full px-3 py-1.5 text-left hover:bg-sage-150"
                 onClick={() => {
-                  onToggleReaction?.(message.id, e);
-                  setPicker(null);
+                  setMenu(null);
+                  setEditValue(message.text);
+                  setEditing(true);
                 }}
-                aria-label={`Reakcja ${e}`}
-                className="grid h-8 w-8 place-items-center rounded-full text-lg hover:bg-mist"
               >
-                {e}
+                Edytuj
               </button>
-            ))}
-          </div>
-        </>
-      )}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  setMenu(null);
+                  setConfirm({
+                    message: "Usunąć wiadomość?",
+                    confirmLabel: "Usuń",
+                    tone: "danger",
+                    onConfirm: () => deleteAction(fd),
+                  });
+                }}
+              >
+                <input type="hidden" name="id" value={message.id} />
+                <button
+                  type="submit"
+                  className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-sage-150"
+                >
+                  Usuń
+                </button>
+              </form>
+            </div>
+          </>,
+          document.body
+        )}
+      {picker &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setPicker(null)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setPicker(null);
+              }}
+            />
+            <div
+              className="fixed z-50 flex gap-0.5 rounded-full border border-line bg-surface p-1 shadow-lg"
+              style={{ left: picker.left, top: picker.top }}
+            >
+              {REACTION_EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => {
+                    onToggleReaction?.(message.id, e);
+                    setPicker(null);
+                  }}
+                  aria-label={`Reakcja ${e}`}
+                  className="grid h-8 w-8 place-items-center rounded-full text-lg hover:bg-mist"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
       {lightbox && message.imageUrl && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4"

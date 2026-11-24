@@ -642,7 +642,7 @@ export function WishForm({
         className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2"
       >
         {undoWish && (
-          <div className="flex items-center gap-3 rounded-xl bg-ink px-4 py-2.5 text-sm text-white shadow-lg">
+          <div className="flex items-center gap-3 rounded-xl bg-ink px-4 py-2.5 text-sm text-white shadow-lg dark:bg-surface dark:text-foreground">
             Usunięto
             <button
               type="button"

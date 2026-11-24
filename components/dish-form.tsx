@@ -745,6 +745,14 @@ export function DishForm({
                 </li>
               );
             })}
+            {totalPages > 1 &&
+              currentPage === totalPages &&
+              pageItems.length < PER_PAGE &&
+              Array.from({ length: PER_PAGE - pageItems.length }).map(
+                (_, i) => (
+                  <li key={`ph-${i}`} className="min-h-12" aria-hidden />
+                )
+              )}
             {!addOpen && <li>{addButton}</li>}
             {addOpen && isDesktop && <li>{addForm}</li>}
           </ul>
