@@ -1251,7 +1251,7 @@ function LikeButton({
   const heart = (
     <span
       aria-hidden
-      className={`inline-flex transition-[transform,color] duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none ${
+      className={`inline-flex transition-[transform,color] duration-300 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none ${
         pop ? "heart-pop" : ""
       } ${likedByMe ? "text-danger" : "text-muted"}`}
     >
