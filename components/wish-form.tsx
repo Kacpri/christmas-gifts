@@ -33,6 +33,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { THEME_IDEAS } from "@/lib/theme-ideas";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { useCollapse } from "@/lib/use-collapse";
 import { Presence } from "@/components/presence";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
@@ -94,6 +95,9 @@ export function WishForm({
   );
   const addPriceRef = useRef<HTMLInputElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { mounted: addFormMounted, shown: addFormShown } = useCollapse(
+    addOpen && isDesktop
+  );
 
   const addParsed = parsePrice(addPrice);
   const addOverBudget =
@@ -516,9 +520,21 @@ export function WishForm({
                    listBudget={listBudget}
                 />
               ))}
-              {localWishes.length < 5 && !addOpen && <li>{addButton}</li>}
-              {localWishes.length < 5 && addOpen && isDesktop && (
-                <li>{addForm}</li>
+              {localWishes.length < 5 && (!addOpen || !isDesktop) && (
+                <li>{addButton}</li>
+              )}
+              {localWishes.length < 5 && addFormMounted && (
+                <li
+                  className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+                    addFormShown
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden" inert={!addFormShown}>
+                    {addForm}
+                  </div>
+                </li>
               )}
             </ul>
           </SortableContext>
@@ -536,11 +552,23 @@ export function WishForm({
         <>
           {localWishes.length === 0 && (
             <div className="flex flex-col gap-2">
-              {!addOpen && addButton}
-              {addOpen && isDesktop && addForm}
+              {(!addOpen || !isDesktop) && addButton}
+              {addFormMounted && (
+                <div
+                  className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+                    addFormShown
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden" inert={!addFormShown}>
+                    {addForm}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          {addOpen && !isDesktop && (
+          {!isDesktop && (
             <BottomSheet open={addOpen} onClose={() => setAddOpen(false)}>
               {addForm}
             </BottomSheet>

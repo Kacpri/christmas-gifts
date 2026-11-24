@@ -42,6 +42,7 @@ import {
   type ActionResult,
 } from "@/app/actions";
 import { Avatar } from "@/components/avatar";
+import { useCollapse } from "@/lib/use-collapse";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
@@ -89,6 +90,9 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
   );
   const [addOpen, setAddOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { mounted: addFormMounted, shown: addFormShown } = useCollapse(
+    addOpen && isDesktop
+  );
   const [childName, setChildName] = useState("");
   const [childPhoto, setChildPhoto] = useState<File | null>(null);
   const [childPhotoUrl, setChildPhotoUrl] = useState<string | null>(null);
@@ -158,7 +162,7 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
               {k.name}
             </button>
           ))}
-          {!addOpen && (
+          {(!addOpen || !isDesktop) && (
             <button
               type="button"
               onClick={() => setAddOpen(true)}
@@ -172,7 +176,7 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
       ) : (
         <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
           Nikt nie dodał jeszcze żadnego dziecka.
-          {!addOpen && (
+          {(!addOpen || !isDesktop) && (
             <button
               type="button"
               onClick={() => setAddOpen(true)}
@@ -184,9 +188,21 @@ export function ChildrenPanel({ me, kids, users }: ChildrenData) {
           )}
         </div>
       )}
-      {addOpen && isDesktop && childForm}
-      {addOpen && !isDesktop && (
-        <BottomSheet open onClose={() => setAddOpen(false)}>
+      {addFormMounted && (
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+            addFormShown
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden" inert={!addFormShown}>
+            {childForm}
+          </div>
+        </div>
+      )}
+      {!isDesktop && (
+        <BottomSheet open={addOpen} onClose={() => setAddOpen(false)}>
           {childForm}
         </BottomSheet>
       )}

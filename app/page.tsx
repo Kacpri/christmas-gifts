@@ -169,6 +169,7 @@ export default async function Home() {
     name: d.name,
     category: d.category as DishCategory,
     author: nameById.get(d.user_id) ?? "??",
+    authorAvatarUrl: avatarById.get(d.user_id) ?? null,
     isMine: d.user_id === user.id,
     quantity: d.quantity,
     likeCount: likeCountByDish.get(d.id) ?? 0,

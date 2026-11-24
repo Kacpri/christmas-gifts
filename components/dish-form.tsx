@@ -18,6 +18,8 @@ import {
 } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { useCollapse } from "@/lib/use-collapse";
+import { Avatar } from "@/components/avatar";
 import { Select } from "@/components/select";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
@@ -34,6 +36,7 @@ export type Dish = {
   name: string;
   category: DishCategory;
   author: string;
+  authorAvatarUrl: string | null;
   isMine: boolean;
   quantity: string | null;
   likeCount: number;
@@ -123,6 +126,9 @@ export function DishForm({
   const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { mounted: addFormMounted, shown: addFormShown } = useCollapse(
+    addOpen && isDesktop
+  );
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
@@ -187,10 +193,10 @@ export function DishForm({
   }, [addState]);
 
   useEffect(() => {
-    if (addOpen && isDesktop) {
+    if (addFormShown) {
       addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [addOpen, isDesktop]);
+  }, [addFormShown]);
 
   const authors = useMemo(
     () =>
@@ -200,9 +206,14 @@ export function DishForm({
     [dishes]
   );
 
+  const avatarByAuthor = new Map(dishes.map((d) => [d.author, d.authorAvatarUrl]));
   const personOptions = [
     { value: "all", label: "Wszyscy" },
-    ...authors.map((a) => ({ value: a, label: a, icon: <UserIcon /> })),
+    ...authors.map((a) => ({
+      value: a,
+      label: a,
+      icon: <Avatar name={a} src={avatarByAuthor.get(a) ?? null} size={20} />,
+    })),
   ];
   const categoryFilterOptions = [
     { value: "all", label: "Wszystkie" },
@@ -670,8 +681,20 @@ export function DishForm({
               </div>
             )}
           </div>
-          {!addOpen && addButton}
-          {addOpen && isDesktop && addForm}
+          {(!addOpen || !isDesktop) && addButton}
+          {addFormMounted && (
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+                addFormShown
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="overflow-hidden" inert={!addFormShown}>
+                {addForm}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -790,8 +813,20 @@ export function DishForm({
                 </li>
               );
             })}
-            {!addOpen && <li>{addButton}</li>}
-            {addOpen && isDesktop && <li>{addForm}</li>}
+            {(!addOpen || !isDesktop) && <li>{addButton}</li>}
+            {addFormMounted && (
+              <li
+                className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+                  addFormShown
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="overflow-hidden" inert={!addFormShown}>
+                  {addForm}
+                </div>
+              </li>
+            )}
             {totalPages > 1 &&
               pageItems.length < perPage &&
               Array.from({ length: perPage - pageItems.length }).map(
@@ -845,8 +880,8 @@ export function DishForm({
         </>
       )}
 
-      {!isDesktop && addOpen && (
-        <BottomSheet open onClose={() => setAddOpen(false)}>
+      {!isDesktop && (
+        <BottomSheet open={addOpen} onClose={() => setAddOpen(false)}>
           {addForm}
         </BottomSheet>
       )}
@@ -1231,7 +1266,7 @@ function LikeButton({
   ) : (
     <button
       {...shared}
-      className="flex h-8 w-8 shrink-0 flex-col items-center justify-start rounded-lg text-muted"
+      className="flex h-8 w-8 shrink-0 flex-col items-center justify-start rounded-lg pt-1.5 text-muted"
     >
       {heart}
       {likeCount > 0 && (
