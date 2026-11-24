@@ -831,9 +831,9 @@ export function OrganizerPanel({
                   type="button"
                   onClick={() => setMenuParticipant(p)}
                   aria-label={`Opcje: ${p.full_name}`}
-                  className="group/btn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink"
+                  className="group/btn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 pointer-fine:hover:text-ink"
                 >
-                  <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
+                  <span className="inline-flex transition-transform duration-150 ease-out pointer-fine:group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                     <MoreIcon />
                   </span>
                 </button>

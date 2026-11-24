@@ -786,7 +786,7 @@ export function DishForm({
                           title="Edytuj"
                           className="group/btn flex h-9 w-9 items-center justify-center rounded-lg text-muted"
                         >
-                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
+                          <span className="inline-flex transition-transform duration-150 ease-out pointer-fine:group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                             <PencilIcon />
                           </span>
                         </button>
@@ -797,7 +797,7 @@ export function DishForm({
                           title="Usuń"
                           className="group/btn flex h-9 w-9 items-center justify-center rounded-lg text-danger"
                         >
-                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
+                          <span className="inline-flex transition-transform duration-150 ease-out pointer-fine:group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                             <TrashIcon />
                           </span>
                         </button>
@@ -1251,7 +1251,7 @@ function LikeButton({
   const heart = (
     <span
       aria-hidden
-      className={`inline-flex transition-[transform,color] duration-300 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none ${
+      className={`inline-flex transition-[transform,color] duration-300 ease-out pointer-fine:group-hover/btn:scale-[1.2] motion-reduce:transition-none ${
         pop ? "heart-pop" : ""
       } ${likedByMe ? "text-danger" : "text-muted"}`}
     >

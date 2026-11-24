@@ -956,9 +956,9 @@ function ChildDetail({
               type="button"
               onClick={() => setMenuChild(true)}
               aria-label={`Opcje: ${child.name}`}
-              className="group/btn ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink"
+              className="group/btn ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 pointer-fine:hover:text-ink"
             >
-              <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
+              <span className="inline-flex transition-transform duration-150 ease-out pointer-fine:group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                 <MoreIcon />
               </span>
             </button>
@@ -1258,9 +1258,9 @@ function SortableChildWishRow({
           onClick={(e) => e.stopPropagation()}
           aria-label={`Przesuń życzenie: ${wish.text}`}
           title="Przesuń"
-          className="group/grip flex h-10 w-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink active:cursor-grabbing"
+          className="group/grip flex h-10 w-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted transition-colors duration-150 pointer-fine:hover:text-ink active:cursor-grabbing"
         >
-          <span className="inline-flex motion-reduce:animate-none group-hover/grip:animate-[grip-nudge_350ms_ease-out]">
+          <span className="inline-flex motion-reduce:animate-none pointer-fine:group-hover/grip:animate-[grip-nudge_350ms_ease-out]">
             <GripIcon />
           </span>
         </button>
@@ -1284,9 +1284,9 @@ function SortableChildWishRow({
             onMenu(wish);
           }}
           aria-label={`Opcje życzenia: ${wish.text}`}
-          className="group/btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink"
+          className="group/btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 pointer-fine:hover:text-ink"
         >
-          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
+          <span className="inline-flex transition-transform duration-150 ease-out pointer-fine:group-hover/btn:scale-[1.2] motion-reduce:transition-none">
             <MoreIcon />
           </span>
         </button>
