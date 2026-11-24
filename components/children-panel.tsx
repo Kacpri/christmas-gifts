@@ -956,9 +956,9 @@ function ChildDetail({
               type="button"
               onClick={() => setMenuChild(true)}
               aria-label={`Opcje: ${child.name}`}
-              className="group/btn ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted"
+              className="group/btn ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink"
             >
-              <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+              <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                 <MoreIcon />
               </span>
             </button>
@@ -1284,9 +1284,9 @@ function SortableChildWishRow({
             onMenu(wish);
           }}
           aria-label={`Opcje życzenia: ${wish.text}`}
-          className="group/btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted"
+          className="group/btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink"
         >
-          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
             <MoreIcon />
           </span>
         </button>
@@ -1764,7 +1764,7 @@ function GripIcon() {
 
 function MoreIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="5" cy="12" r="1.6" fill="currentColor" />
       <circle cx="12" cy="12" r="1.6" fill="currentColor" />
       <circle cx="19" cy="12" r="1.6" fill="currentColor" />

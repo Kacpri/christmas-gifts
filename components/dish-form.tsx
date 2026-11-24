@@ -786,7 +786,7 @@ export function DishForm({
                           title="Edytuj"
                           className="group/btn flex h-9 w-9 items-center justify-center rounded-lg text-muted"
                         >
-                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                             <PencilIcon />
                           </span>
                         </button>
@@ -797,7 +797,7 @@ export function DishForm({
                           title="Usuń"
                           className="group/btn flex h-9 w-9 items-center justify-center rounded-lg text-danger"
                         >
-                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-110 motion-reduce:transition-none">
+                          <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
                             <TrashIcon />
                           </span>
                         </button>
@@ -1243,11 +1243,18 @@ function LikeButton({
   isDesktop: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [pop, setPop] = useState(false);
   const clickedSinceHoverRef = useRef(false);
+  const popTimerRef = useRef<number | null>(null);
   const freshHover = hovered && !clickedSinceHoverRef.current;
   const filled = likedByMe ? !freshHover : freshHover;
   const heart = (
-    <span aria-hidden className={likedByMe ? "text-danger" : "text-muted"}>
+    <span
+      aria-hidden
+      className={`inline-flex transition-[transform,color] duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none ${
+        pop ? "heart-pop" : ""
+      } ${likedByMe ? "text-danger" : "text-muted"}`}
+    >
       <HeartIcon filled={filled} className="size-5" />
     </span>
   );
@@ -1255,6 +1262,11 @@ function LikeButton({
     type: "button" as const,
     onClick: (e: MouseEvent<HTMLButtonElement>) => {
       clickedSinceHoverRef.current = true;
+      if (!likedByMe) {
+        setPop(true);
+        if (popTimerRef.current) clearTimeout(popTimerRef.current);
+        popTimerRef.current = window.setTimeout(() => setPop(false), 300);
+      }
       onClick(e);
     },
     onMouseEnter: () => {
@@ -1268,7 +1280,7 @@ function LikeButton({
   return isDesktop ? (
     <button
       {...shared}
-      className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted"
+      className="group/btn flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted"
     >
       {heart}
       <span className="w-4 text-right tabular-nums text-xs">
@@ -1278,7 +1290,7 @@ function LikeButton({
   ) : (
     <button
       {...shared}
-      className="flex h-8 w-8 shrink-0 flex-col items-center justify-start rounded-lg pt-1.5 text-muted"
+      className="group/btn flex h-8 w-8 shrink-0 flex-col items-center justify-start rounded-lg pt-1.5 text-muted"
     >
       {heart}
       {likeCount > 0 && (

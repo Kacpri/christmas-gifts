@@ -831,9 +831,11 @@ export function OrganizerPanel({
                   type="button"
                   onClick={() => setMenuParticipant(p)}
                   aria-label={`Opcje: ${p.full_name}`}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-icon-hover"
+                  className="group/btn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:text-ink"
                 >
-                  <MoreIcon />
+                  <span className="inline-flex transition-transform duration-150 ease-out group-hover/btn:scale-[1.2] motion-reduce:transition-none">
+                    <MoreIcon />
+                  </span>
                 </button>
               </div>
               <p className="truncate text-xs text-faint">
@@ -1189,7 +1191,7 @@ function SpinnerIcon() {
 
 function MoreIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="5" cy="12" r="1.6" fill="currentColor" />
       <circle cx="12" cy="12" r="1.6" fill="currentColor" />
       <circle cx="19" cy="12" r="1.6" fill="currentColor" />
