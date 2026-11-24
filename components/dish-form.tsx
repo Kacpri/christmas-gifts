@@ -745,16 +745,28 @@ export function DishForm({
                 </li>
               );
             })}
+            {!addOpen && <li>{addButton}</li>}
+            {addOpen && isDesktop && <li>{addForm}</li>}
             {totalPages > 1 &&
               currentPage === totalPages &&
               pageItems.length < PER_PAGE &&
               Array.from({ length: PER_PAGE - pageItems.length }).map(
                 (_, i) => (
-                  <li key={`ph-${i}`} className="min-h-12" aria-hidden />
+                  <li
+                    key={`ph-${i}`}
+                    className="min-h-12 rounded-[10px] px-3 py-2"
+                    aria-hidden
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="h-8 w-8 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm leading-5">{"\u00A0"}</p>
+                        <p className="text-xs leading-4">{"\u00A0"}</p>
+                      </div>
+                    </div>
+                  </li>
                 )
               )}
-            {!addOpen && <li>{addButton}</li>}
-            {addOpen && isDesktop && <li>{addForm}</li>}
           </ul>
 
           {totalPages > 1 && (
