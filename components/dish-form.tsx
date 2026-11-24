@@ -46,6 +46,12 @@ type SortDir = "asc" | "desc";
 const empty: ActionResult = { ok: false };
 const PER_PAGE_DESKTOP = 10;
 const PER_PAGE_MOBILE = 8;
+const PER_PAGE_OPTIONS = [
+  { value: String(PER_PAGE_DESKTOP), label: String(PER_PAGE_DESKTOP) },
+  { value: "15", label: "15" },
+  { value: "20", label: "20" },
+  { value: "all", label: "Wszystkie" },
+];
 
 const CATEGORY_OPTIONS = DISH_CATEGORIES.map((c) => ({
   value: c.value,
@@ -104,6 +110,7 @@ export function DishForm({
   const [sortField, setSortField] = useState<SortField>("time");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
+  const [perPageChoice, setPerPageChoice] = useState(String(PER_PAGE_DESKTOP));
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editQuantity, setEditQuantity] = useState("");
@@ -116,10 +123,10 @@ export function DishForm({
   const [clearConfirm, setClearConfirm] = useState<ConfirmState | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const perPage = isDesktop ? PER_PAGE_DESKTOP : PER_PAGE_MOBILE;
   const [mobileMenuDish, setMobileMenuDish] = useState<Dish | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
+  const pendingScrollRef = useRef<number | null>(null);
   const [likeOverrides, setLikeOverrides] = useState<
     Record<number, { likedByMe: boolean; likeCount: number }>
   >({});
@@ -216,6 +223,12 @@ export function DishForm({
       return sortDir === "asc" ? base : -base;
     });
 
+  const perPage = isDesktop
+    ? perPageChoice === "all"
+      ? Math.max(1, filtered.length)
+      : Number(perPageChoice)
+    : PER_PAGE_MOBILE;
+
   const filterActive =
     q !== "" || personFilter !== "all" || categoryFilter !== "all";
 
@@ -266,6 +279,22 @@ export function DishForm({
     setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     setPage(1);
   }
+
+  function changePage(next: number) {
+    pendingScrollRef.current = window.scrollY;
+    setPage(next);
+  }
+
+  useEffect(() => {
+    const saved = pendingScrollRef.current;
+    if (saved == null) return;
+    pendingScrollRef.current = null;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: saved });
+      });
+    });
+  }, [page]);
 
   const editingDish =
     editingId != null ? dishes.find((d) => d.id === editingId) ?? null : null;
@@ -595,10 +624,23 @@ export function DishForm({
                 title={sortDir === "asc" ? "Rosnąco" : "Malejąco"}
                 className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-input-line bg-surface text-muted hover:bg-mist"
               >
-                <SortDirIcon dir={sortDir} />
-              </button>
-              </div>
-              </div>
+                  <SortDirIcon dir={sortDir} />
+                </button>
+                </div>
+                {isDesktop && (
+                  <Select
+                    leadingIcon={<RowsIcon />}
+                    value={perPageChoice}
+                    onChange={(v) => {
+                      setPerPageChoice(v);
+                      setPage(1);
+                    }}
+                    options={PER_PAGE_OPTIONS}
+                    scrollable={false}
+                    className={narrow ? "w-full flex-1" : "w-full sm:w-44"}
+                  />
+                )}
+                </div>
             </div>
           </div>
         </div>
@@ -684,7 +726,7 @@ export function DishForm({
                   <span className="hidden w-[72px] shrink-0 text-right text-sm text-muted sm:block">
                     {dish.quantity ? formatQuantity(dish.quantity) : ""}
                   </span>
-                  <div className="flex w-[74px] shrink-0 items-center justify-end gap-0.5">
+                  <div className="flex w-8 shrink-0 items-center justify-end gap-0.5 md:w-[74px]">
                     <div
                       className={`flex w-full justify-end ${
                         dish.isMine ? "group-hover:hidden" : ""
@@ -775,7 +817,7 @@ export function DishForm({
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                onClick={() => changePage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
               >
@@ -788,11 +830,11 @@ export function DishForm({
                       "potrawy",
                       "potraw",
                     ])}`
-                  : `${currentPage}/${totalPages}`}
+                  : `strona ${currentPage} z ${totalPages}`}
               </span>
               <button
                 type="button"
-                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
               >
@@ -1077,6 +1119,26 @@ function FunnelIcon() {
   );
 }
 
+function RowsIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 5h18" />
+      <path d="M3 12h18" />
+      <path d="M3 19h18" />
+    </svg>
+  );
+}
+
 function PlusCircleIcon() {
   return (
     <svg
@@ -1139,7 +1201,7 @@ function LikeButton({
   const filled = likedByMe ? !freshHover : freshHover;
   const heart = (
     <span aria-hidden className={likedByMe ? "text-danger" : "text-muted"}>
-      <HeartIcon filled={filled} className={isDesktop ? undefined : "size-5"} />
+      <HeartIcon filled={filled} className="size-5" />
     </span>
   );
   const shared = {
