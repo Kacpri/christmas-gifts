@@ -12,6 +12,7 @@ import {
   attachSpotifyPlaylist,
   createSpotifyPlaylist,
   disconnectSpotify,
+  probeSpotifyPermissions,
   removePlaylistTrack,
   retryPlaylistTrack,
   type PlaylistActionResult,
@@ -74,6 +75,10 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   );
   const [retryState, retryAction, retrying] = useActionState(
     retryPlaylistTrack,
+    empty
+  );
+  const [probeState, probeAction, probing] = useActionState(
+    probeSpotifyPermissions,
     empty
   );
 
@@ -221,22 +226,37 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   </span>
                 </span>
               </p>
-              <button
-                type="button"
-                onClick={() =>
-                  setConfirm({
-                    message:
-                      "Rozłączyć konto Spotify? Wspólna playlista przestanie działać, dopóki nie połączysz konta ponownie.",
-                    confirmLabel: "Rozłącz",
-                    tone: "danger",
-                    onConfirm: () => disconnectAction(new FormData()),
-                  })
-                }
-                disabled={disconnecting}
-                className="shrink-0 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
-              >
-                {disconnecting ? "Rozłączanie…" : "Rozłącz"}
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => probeAction(new FormData())}
+                  disabled={probing}
+                  className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                >
+                  {probing ? "Testowanie…" : "Testuj uprawnienia"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setConfirm({
+                      message:
+                        "Rozłączyć konto Spotify? Wspólna playlista przestanie działać, dopóki nie połączysz konta ponownie.",
+                      confirmLabel: "Rozłącz",
+                      tone: "danger",
+                      onConfirm: () => disconnectAction(new FormData()),
+                    })
+                  }
+                  disabled={disconnecting}
+                  className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                >
+                  {disconnecting ? "Rozłączanie…" : "Rozłącz"}
+                </button>
+              </div>
+            </div>
+          )}
+          {probeState.error && (
+            <div className="rounded-[10px] bg-mist px-3 py-2.5 text-xs leading-relaxed text-ink">
+              {probeState.error}
             </div>
           )}
           {!disconnectState.ok && disconnectState.error && (

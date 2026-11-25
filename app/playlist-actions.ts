@@ -8,6 +8,7 @@ import {
   createPlaylist,
   getOrgSpotifyId,
   getPlaylist,
+  probePermissions,
   removeTracks,
   SpotifyError,
 } from "@/lib/spotify";
@@ -182,6 +183,28 @@ export async function disconnectSpotify(
   if (partyError) return { ok: false, error: partyError.message };
   revalidatePath("/");
   return { ok: true };
+}
+
+export async function probeSpotifyPermissions(
+  _prev: PlaylistActionResult,
+  _formData: FormData
+): Promise<PlaylistActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może zarządzać playlistą." };
+  }
+  try {
+    const results = await probePermissions();
+    return { ok: true, error: results.join("  •  ") };
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        e instanceof SpotifyError
+          ? e.message
+          : "Nie udało się przetestować uprawnień.",
+    };
+  }
 }
 
 export async function addPlaylistTrack(

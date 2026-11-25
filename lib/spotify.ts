@@ -86,6 +86,7 @@ async function readSpotifyError(
   } catch {
     if (body) message = `Spotify: HTTP ${res.status} — ${body.slice(0, 200)}`;
   }
+  if (body) message += ` [${body.slice(0, 120)}]`;
   return new SpotifyError(message, res.status);
 }
 
@@ -329,6 +330,45 @@ export async function getPlaylist(
 export async function getOrgSpotifyId(): Promise<string | null> {
   const acc = await getOrgAccount();
   return acc?.spotify_id ?? null;
+}
+
+export async function probePermissions(): Promise<string[]> {
+  const token = requireToken(await orgToken());
+  const describe = (e: unknown) =>
+    e instanceof SpotifyError ? e.message : String(e);
+  const results: string[] = [];
+  try {
+    await apiFetch("/me", { method: "GET" }, token);
+    results.push("GET /me: OK");
+  } catch (e) {
+    results.push(`GET /me: ${describe(e)}`);
+  }
+  try {
+    await apiFetch("/me/playlists", { method: "GET" }, token);
+    results.push("GET /me/playlists: OK");
+  } catch (e) {
+    results.push(`GET /me/playlists: ${describe(e)}`);
+  }
+  try {
+    const res = await apiFetch(
+      "/playlists",
+      {
+        method: "POST",
+        body: JSON.stringify({ name: `probe-${Date.now()}`, public: false }),
+      },
+      token
+    );
+    const created = (await res.json()) as { id: string };
+    results.push("POST /playlists (utwórz): OK");
+    try {
+      await apiFetch(`/playlists/${created.id}`, { method: "DELETE" }, token);
+    } catch {
+      // sprzątanie best-effort
+    }
+  } catch (e) {
+    results.push(`POST /playlists (utwórz): ${describe(e)}`);
+  }
+  return results;
 }
 
 export async function addTracks(
