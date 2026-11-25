@@ -7,7 +7,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const { origin } = url;
   const code = url.searchParams.get("code");
-  const failed = () => NextResponse.redirect(`${origin}/?spotify=error`);
+  const withDiag = (base: string, diag?: string) =>
+    `${base}${diag ? `&diag=${encodeURIComponent(diag)}` : ""}`;
+  const failed = (diag?: string) =>
+    NextResponse.redirect(withDiag(`${origin}/?spotify=error`, diag));
 
   const supabase = await createClient();
   const {
@@ -57,11 +60,18 @@ export async function GET(request: Request) {
       );
     if (error) {
       console.error("[spotify] callback: błąd zapisu konta:", error.message);
-      return failed();
+      return failed(`zapis: ${error.message}`);
     }
-    return NextResponse.redirect(`${origin}/?spotify=ok`);
+    return NextResponse.redirect(
+      withDiag(
+        `${origin}/?spotify=ok`,
+        `scope: ${tokens.scope ?? "(brak)"}; spotify_id: ${me.id}`
+      )
+    );
   } catch (e) {
     console.error("[spotify] callback: błąd:", e);
-    return failed();
+    return failed(
+      e instanceof Error ? e.message : String(e)
+    );
   }
 }
