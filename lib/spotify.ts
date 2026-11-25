@@ -223,35 +223,19 @@ export async function orgToken(): Promise<string | null> {
     }
     throw e;
   }
-  const scopes = tokenScopes(token);
-  const missing = REQUIRED_SCOPES.filter((s) => !scopes.includes(s));
-  if (missing.length > 0) {
-    let tokenExp = "(nie-JWT)";
-    try {
-      const payload = JSON.parse(
-        Buffer.from(token.split(".")[1] ?? "", "base64").toString("utf8")
-      ) as { exp?: number };
-      if (payload.exp) {
-        tokenExp = new Date(payload.exp * 1000).toISOString();
-      }
-    } catch {
-      // nie-JWT
+  // Spotify zwraca tokeny nieprzezroczyste (nie-JWT) — scope da się
+  // zweryfikować tylko dla JWT; dla pozostałych formatów sprawdzanie
+  // pominij (brak uprawnień ujawni 403 z API).
+  if (token.startsWith("eyJ") && token.split(".").length === 3) {
+    const scopes = tokenScopes(token);
+    const missing = REQUIRED_SCOPES.filter((s) => !scopes.includes(s));
+    if (missing.length > 0) {
+      throw new SpotifyError(
+        `Token Spotify nie ma wymaganych uprawnień (brakuje: ${missing.join(
+          ", "
+        )}). Połącz Spotify ponownie.`
+      );
     }
-    console.error(
-      "[spotify] token bez wymaganych scope'ow. wiersz:",
-      JSON.stringify({
-        user_id: acc.user_id,
-        spotify_id: acc.spotify_id,
-        expires_at: acc.expires_at,
-      }),
-      "token exp:",
-      tokenExp
-    );
-    throw new SpotifyError(
-      `Token Spotify nie ma wymaganych uprawnień (brakuje: ${missing.join(
-        ", "
-      )}; token ma: ${scopes.length > 0 ? scopes.join(", ") : "brak"}). Wiersz z bazy: spotify_id=${acc.spotify_id ?? "(brak)"}, access: ${token.slice(0, 15)}… (dl. ${token.length}), refresh: ${acc.refresh_token.slice(0, 15)}… (dl. ${acc.refresh_token.length}, segmenty: ${acc.refresh_token.split(".").length}), expires_at: ${acc.expires_at}. Połącz Spotify ponownie.`
-    );
   }
   return token;
 }

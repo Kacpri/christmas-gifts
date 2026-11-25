@@ -7,10 +7,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const { origin } = url;
   const code = url.searchParams.get("code");
-  const withDiag = (base: string, diag?: string) =>
-    `${base}${diag ? `&diag=${encodeURIComponent(diag)}` : ""}`;
   const failed = (diag?: string) =>
-    NextResponse.redirect(withDiag(`${origin}/?spotify=error`, diag));
+    NextResponse.redirect(
+      `${origin}/?spotify=error${diag ? `&diag=${encodeURIComponent(diag)}` : ""}`
+    );
 
   const supabase = await createClient();
   const {
@@ -31,17 +31,7 @@ export async function GET(request: Request) {
 
   try {
     const tokens = await exchangeCode(code, `${origin}/spotify/callback`);
-    console.error(
-      "[spotify] callback: kod wymieniony, scope w odpowiedzi:",
-      tokens.scope ?? "(brak pola scope)"
-    );
     const me = await getMe(tokens.access_token);
-    console.error(
-      "[spotify] callback: /me ok, spotify_id:",
-      me.id,
-      "display_name:",
-      me.display_name ?? "(brak)"
-    );
     const { error } = await supabase
       .from("spotify_accounts")
       .upsert(
@@ -62,12 +52,7 @@ export async function GET(request: Request) {
       console.error("[spotify] callback: błąd zapisu konta:", error.message);
       return failed(`zapis: ${error.message}`);
     }
-    return NextResponse.redirect(
-      withDiag(
-        `${origin}/?spotify=ok`,
-        `scope: ${tokens.scope ?? "(brak)"}; spotify_id: ${me.id}`
-      )
-    );
+    return NextResponse.redirect(`${origin}/?spotify=ok`);
   } catch (e) {
     console.error("[spotify] callback: błąd:", e);
     return failed(

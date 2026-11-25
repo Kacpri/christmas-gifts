@@ -84,24 +84,16 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
-  const [authBanner, setAuthBanner] = useState<{
-    kind: "ok" | "error";
-    diag?: string;
-  } | null>(null);
+  const [authBanner, setAuthBanner] = useState<"ok" | "error" | null>(null);
   const searchSeq = useRef(0);
   const searchBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const param = params.get("spotify");
+    const param = new URLSearchParams(window.location.search).get("spotify");
     if (param === "ok" || param === "error") {
-      const diag = params.get("diag") ?? undefined;
-      setAuthBanner({ kind: param, diag });
+      setAuthBanner(param);
       window.history.replaceState({}, "", window.location.pathname);
-      const t = window.setTimeout(
-        () => setAuthBanner(null),
-        diag ? 30000 : 6000
-      );
+      const t = window.setTimeout(() => setAuthBanner(null), 6000);
       return () => window.clearTimeout(t);
     }
   }, []);
@@ -192,19 +184,14 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       {authBanner && (
         <div
           className={`rounded-[10px] px-3 py-2.5 text-sm ${
-            authBanner.kind === "ok"
+            authBanner === "ok"
               ? "bg-sage-100 text-accent-deep dark:bg-sage-300 dark:text-[#e6f6ec]"
               : "bg-danger-soft text-danger"
           }`}
         >
-          {authBanner.kind === "ok"
+          {authBanner === "ok"
             ? "Spotify zostało połączone."
             : "Nie udało się połączyć Spotify. Spróbuj ponownie."}
-          {authBanner.diag && (
-            <div className="mt-1 break-all font-mono text-xs opacity-80">
-              {authBanner.diag}
-            </div>
-          )}
         </div>
       )}
 
