@@ -17,6 +17,7 @@ import {
   CHAT_PHOTO_MAX_BYTES,
   CHAT_PHOTO_TYPES,
 } from "@/lib/chat-photo";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -590,6 +591,9 @@ export async function sendMessage(
   formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  if (isRateLimited(`msg:${user.id}`, 10, 60_000)) {
+    return { ok: false, error: "Zbyt wiele wiadomości. Spróbuj za chwilę." };
+  }
   const text = String(formData.get("text") ?? "").trim();
   const lotteryType = Number(formData.get("lottery_type"));
   const drawerId = String(formData.get("drawer_id") ?? "");
@@ -678,6 +682,9 @@ export async function sendGroupMessage(
   formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  if (isRateLimited(`gmsg:${user.id}`, 10, 60_000)) {
+    return { ok: false, error: "Zbyt wiele wiadomości. Spróbuj za chwilę." };
+  }
   const text = String(formData.get("text") ?? "").trim();
   if (text.length > 500) {
     return { ok: false, error: "Wiadomość: maks. 500 znaków." };
@@ -773,6 +780,9 @@ export async function sendDm(
   formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  if (isRateLimited(`dm:${user.id}`, 10, 60_000)) {
+    return { ok: false, error: "Zbyt wiele wiadomości. Spróbuj za chwilę." };
+  }
   const text = String(formData.get("text") ?? "").trim();
   const recipientId = String(formData.get("recipient_id") ?? "");
   if (text.length > 500) {
@@ -871,6 +881,9 @@ export async function sendAnonDm(
   formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  if (isRateLimited(`anondm:${user.id}`, 10, 60_000)) {
+    return { ok: false, error: "Zbyt wiele wiadomości. Spróbuj za chwilę." };
+  }
   const text = String(formData.get("text") ?? "").trim();
   const conversationId = Number(formData.get("conversation_id"));
   if (!Number.isInteger(conversationId) || conversationId <= 0) {
@@ -1066,6 +1079,9 @@ export async function sendLotteryEmails(
   _formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  if (isRateLimited(`emails:${user.id}`, 5, 60_000)) {
+    return { ok: false, error: "Zbyt wiele prób. Spróbuj za chwilę." };
+  }
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_organizer")
@@ -1279,6 +1295,9 @@ export async function sendReadyReminders(
   if (!org) {
     return { ok: false, error: "Tylko organizator może wysyłać przypomnienia." };
   }
+  if (isRateLimited(`reminders:${org.user.id}`, 5, 60_000)) {
+    return { ok: false, error: "Zbyt wiele prób. Spróbuj za chwilę." };
+  }
   const { supabase } = org;
   const { data, error } = await supabase.rpc("not_ready_emails");
   if (error) return { ok: false, error: error.message };
@@ -1330,6 +1349,9 @@ export async function createErrorReport(
   formData: FormData
 ): Promise<ActionResult> {
   const { supabase, user } = await requireUser();
+  if (isRateLimited(`report:${user.id}`, 3, 60_000)) {
+    return { ok: false, error: "Zbyt wiele zgłoszeń. Spróbuj za chwilę." };
+  }
   try {
     await supabase.rpc("ensure_profile");
   } catch {
