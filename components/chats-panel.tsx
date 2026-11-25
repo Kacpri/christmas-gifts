@@ -1811,7 +1811,15 @@ export function ChatsPanel({
                 })}
                   </div>
                 </div>
-                <ScrollToBottomButton boxRef={boxRef} />
+                <ScrollToBottomButton
+                  boxRef={boxRef}
+                  messageCount={selectedItem.messages.length}
+                  threadKey={selectedKey ?? ""}
+                  lastSenderIsMe={
+                    selectedItem.messages[selectedItem.messages.length - 1]
+                      ?.senderId === me
+                  }
+                />
               </div>
                 <form
                   action={isAnon ? anonSend : isDm ? dmSend : lotterySend}

@@ -491,7 +491,14 @@ export function GroupChatSection({
             );
           })}
           </div>
-          {isDesktop && <ScrollToBottomButton boxRef={boxRef} />}
+          {isDesktop && (
+            <ScrollToBottomButton
+              boxRef={boxRef}
+              messageCount={local.length}
+              threadKey="group"
+              lastSenderIsMe={local[local.length - 1]?.senderId === me}
+            />
+          )}
         </div>
         <form
           action={sendAction}
