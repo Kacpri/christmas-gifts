@@ -250,7 +250,7 @@ export async function orgToken(): Promise<string | null> {
     throw new SpotifyError(
       `Token Spotify nie ma wymaganych uprawnień (brakuje: ${missing.join(
         ", "
-      )}; token ma: ${scopes.length > 0 ? scopes.join(", ") : "brak"}). Wiersz z bazy: spotify_id=${acc.spotify_id ?? "(brak)"}, token ważny do ${tokenExp}. Połącz Spotify ponownie.`
+      )}; token ma: ${scopes.length > 0 ? scopes.join(", ") : "brak"}). Wiersz z bazy: spotify_id=${acc.spotify_id ?? "(brak)"}, token: ${token.slice(0, 15)}… (dl. ${token.length}, segmenty: ${token.split(".").length}, exp: ${tokenExp}). Połącz Spotify ponownie.`
     );
   }
   return token;
