@@ -28,7 +28,17 @@ export async function GET(request: Request) {
 
   try {
     const tokens = await exchangeCode(code, `${origin}/spotify/callback`);
+    console.error(
+      "[spotify] callback: kod wymieniony, scope w odpowiedzi:",
+      tokens.scope ?? "(brak pola scope)"
+    );
     const me = await getMe(tokens.access_token);
+    console.error(
+      "[spotify] callback: /me ok, spotify_id:",
+      me.id,
+      "display_name:",
+      me.display_name ?? "(brak)"
+    );
     const { error } = await supabase
       .from("spotify_accounts")
       .upsert(
@@ -45,9 +55,13 @@ export async function GET(request: Request) {
         },
         { onConflict: "user_id" }
       );
-    if (error) return failed();
+    if (error) {
+      console.error("[spotify] callback: błąd zapisu konta:", error.message);
+      return failed();
+    }
     return NextResponse.redirect(`${origin}/?spotify=ok`);
-  } catch {
+  } catch (e) {
+    console.error("[spotify] callback: błąd:", e);
     return failed();
   }
 }

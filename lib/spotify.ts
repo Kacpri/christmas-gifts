@@ -120,7 +120,12 @@ export function authorizeUrl(clientId: string, redirectUri: string): string {
 export async function exchangeCode(
   code: string,
   redirectUri: string
-): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
+): Promise<{
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  scope?: string;
+}> {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
@@ -142,6 +147,7 @@ export async function exchangeCode(
     access_token: string;
     refresh_token: string;
     expires_in: number;
+    scope?: string;
   };
 }
 
