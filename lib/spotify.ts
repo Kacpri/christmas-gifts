@@ -223,7 +223,7 @@ export async function orgToken(): Promise<string | null> {
     throw new SpotifyError(
       `Token Spotify nie ma wymaganych uprawnień (brakuje: ${missing.join(
         ", "
-      )}). Połącz Spotify ponownie.`
+      )}; token ma: ${scopes.length > 0 ? scopes.join(", ") : "brak"}). Połącz Spotify ponownie.`
     );
   }
   return token;
