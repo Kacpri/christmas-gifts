@@ -220,6 +220,27 @@ export async function orgToken(): Promise<string | null> {
   const scopes = tokenScopes(token);
   const missing = REQUIRED_SCOPES.filter((s) => !scopes.includes(s));
   if (missing.length > 0) {
+    let payloadInfo = "(token nie jest JWT)";
+    try {
+      const payload = JSON.parse(
+        Buffer.from(token.split(".")[1] ?? "", "base64").toString("utf8")
+      ) as { sub?: string; scope?: string; exp?: number };
+      payloadInfo = JSON.stringify({
+        sub: payload.sub,
+        scope: payload.scope ?? "(brak)",
+        exp: payload.exp,
+      });
+    } catch {
+      // nie-JWT
+    }
+    console.error(
+      "[spotify] token bez wymaganych scope'ow. dlugosc:",
+      token.length,
+      "segmenty:",
+      token.split(".").length,
+      "payload:",
+      payloadInfo
+    );
     throw new SpotifyError(
       `Token Spotify nie ma wymaganych uprawnień (brakuje: ${missing.join(
         ", "
