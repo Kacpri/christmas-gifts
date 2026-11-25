@@ -35,6 +35,7 @@ import {
   type ChatMessage,
 } from "@/components/message-bubble";
 import { Presence } from "@/components/presence";
+import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { listTimeOf, plural } from "@/lib/format";
 import { notify } from "@/lib/notify";
 import { chatPhotoUrl } from "@/lib/chat-photo";
@@ -1752,10 +1753,11 @@ export function ChatsPanel({
                   </p>
                 )}
               </div>
-              <div
-                ref={boxRef}
-                className="chat-scroll chat-fade flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] px-3 py-4 dark:bg-sage-100"
-              >
+              <div className="relative min-h-0 flex-1">
+                <div
+                  ref={boxRef}
+                  className="chat-scroll chat-fade flex h-full min-h-0 flex-col overflow-y-auto rounded-[14px] bg-[#eef5f0] px-3 py-4 dark:bg-sage-100"
+                >
                 <div className="mt-auto flex flex-col">
                   {hasOlder && (
                     <button
@@ -1809,6 +1811,8 @@ export function ChatsPanel({
                 })}
                   </div>
                 </div>
+                <ScrollToBottomButton boxRef={boxRef} />
+              </div>
                 <form
                   action={isAnon ? anonSend : isDm ? dmSend : lotterySend}
                   onSubmit={(e) => {

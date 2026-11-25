@@ -27,6 +27,7 @@ import {
   dayKey,
   type ChatMessage,
 } from "@/components/message-bubble";
+import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { notify } from "@/lib/notify";
 import { chatPhotoUrl } from "@/lib/chat-photo";
 import { applyReaction } from "@/lib/reactions";
@@ -436,12 +437,13 @@ export function GroupChatSection({
           isDesktop ? "h-96" : ""
         }`}
       >
-        <div
-          ref={boxRef}
-          className={`chat-scroll chat-fade relative z-1 flex flex-col px-3 py-4 ${
-            isDesktop ? "flex-1 overflow-y-auto" : ""
-          }`}
-        >
+        <div className={`relative ${isDesktop ? "min-h-0 flex-1" : ""}`}>
+          <div
+            ref={boxRef}
+            className={`chat-scroll chat-fade relative z-1 flex flex-col px-3 py-4 ${
+              isDesktop ? "h-full overflow-y-auto" : ""
+            }`}
+          >
           {hasOlder && (
             <button
               type="button"
@@ -488,6 +490,8 @@ export function GroupChatSection({
               </Fragment>
             );
           })}
+          </div>
+          {isDesktop && <ScrollToBottomButton boxRef={boxRef} />}
         </div>
         <form
           action={sendAction}
