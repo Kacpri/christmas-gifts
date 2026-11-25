@@ -155,10 +155,14 @@ export async function editWish(
 }
 
 export async function removeWish(formData: FormData): Promise<ActionResult> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id)) return { ok: false, error: "Nieprawidłowe życzenie." };
-  const { error } = await supabase.from("wishes").delete().eq("id", id);
+  const { error } = await supabase
+    .from("wishes")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   if (error) {
     return {
       ok: false,
@@ -359,6 +363,7 @@ export async function saveName(
 }
 
 const AVATAR_MAX_BYTES = 4 * 1024 * 1024;
+const ERROR_REPORT_SCREENSHOT_MAX_BYTES = 6 * 1024 * 1024;
 const AVATAR_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -558,6 +563,12 @@ async function uploadChatPhoto(
   return { path };
 }
 
+function chatPhotoSize(raw: FormDataEntryValue | null): number | null {
+  const n = Math.floor(Number(raw ?? 0));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.min(n, 4096);
+}
+
 async function collectTablePhotoPaths(
   supabase: Awaited<ReturnType<typeof createClient>>,
   kind: 1 | 2 | 3
@@ -605,10 +616,8 @@ export async function sendMessage(
   if (!text && !photo.path) {
     return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
-  const imageWidth =
-    Math.floor(Number(formData.get("image_width") ?? 0)) || null;
-  const imageHeight =
-    Math.floor(Number(formData.get("image_height") ?? 0)) || null;
+  const imageWidth = chatPhotoSize(formData.get("image_width"));
+  const imageHeight = chatPhotoSize(formData.get("image_height"));
   const { error } = await supabase.from("messages").insert({
     lottery_type: lotteryType,
     drawer_id: drawerId,
@@ -678,10 +687,8 @@ export async function sendGroupMessage(
   if (!text && !photo.path) {
     return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
-  const imageWidth =
-    Math.floor(Number(formData.get("image_width") ?? 0)) || null;
-  const imageHeight =
-    Math.floor(Number(formData.get("image_height") ?? 0)) || null;
+  const imageWidth = chatPhotoSize(formData.get("image_width"));
+  const imageHeight = chatPhotoSize(formData.get("image_height"));
   const { error } = await supabase.from("group_messages").insert({
     sender_id: user.id,
     text,
@@ -779,10 +786,8 @@ export async function sendDm(
   if (!text && !photo.path) {
     return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
   }
-  const imageWidth =
-    Math.floor(Number(formData.get("image_width") ?? 0)) || null;
-  const imageHeight =
-    Math.floor(Number(formData.get("image_height") ?? 0)) || null;
+  const imageWidth = chatPhotoSize(formData.get("image_width"));
+  const imageHeight = chatPhotoSize(formData.get("image_height"));
   const { error } = await supabase.from("dm_messages").insert({
     sender_id: user.id,
     recipient_id: recipientId,
@@ -1337,6 +1342,12 @@ export async function createErrorReport(
   let screenshotPath: string | null = null;
   const screenshot = formData.get("screenshot");
   if (screenshot instanceof Blob && screenshot.size > 0) {
+    if (screenshot.type !== "image/png") {
+      return { ok: false, error: "Zrzut ekranu musi być w formacie PNG." };
+    }
+    if (screenshot.size > ERROR_REPORT_SCREENSHOT_MAX_BYTES) {
+      return { ok: false, error: "Zrzut ekranu może mieć maks. 6 MB." };
+    }
     const name = `${user.id}/${Date.now().toString(36)}-${Math.random()
       .toString(36)
       .slice(2, 10)}.png`;

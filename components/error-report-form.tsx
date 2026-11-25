@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useActionState, useState } from "react";
-import { domToBlob } from "modern-screenshot";
 
 import { createErrorReport, type ActionResult } from "@/app/actions";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -46,6 +45,7 @@ export function ErrorReportForm({
     if (!el) return;
     setCapturing(true);
     try {
+      const { domToBlob } = await import("modern-screenshot");
       const blob = await domToBlob(el, { scale: 2, type: "image/png" });
       setScreenshot(new File([blob], "screenshot.png", { type: "image/png" }));
     } catch {
