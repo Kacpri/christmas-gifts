@@ -1,3 +1,8 @@
+## Git workflow
+
+- Po każdej zakończonej i zweryfikowanej zmianie (typecheck + lint bez błędów) commituj i pushuj na `origin/master` bez dodatkowego proszenia.
+- Styl commitów: `feat:` / `fix:` / `chore:` + opis po polsku bez diakrytyków.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

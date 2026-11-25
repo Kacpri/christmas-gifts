@@ -9,6 +9,19 @@ export const SPOTIFY_SCOPES = [
   "playlist-modify-public",
 ].join(" ");
 
+const REQUIRED_SCOPES = SPOTIFY_SCOPES.split(" ");
+
+function tokenScopes(token: string): string[] {
+  try {
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1] ?? "", "base64").toString("utf8")
+    ) as { scope?: string };
+    return (payload.scope ?? "").split(/\s+/).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export class SpotifyError extends Error {
   status?: number;
   constructor(message: string, status?: number) {
@@ -195,14 +208,25 @@ async function ensureValidToken(acc: OrgAccount): Promise<string> {
 export async function orgToken(): Promise<string | null> {
   const acc = await getOrgAccount();
   if (!acc) return null;
+  let token: string;
   try {
-    return await ensureValidToken(acc);
+    token = await ensureValidToken(acc);
   } catch (e) {
     if (e instanceof SpotifyError && e.status === 400) {
       return null;
     }
     throw e;
   }
+  const scopes = tokenScopes(token);
+  const missing = REQUIRED_SCOPES.filter((s) => !scopes.includes(s));
+  if (missing.length > 0) {
+    throw new SpotifyError(
+      `Token Spotify nie ma wymaganych uprawnień (brakuje: ${missing.join(
+        ", "
+      )}). Połącz Spotify ponownie.`
+    );
+  }
+  return token;
 }
 
 function requireToken(token: string | null): string {
