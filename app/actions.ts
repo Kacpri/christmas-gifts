@@ -1247,6 +1247,7 @@ export async function savePartyBudgets(
 const TOGGLEABLE_PANELS = [
   "wishes",
   "potrawy",
+  "playlista",
   "children",
   "group-chat",
 ] as const;

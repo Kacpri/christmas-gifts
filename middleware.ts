@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
     !user &&
     pathname !== "/login" &&
     pathname !== "/auth/callback" &&
+    pathname !== "/spotify/callback" &&
     pathname !== "/offline"
   ) {
     const url = request.nextUrl.clone();

@@ -72,6 +72,7 @@ const plural = (n: number, forms: [string, string, string]) => {
 const PANEL_VISIBILITY_OPTIONS = [
   { id: "wishes", title: "Życzenia" },
   { id: "potrawy", title: "Potrawy" },
+  { id: "playlista", title: "Playlista" },
   { id: "children", title: "Dzieci" },
   { id: "group-chat", title: "Czat wspólny" },
 ] as const;

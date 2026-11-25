@@ -61,6 +61,7 @@ import { NameForm } from "@/components/name-form";
 import { NotificationToggle } from "@/components/notification-toggle";
 import { DishForm, type Dish } from "@/components/dish-form";
 import { OrganizerPanel } from "@/components/organizer-panel";
+import { PlaylistPanel, type PlaylistPanelData } from "@/components/playlist-panel";
 import { ReadySection } from "@/components/ready-section";
 import { WishForm, type Wish } from "@/components/wish-form";
 import {
@@ -79,6 +80,7 @@ const MemoDishForm = memo(DishForm);
 const MemoGroupChatSection = memo(GroupChatSection);
 const MemoNameForm = memo(NameForm);
 const MemoOrganizerPanel = memo(OrganizerPanel);
+const MemoPlaylistPanel = memo(PlaylistPanel);
 const MemoReadySection = memo(ReadySection);
 const MemoWishForm = memo(WishForm);
 const MemoGiftsBody = memo(GiftsBody);
@@ -90,6 +92,7 @@ export type PanelId =
   | "group-chat"
   | "wishes"
   | "potrawy"
+  | "playlista"
   | "children"
   | "ready"
   | "organizer";
@@ -102,6 +105,7 @@ const ALL_PANELS: PanelId[] = [
   "group-chat",
   "wishes",
   "potrawy",
+  "playlista",
   "children",
   "organizer",
 ];
@@ -118,6 +122,7 @@ const DEFAULT_LAYOUT: Layout = {
     "wishes",
     "chats",
     "potrawy",
+    "playlista",
     "children",
     "group-chat",
     "organizer",
@@ -634,6 +639,16 @@ function ChildrenIcon() {
   );
 }
 
+function PlaylistIcon() {
+  return (
+    <PanelIconSvg>
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </PanelIconSvg>
+  );
+}
+
 const PANEL_ICONS: Record<PanelId, ReactNode> = {
   profile: <ProfileIcon />,
   ready: <ReadyIcon />,
@@ -642,6 +657,7 @@ const PANEL_ICONS: Record<PanelId, ReactNode> = {
   "group-chat": <GroupChatIcon />,
   wishes: <WishesIcon />,
   potrawy: <PotrawyIcon />,
+  playlista: <PlaylistIcon />,
   children: <ChildrenIcon />,
   organizer: <OrganizerIcon />,
 };
@@ -1275,6 +1291,7 @@ export function Dashboard({
   groupChat,
   wishes,
   dishes,
+  playlist,
   kids,
   party,
   ready,
@@ -1300,6 +1317,7 @@ export function Dashboard({
     themeLockReason: string | null;
   };
   dishes: Dish[];
+  playlist: PlaylistPanelData;
   kids: ChildrenData;
   party: {
     startsAt: string | null;
@@ -1798,6 +1816,10 @@ export function Dashboard({
           onAnimState={dishesFormAnim}
         />
       ),
+    },
+    playlista: {
+      title: "Playlista",
+      body: <MemoPlaylistPanel playlist={playlist} />,
     },
     children: {
       title: "Dzieci",

@@ -41,6 +41,7 @@ export default async function Home() {
     { data: childParentRows },
     { data: childWishRows },
     { data: childReservationRows },
+    { data: playlistTrackRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -86,7 +87,7 @@ export default async function Home() {
     supabase
       .from("party")
       .select(
-        "starts_at, location, notes, label, list_budget, theme_budget, panel_visibility"
+        "starts_at, location, notes, label, list_budget, theme_budget, panel_visibility, spotify_playlist_id, spotify_playlist_name"
       )
       .eq("id", 1)
       .maybeSingle(),
@@ -127,6 +128,12 @@ export default async function Home() {
       .select("id, child_id, text, link, price")
       .order("pos"),
     supabase.rpc("child_reservation_data"),
+    supabase
+      .from("playlist_tracks")
+      .select(
+        "id, user_id, name, artists, track_url, status, added_at, profiles(full_name, avatar_path, avatar_updated_at, oauth_avatar_url)"
+      )
+      .order("added_at"),
   ]);
 
   const lotteryDone = (myAssignments?.length ?? 0) === 2;
@@ -246,12 +253,15 @@ export default async function Home() {
     screenshot_url: string | null;
     avatar_url: string | null;
   }[] = [];
+  let spotifyDisplayName: string | null = null;
+  let spotifyLinked = false;
   if (profile?.is_organizer) {
     const [
       { data: themesData },
       { data: wishRows },
       { data: statusRows },
       { data: reportRows },
+      { data: spotifyAccount },
     ] = await Promise.all([
       supabase.from("themes").select("user_id, theme"),
       supabase.from("wishes").select("user_id"),
@@ -260,6 +270,11 @@ export default async function Home() {
         .from("error_reports")
         .select("id, description, created_at, user_id, screenshot_path")
         .order("created_at", { ascending: false }),
+      supabase
+        .from("spotify_accounts")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ]);
     const themeTextById = new Map(
       (themesData ?? []).map((t) => [t.user_id as string, t.theme as string])
@@ -314,7 +329,41 @@ export default async function Home() {
       screenshot_url: r.screenshot_path ? `${storageBase}/${r.screenshot_path}` : null,
       avatar_url: avatarById.get(r.user_id) ?? null,
     }));
+    spotifyDisplayName = spotifyAccount?.display_name ?? null;
+    spotifyLinked = Boolean(spotifyAccount);
   }
+
+  type PlaylistTrackRow = {
+    id: number;
+    user_id: string;
+    name: string;
+    artists: string;
+    track_url: string | null;
+    status: string;
+    added_at: string;
+    profiles: {
+      full_name: string;
+      avatar_path: string | null;
+      avatar_updated_at: string | null;
+      oauth_avatar_url: string | null;
+    } | null;
+  };
+  const playlistTracks = (
+    (playlistTrackRows ?? []) as unknown as PlaylistTrackRow[]
+  ).map(
+    (t) => ({
+      id: t.id,
+      name: t.name,
+      artists: t.artists,
+      trackUrl: t.track_url,
+      addedByName: t.profiles?.full_name ?? "??",
+      addedByAvatarUrl: avatarUrlOf(t.profiles),
+      isMine: t.user_id === user.id,
+      status: t.status as "pending" | "ok" | "error",
+      addedAt: t.added_at,
+    })
+  );
+  const myTrackCount = playlistTracks.filter((t) => t.isMine).length;
 
   const { data: groupMessagesData } = await supabase
     .from("group_messages")
@@ -639,6 +688,19 @@ export default async function Home() {
         themeLockReason: themeLockReason,
       }}
       dishes={dishes}
+      playlist={{
+        isOrganizer: Boolean(profile?.is_organizer),
+        spotifyLinked,
+        spotifyDisplayName,
+        playlistId: partyRow?.spotify_playlist_id ?? null,
+        playlistName: partyRow?.spotify_playlist_name ?? null,
+        playlistUrl: partyRow?.spotify_playlist_id
+          ? `https://open.spotify.com/playlist/${partyRow.spotify_playlist_id}`
+          : null,
+        tracks: playlistTracks,
+        myCount: myTrackCount,
+        myLimit: 5,
+      }}
       kids={{
         me: user.id,
         kids,
