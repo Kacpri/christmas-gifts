@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   addTracks,
   createPlaylist,
+  getOrgSpotifyId,
   getPlaylist,
   removeTracks,
   SpotifyError,
@@ -117,6 +118,20 @@ export async function attachSpotifyPlaylist(
   }
   try {
     const playlist = await getPlaylist(id);
+    const orgSpotifyId = await getOrgSpotifyId();
+    if (
+      orgSpotifyId &&
+      playlist.ownerId &&
+      playlist.ownerId !== orgSpotifyId
+    ) {
+      return {
+        ok: false,
+        error:
+          playlist.ownerName
+            ? `To playlista użytkownika ${playlist.ownerName}. Podłącz playlistę z własnego konta Spotify (zalogowano jako ${orgSpotifyId}).`
+            : "To playlista innego użytkownika. Podłącz playlistę z własnego konta Spotify.",
+      };
+    }
     const { error } = await supabase
       .from("party")
       .upsert(
@@ -222,7 +237,7 @@ export async function addPlaylistTrack(
       .from("playlist_tracks")
       .update({ status: "ok" })
       .eq("id", inserted.id);
-  } catch {
+  } catch (e) {
     await supabase
       .from("playlist_tracks")
       .update({ status: "error" })
@@ -231,7 +246,9 @@ export async function addPlaylistTrack(
     return {
       ok: false,
       error:
-        "Utwór jest na liście, ale nie udało się dodać go na Spotify. Kliknij „Ponów”.",
+        e instanceof SpotifyError
+          ? `Utwór jest na liście, ale Spotify zwrócił błąd: ${e.message}. Kliknij „Ponów”.`
+          : "Utwór jest na liście, ale nie udało się dodać go na Spotify. Kliknij „Ponów”.",
     };
   }
   revalidatePath("/");

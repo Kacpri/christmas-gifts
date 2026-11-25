@@ -31,6 +31,7 @@ type OrgAccount = {
   refresh_token: string;
   expires_at: string;
   display_name: string | null;
+  spotify_id: string | null;
 };
 
 type RawTrack = {
@@ -45,13 +46,32 @@ function tokenParams(clientId: string, clientSecret: string) {
   return new URLSearchParams({ client_id: clientId, client_secret: clientSecret });
 }
 
-async function readSpotifyError(res: Response): Promise<SpotifyError> {
+async function readSpotifyError(
+  res: Response,
+  url: string
+): Promise<SpotifyError> {
+  let body = "";
+  try {
+    body = await res.text();
+  } catch {
+    // brak ciała
+  }
+  console.error(
+    "[spotify] nieudany request:",
+    url,
+    res.status,
+    body.slice(0, 500)
+  );
   let message = `Spotify: HTTP ${res.status}`;
   try {
-    const body = (await res.json()) as { error?: { message?: string } };
-    if (body.error?.message) message = body.error.message;
+    const data = JSON.parse(body) as {
+      error?: { message?: string; reason?: string };
+    };
+    if (data.error?.message) message = `Spotify: ${data.error.message}`;
+    else if (data.error?.reason)
+      message = `Spotify: HTTP ${res.status} (${data.error.reason})`;
   } catch {
-    // ciało nie-JSON — zostaje domyślny komunikat
+    if (body) message = `Spotify: HTTP ${res.status} — ${body.slice(0, 200)}`;
   }
   return new SpotifyError(message, res.status);
 }
@@ -61,7 +81,8 @@ async function apiFetch(
   init: RequestInit,
   token: string
 ): Promise<Response> {
-  const res = await fetch(`${API}${path}`, {
+  const url = `${API}${path}`;
+  const res = await fetch(url, {
     ...init,
     cache: "no-store",
     headers: {
@@ -69,7 +90,7 @@ async function apiFetch(
       ...(init.body ? { "Content-Type": "application/json" } : {}),
     },
   });
-  if (!res.ok) throw await readSpotifyError(res);
+  if (!res.ok) throw await readSpotifyError(res, url);
   return res;
 }
 
@@ -94,15 +115,16 @@ export async function exchangeCode(
   }
   const body = tokenParams(clientId, clientSecret);
   body.set("grant_type", "authorization_code");
-  body.set("code", code);
-  body.set("redirect_uri", redirectUri);
-  const res = await fetch(`${AUTH}/api/token`, {
-    method: "POST",
-    cache: "no-store",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  if (!res.ok) throw await readSpotifyError(res);
+    body.set("code", code);
+    body.set("redirect_uri", redirectUri);
+    const url = `${AUTH}/api/token`;
+    const res = await fetch(url, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+    if (!res.ok) throw await readSpotifyError(res, url);
   return (await res.json()) as {
     access_token: string;
     refresh_token: string;
@@ -121,13 +143,14 @@ export async function refreshAccessToken(
   const body = tokenParams(clientId, clientSecret);
   body.set("grant_type", "refresh_token");
   body.set("refresh_token", refreshToken);
-  const res = await fetch(`${AUTH}/api/token`, {
+  const url = `${AUTH}/api/token`;
+  const res = await fetch(url, {
     method: "POST",
     cache: "no-store",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!res.ok) throw await readSpotifyError(res);
+  if (!res.ok) throw await readSpotifyError(res, url);
   return (await res.json()) as {
     access_token: string;
     refresh_token?: string;
@@ -244,21 +267,33 @@ export async function createPlaylist(
 
 export async function getPlaylist(
   id: string
-): Promise<{ id: string; name: string; url: string | null; ownerName: string | null }> {
+): Promise<{
+  id: string;
+  name: string;
+  url: string | null;
+  ownerName: string | null;
+  ownerId: string | null;
+}> {
   const token = requireToken(await orgToken());
   const res = await apiFetch(`/playlists/${id}`, { method: "GET" }, token);
   const body = (await res.json()) as {
     id: string;
     name: string;
     external_urls?: { spotify?: string };
-    owner?: { display_name?: string };
+    owner?: { id?: string; display_name?: string };
   };
   return {
     id: body.id,
     name: body.name,
     url: body.external_urls?.spotify ?? null,
     ownerName: body.owner?.display_name ?? null,
+    ownerId: body.owner?.id ?? null,
   };
+}
+
+export async function getOrgSpotifyId(): Promise<string | null> {
+  const acc = await getOrgAccount();
+  return acc?.spotify_id ?? null;
 }
 
 export async function addTracks(
