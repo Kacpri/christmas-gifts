@@ -26,31 +26,6 @@ import {
   titleSimilarity,
 } from "@/lib/title-match";
 
-function silentWavUrl(): string {
-  const sampleRate = 8000;
-  const numSamples = 800;
-  const dataSize = numSamples * 2;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-  const writeStr = (offset: number, s: string) => {
-    for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
-  };
-  writeStr(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeStr(8, "WAVE");
-  writeStr(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, "data");
-  view.setUint32(40, dataSize, true);
-  return URL.createObjectURL(new Blob([buffer], { type: "audio/wav" }));
-}
-
 export type PlaylistTrackItem = {
   id: number;
   trackId: string;
@@ -154,29 +129,31 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const previewSeq = useRef(0);
-  const primedRef = useRef(false);
 
-  function ensureAudio(): HTMLAudioElement {
-    if (!audioRef.current) audioRef.current = new Audio();
-    return audioRef.current;
+  function ensureCtx(): AudioContext {
+    if (!ctxRef.current) ctxRef.current = new AudioContext();
+    return ctxRef.current;
   }
 
-  function primeAudio() {
-    if (primedRef.current) return;
-    primedRef.current = true;
-    const audio = ensureAudio();
-    audio.onended = null;
-    audio.onerror = null;
-    audio.muted = true;
-    audio.src = silentWavUrl();
-    void audio.play().catch(() => {});
+  function stopSource() {
+    const src = sourceRef.current;
+    if (src) {
+      src.onended = null;
+      try {
+        src.stop();
+      } catch {
+        // juz zatrzymany
+      }
+      sourceRef.current = null;
+    }
   }
 
   function stopPreview() {
     previewSeq.current++;
-    audioRef.current?.pause();
+    stopSource();
     setPreviewingId(null);
     setPreviewLoadingId(null);
     setPreviewError(null);
@@ -188,7 +165,8 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       return;
     }
     stopPreview();
-    primeAudio();
+    const ctx = ensureCtx();
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
     const seq = ++previewSeq.current;
     setPreviewLoadingId(track.id);
     try {
@@ -214,39 +192,45 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
         setPreviewError("Brak podglądu dla tego utworu.");
         return;
       }
-      const audio = ensureAudio();
-      audio.muted = false;
-      audio.src = body.previewUrl;
-      audio.onended = () => {
-        if (audioRef.current === audio) {
-          setPreviewingId(null);
-        }
-      };
-      audio.onerror = () => {
-        if (audioRef.current === audio) {
-          setPreviewingId(null);
-          setPreviewError("Nie udało się odtworzyć podglądu.");
-        }
-      };
-      try {
-        await audio.play();
-      } catch {
+      const audioRes = await fetch(body.previewUrl);
+      if (!audioRes.ok) throw new Error(`audio ${audioRes.status}`);
+      const audioBuf = await audioRes.arrayBuffer();
+      const decoded = await ctx.decodeAudioData(audioBuf);
+      if (seq !== previewSeq.current) return;
+      if (ctx.state !== "running") {
+        await ctx.resume().catch(() => {});
+      }
+      if (ctx.state !== "running") {
         setPreviewError("Przeglądarka zablokowała odtwarzanie.");
         return;
       }
-      if (seq !== previewSeq.current) {
-        audio.pause();
-        return;
-      }
+      const src = ctx.createBufferSource();
+      src.buffer = decoded;
+      src.connect(ctx.destination);
+      src.onended = () => {
+        if (sourceRef.current === src) {
+          sourceRef.current = null;
+          setPreviewingId(null);
+        }
+      };
+      sourceRef.current = src;
+      src.start();
       setPreviewingId(track.id);
-    } catch {
-      setPreviewError("Podgląd teraz nie działa.");
+    } catch (e) {
+      setPreviewError(
+        `Podgląd nie działa (${e instanceof Error ? e.name : "błąd"}).`
+      );
     } finally {
       if (seq === previewSeq.current) setPreviewLoadingId(null);
     }
   }
 
-  useEffect(() => stopPreview, []);
+  useEffect(() => {
+    return () => {
+      stopPreview();
+      void ctxRef.current?.close().catch(() => {});
+    };
+  }, []);
 
   useEffect(() => {
     const param = new URLSearchParams(window.location.search).get("spotify");
