@@ -434,7 +434,7 @@ export function GroupChatSection({
       </div>
       <div
         className={`mt-3 flex flex-col overflow-hidden rounded-[14px] bg-mist ${
-          isDesktop ? "h-96" : ""
+          isDesktop ? "h-[480px]" : ""
         }`}
       >
         <div className={`relative ${isDesktop ? "min-h-0 flex-1" : ""}`}>

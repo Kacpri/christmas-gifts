@@ -131,7 +131,7 @@ export default async function Home() {
     supabase
       .from("playlist_tracks")
       .select(
-        "id, user_id, track_id, name, artists, track_url, duration_ms, status, added_at, profiles(full_name, avatar_path, avatar_updated_at, oauth_avatar_url)"
+        "id, user_id, track_id, name, artists, track_url, duration_ms, cover_path, status, added_at, profiles(full_name, avatar_path, avatar_updated_at, oauth_avatar_url)"
       )
       .order("added_at"),
   ]);
@@ -341,6 +341,7 @@ export default async function Home() {
     artists: string;
     track_url: string | null;
     duration_ms: number | null;
+    cover_path: string | null;
     status: string;
     added_at: string;
     profiles: {
@@ -360,6 +361,9 @@ export default async function Home() {
       artists: t.artists,
       trackUrl: t.track_url,
       durationMs: t.duration_ms,
+      coverUrl: t.cover_path
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/album-covers/${t.cover_path}`
+        : null,
       addedByName: t.profiles?.full_name ?? "??",
       addedByAvatarUrl: avatarUrlOf(t.profiles),
       isMine: t.user_id === user.id,

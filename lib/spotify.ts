@@ -37,6 +37,7 @@ export type SpotifyTrack = {
   url: string | null;
   image: string | null;
   durationMs: number | null;
+  previewUrl: string | null;
 };
 
 type OrgAccount = {
@@ -55,6 +56,7 @@ type RawTrack = {
   external_urls?: { spotify?: string };
   album?: { images?: { url: string }[] };
   duration_ms?: number;
+  preview_url?: string | null;
 };
 
 function tokenParams(clientId: string, clientSecret: string) {
@@ -273,6 +275,7 @@ function mapTrack(t: RawTrack): SpotifyTrack {
       t.album?.images?.[0]?.url ??
       null,
     durationMs: t.duration_ms ?? null,
+    previewUrl: t.preview_url ?? null,
   };
 }
 
@@ -418,4 +421,46 @@ export async function removeTracks(
     },
     token
   );
+}
+
+const COVER_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+// Best-effort: pobiera okładkę albumu z CDN Spotify i wgrywa do
+// bucketu album-covers. Zwraca ścieżkę lub null (brak okładki /
+// błąd pobrania — utwór zostaje dodany bez okładki).
+export async function storeAlbumCover(
+  trackId: string,
+  imageUrl: string
+): Promise<string | null> {
+  if (!imageUrl) return null;
+  let res: Response;
+  try {
+    res = await fetch(imageUrl, { cache: "no-store" });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+  const contentType = res.headers.get("content-type")?.split(";")[0] ?? "";
+  const ext = COVER_EXT[contentType] ?? "jpg";
+  const bytes = await res.arrayBuffer();
+  if (bytes.byteLength === 0 || bytes.byteLength > 2 * 1024 * 1024) {
+    return null;
+  }
+  const supabase = await createClient();
+  const path = `${trackId}.${ext}`;
+  const { error } = await supabase.storage
+    .from("album-covers")
+    .upload(path, new Blob([bytes], { type: contentType || "image/jpeg" }), {
+      contentType: contentType || "image/jpeg",
+      upsert: true,
+    });
+  if (error) {
+    console.error("[spotify] upload okładki:", error.message);
+    return null;
+  }
+  return path;
 }

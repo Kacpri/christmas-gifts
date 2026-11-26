@@ -185,9 +185,9 @@ function TagPillIcon({ tag }: { tag: Tag }) {
   if (tag === "anonimowy") {
     return (
       <svg {...common}>
-        <path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a3 3 0 0 0-3 3v1a2 2 0 0 1-2 2 2 2 0 0 1-2-2V10a3 3 0 0 0-3-3H2Z" />
-        <path d="M9 14v2" />
-        <path d="M15 14v2" />
+        <rect x="2.5" y="7" width="19" height="8" rx="3" />
+        <circle cx="8.5" cy="11" r="1.6" fill="currentColor" stroke="none" />
+        <circle cx="15.5" cy="11" r="1.6" fill="currentColor" stroke="none" />
       </svg>
     );
   }
@@ -305,7 +305,7 @@ function ArrowLeftIcon() {
   );
 }
 
-function MaskIcon() {
+function ThiefMaskIcon() {
   return (
     <svg
       width="18"
@@ -318,9 +318,9 @@ function MaskIcon() {
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M2 12a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V7h-5a3 3 0 0 0-3 3v1a2 2 0 0 1-2 2 2 2 0 0 1-2-2V10a3 3 0 0 0-3-3H2Z" />
-      <path d="M9 14v2" />
-      <path d="M15 14v2" />
+      <rect x="2.5" y="7" width="19" height="8" rx="3" />
+      <circle cx="8.5" cy="11" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="11" r="1.4" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -1383,6 +1383,37 @@ export function ChatsPanel({
     }
   }
 
+  function AnonChatToggle() {
+    const on = pickerMode === "anon";
+    return (
+      <button
+        type="button"
+        onClick={() => setPickerMode(on ? "dm" : "anon")}
+        aria-pressed={on}
+        className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium ${
+          on ? "bg-violet-100 text-violet-800" : "text-ink hover:bg-mist"
+        }`}
+      >
+        <span className="flex items-center gap-2">
+          <ThiefMaskIcon />
+          Anonimowy czat
+        </span>
+        <span
+          className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+            on ? "bg-violet-800" : "bg-line"
+          }`}
+          aria-hidden
+        >
+          <span
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface transition-transform ${
+              on ? "translate-x-[18px]" : "translate-x-0.5"
+            }`}
+          />
+        </span>
+      </button>
+    );
+  }
+
   function toggleLotteryReaction(key: string, messageId: number, emoji: string) {
     const cur = (lotteryMsgs[key] ?? []).find((m) => m.id === messageId);
     const add = !cur?.reactions.some(
@@ -1566,7 +1597,7 @@ export function ChatsPanel({
         {(!useMobileLayout || !selectedItem) && (
         <div
           className={`flex flex-col gap-3 ${
-            isDesktop ? "h-96 pb-3" : ""
+            isDesktop ? "h-[480px] pb-3" : ""
           } ${!useMobileLayout ? "w-72" : ""}`}
         >
           <div className="relative min-h-0 flex-1">
@@ -1699,24 +1730,13 @@ export function ChatsPanel({
             <PlusIcon />
             Nowy czat
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPickerMode("anon");
-              setPickerOpen(true);
-            }}
-            className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-violet-800/40 bg-surface text-base font-semibold text-violet-800 hover:bg-mist"
-          >
-            <MaskIcon />
-            Anonimowy czat
-          </button>
         </div>
         )}
 
         {(!useMobileLayout || selectedItem) && (
         <div
           className={`flex min-w-0 flex-1 flex-col gap-3 pb-3 ${
-            useMobileLayout ? "h-[440px]" : "h-96"
+            useMobileLayout ? "h-[440px]" : "h-[480px]"
           }`}
         >
           {selectedItem ? (
@@ -1955,6 +1975,9 @@ export function ChatsPanel({
           title={pickerMode === "anon" ? "Anonimowy czat" : "Nowy czat"}
           closeOnBackdrop
         >
+          <div className="mb-1">
+            <AnonChatToggle />
+          </div>
           {pickerMode === "anon" && (
             <p className="px-3 pb-1 text-xs text-faint">
               Ta osoba nie dowie się, kim jesteś.
@@ -2000,6 +2023,9 @@ export function ChatsPanel({
             <p className="mb-1 px-1 text-sm font-semibold text-ink">
               {pickerMode === "anon" ? "Anonimowy czat" : "Nowy czat"}
             </p>
+            <div className="mb-1">
+              <AnonChatToggle />
+            </div>
             {pickerMode === "anon" && (
               <p className="mb-1 px-1 text-xs text-faint">
                 Ta osoba nie dowie się, kim jesteś.

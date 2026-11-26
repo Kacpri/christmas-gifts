@@ -8,9 +8,11 @@ import {
   createPlaylist,
   getOrgSpotifyId,
   getPlaylist,
+  getTrack,
   probePermissions,
   removeTracks,
   SpotifyError,
+  storeAlbumCover,
 } from "@/lib/spotify";
 import { createClient } from "@/lib/supabase/server";
 
@@ -260,6 +262,7 @@ export async function addPlaylistTrack(
   const name = String(formData.get("name") ?? "").trim();
   const artists = String(formData.get("artists") ?? "").trim();
   const trackUrl = String(formData.get("track_url") ?? "").trim();
+  const coverUrl = String(formData.get("cover_url") ?? "").trim();
   const durationMsRaw = Number(formData.get("duration_ms"));
   const durationMs =
     Number.isInteger(durationMsRaw) && durationMsRaw > 0
@@ -324,6 +327,17 @@ export async function addPlaylistTrack(
           : "Utwór jest na liście, ale nie udało się dodać go na Spotify. Kliknij „Ponów”.",
     };
   }
+  try {
+    const coverPath = await storeAlbumCover(trackId, coverUrl);
+    if (coverPath) {
+      await supabase
+        .from("playlist_tracks")
+        .update({ cover_path: coverPath })
+        .eq("id", inserted.id);
+    }
+  } catch {
+    // okładka jest best-effort — nie blokuje dodania utworu
+  }
   revalidatePath("/");
   return { ok: true };
 }
@@ -381,7 +395,7 @@ export async function retryPlaylistTrack(
   }
   const { data: row } = await supabase
     .from("playlist_tracks")
-    .select("id, user_id, track_id")
+    .select("id, user_id, track_id, cover_path")
     .eq("id", id)
     .maybeSingle();
   if (!row) return { ok: false, error: "Utwór nie istnieje." };
@@ -406,6 +420,20 @@ export async function retryPlaylistTrack(
           ? e.message
           : "Nie udało się dodać utworu na Spotify.",
     };
+  }
+  if (!row.cover_path) {
+    try {
+      const track = await getTrack(row.track_id);
+      const coverPath = await storeAlbumCover(row.track_id, track.image ?? "");
+      if (coverPath) {
+        await supabase
+          .from("playlist_tracks")
+          .update({ cover_path: coverPath })
+          .eq("id", id);
+      }
+    } catch {
+      // okładka jest best-effort
+    }
   }
   revalidatePath("/");
   return { ok: true };

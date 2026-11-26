@@ -18,7 +18,6 @@ import {
   updateTrackLimit,
   type PlaylistActionResult,
 } from "@/app/playlist-actions";
-import { Avatar } from "@/components/avatar";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { plural } from "@/lib/format";
 
@@ -29,6 +28,7 @@ export type PlaylistTrackItem = {
   artists: string;
   trackUrl: string | null;
   durationMs: number | null;
+  coverUrl: string | null;
   addedByName: string;
   addedByAvatarUrl: string | null;
   isMine: boolean;
@@ -57,12 +57,14 @@ type SearchTrack = {
   url: string | null;
   image: string | null;
   durationMs: number | null;
+  previewUrl: string | null;
 };
 
 type PendingAdd = {
   trackId: string;
   name: string;
   artists: string;
+  image: string | null;
 };
 
 const empty: PlaylistActionResult = { ok: false };
@@ -120,6 +122,40 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const [authBanner, setAuthBanner] = useState<"ok" | "error" | null>(null);
   const searchSeq = useRef(0);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function stopPreview() {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setPreviewingId(null);
+  }
+
+  function togglePreview(track: SearchTrack) {
+    if (!track.previewUrl) return;
+    if (previewingId === track.id) {
+      stopPreview();
+      return;
+    }
+    audioRef.current?.pause();
+    const audio = new Audio(track.previewUrl);
+    audioRef.current = audio;
+    audio.onended = () => {
+      if (audioRef.current === audio) {
+        audioRef.current = null;
+        setPreviewingId(null);
+      }
+    };
+    void audio.play().catch(() => {
+      if (audioRef.current === audio) {
+        audioRef.current = null;
+        setPreviewingId(null);
+      }
+    });
+    setPreviewingId(track.id);
+  }
+
+  useEffect(() => stopPreview, []);
 
   useEffect(() => {
     const param = new URLSearchParams(window.location.search).get("spotify");
@@ -166,6 +202,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   }, []);
 
   useEffect(() => {
+    stopPreview();
     const q = query.trim();
     setDropdownOpen(q.length > 0);
     if (q.length < 2) {
@@ -212,6 +249,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
     fd.set("name", track.name);
     fd.set("artists", track.artists);
     fd.set("track_url", track.url ?? "");
+    fd.set("cover_url", track.image ?? "");
     if (track.durationMs != null) {
       fd.set("duration_ms", String(track.durationMs));
     }
@@ -219,7 +257,9 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       trackId: track.id,
       name: track.name,
       artists: track.artists,
+      image: track.image,
     });
+    stopPreview();
     addAction(fd);
     setQuery("");
     setResults(null);
@@ -508,19 +548,23 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       {hasPlaylist ? (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-muted">
-              Wspólna playlista — {visibleTracks.length}{" "}
-              {plural(visibleTracks.length, [
-                "piosenka",
-                "piosenki",
-                "piosenek",
-              ])}
-              {hasDuration ? ` • ${formatDuration(totalDurationMs)}` : ""} ·
-              każdy dodaje do {playlist.myLimit}
+            <p className="min-w-0 truncate text-sm text-muted">
+              Wspólna playlista — każdy dodaje do {playlist.myLimit}
             </p>
-            <span className="shrink-0 rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent dark:bg-sage-300 dark:text-[#e6f6ec]">
-              {effectiveMyCount}/{playlist.myLimit}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+                {visibleTracks.length}{" "}
+                {plural(visibleTracks.length, [
+                  "piosenka",
+                  "piosenki",
+                  "piosenek",
+                ])}
+                {hasDuration ? ` • ${formatDuration(totalDurationMs)}` : ""}
+              </span>
+              <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent dark:bg-sage-300 dark:text-[#e6f6ec]">
+                {effectiveMyCount}/{playlist.myLimit}
+              </span>
+            </div>
           </div>
 
           <div ref={searchBoxRef} className="relative">
@@ -559,41 +603,94 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                       </p>
                     )}
                     <ul>
-                      {results.map((t) => (
-                        <li key={t.id}>
-                          <button
-                            type="button"
-                            onClick={() => handlePick(t)}
-                            disabled={
-                              adding || effectiveMyCount >= playlist.myLimit
-                            }
-                            className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-mist disabled:opacity-50"
-                          >
-                            {t.image ? (
-                              <img
-                                src={t.image}
-                                alt=""
-                                aria-hidden
-                                width={36}
-                                height={36}
-                                className="shrink-0 rounded-md object-cover"
-                              />
-                            ) : (
-                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-sage-150 text-accent">
-                                <MusicNoteIcon />
+                      {results.map((t) => {
+                        const onList =
+                          playlist.tracks.some((x) => x.trackId === t.id) ||
+                          pendingAdd?.trackId === t.id;
+                        const similarTitle =
+                          !onList &&
+                          playlist.tracks.some(
+                            (x) =>
+                              x.name.trim().toLowerCase() ===
+                              t.name.trim().toLowerCase()
+                          );
+                        return (
+                          <li key={t.id} className="flex items-center pr-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handlePick(t)}
+                              disabled={
+                                onList ||
+                                adding ||
+                                effectiveMyCount >= playlist.myLimit
+                              }
+                              className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-mist disabled:opacity-50"
+                            >
+                              {t.image ? (
+                                <img
+                                  src={t.image}
+                                  alt=""
+                                  aria-hidden
+                                  width={36}
+                                  height={36}
+                                  className="shrink-0 rounded-md object-cover"
+                                />
+                              ) : (
+                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-sage-150 text-accent">
+                                  <MusicNoteIcon />
+                                </span>
+                              )}
+                              <span className="min-w-0">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="truncate text-sm font-medium text-ink">
+                                    {t.name}
+                                  </span>
+                                  {onList && (
+                                    <span className="shrink-0 rounded bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                                      na liście
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="block truncate text-xs text-muted">
+                                  {t.artists}
+                                </span>
+                                {similarTitle && (
+                                  <span className="block truncate text-[11px] text-amber-600">
+                                    podobny tytuł już na liście
+                                  </span>
+                                )}
                               </span>
+                            </button>
+                            {t.previewUrl && (
+                              <button
+                                type="button"
+                                onClick={() => togglePreview(t)}
+                                aria-label={
+                                  previewingId === t.id
+                                    ? `Zatrzymaj podgląd: ${t.name}`
+                                    : `Odtwórz podgląd: ${t.name}`
+                                }
+                                title={
+                                  previewingId === t.id
+                                    ? "Zatrzymaj podgląd"
+                                    : "Podgląd (30 s)"
+                                }
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                  previewingId === t.id
+                                    ? "bg-sage-100 text-accent-deep dark:bg-sage-300 dark:text-[#e6f6ec]"
+                                    : "text-muted hover:bg-mist"
+                                }`}
+                              >
+                                {previewingId === t.id ? (
+                                  <PauseIcon />
+                                ) : (
+                                  <PlayIcon />
+                                )}
+                              </button>
                             )}
-                            <span className="min-w-0">
-                              <span className="block truncate text-sm font-medium text-ink">
-                                {t.name}
-                              </span>
-                              <span className="block truncate text-xs text-muted">
-                                {t.artists}
-                              </span>
-                            </span>
-                          </button>
-                        </li>
-                      ))}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </>
                 )}
@@ -627,11 +724,20 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   key={track.id}
                   className="flex items-center gap-3 rounded-[10px] bg-mist px-3 py-2"
                 >
-                  <Avatar
-                    name={track.addedByName}
-                    src={track.addedByAvatarUrl}
-                    size={32}
-                  />
+                  {track.coverUrl ? (
+                    <img
+                      src={track.coverUrl}
+                      alt=""
+                      aria-hidden
+                      width={32}
+                      height={32}
+                      className="shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-sage-150 text-accent">
+                      <MusicNoteIcon />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-ink">
                       {track.name}
@@ -679,11 +785,20 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
               ))}
               {pendingAdd && (
                 <li className="flex items-center gap-3 rounded-[10px] bg-mist px-3 py-2">
-                  <Avatar
-                    name={playlist.myName}
-                    src={playlist.myAvatarUrl}
-                    size={32}
-                  />
+                  {pendingAdd.image ? (
+                    <img
+                      src={pendingAdd.image}
+                      alt=""
+                      aria-hidden
+                      width={32}
+                      height={32}
+                      className="shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-sage-150 text-accent">
+                      <MusicNoteIcon />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-ink">
                       {pendingAdd.name}
@@ -809,6 +924,23 @@ function TrashIcon() {
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
     </svg>
   );
 }
