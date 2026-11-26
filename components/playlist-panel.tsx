@@ -15,16 +15,20 @@ import {
   probeSpotifyPermissions,
   removePlaylistTrack,
   retryPlaylistTrack,
+  updateTrackLimit,
   type PlaylistActionResult,
 } from "@/app/playlist-actions";
 import { Avatar } from "@/components/avatar";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
+import { plural } from "@/lib/format";
 
 export type PlaylistTrackItem = {
   id: number;
+  trackId: string;
   name: string;
   artists: string;
   trackUrl: string | null;
+  durationMs: number | null;
   addedByName: string;
   addedByAvatarUrl: string | null;
   isMine: boolean;
@@ -42,6 +46,8 @@ export type PlaylistPanelData = {
   tracks: PlaylistTrackItem[];
   myCount: number;
   myLimit: number;
+  myName: string;
+  myAvatarUrl: string | null;
 };
 
 type SearchTrack = {
@@ -50,10 +56,25 @@ type SearchTrack = {
   artists: string;
   url: string | null;
   image: string | null;
+  durationMs: number | null;
+};
+
+type PendingAdd = {
+  trackId: string;
+  name: string;
+  artists: string;
 };
 
 const empty: PlaylistActionResult = { ok: false };
 const DEFAULT_PLAYLIST_NAME = "Świąteczna Tablica – Playlista";
+
+function formatDuration(ms: number): string {
+  const totalMin = Math.round(ms / 60000);
+  if (totalMin < 60) return `${totalMin} min`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `${h} h ${m} min` : `${h} h`;
+}
 
 export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const [createState, createAction, creating] = useActionState(
@@ -81,6 +102,13 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
     probeSpotifyPermissions,
     empty
   );
+  const [limitState, limitAction, savingLimit] = useActionState(
+    updateTrackLimit,
+    empty
+  );
+  const [limitValue, setLimitValue] = useState(String(playlist.myLimit));
+  const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null);
+  const [hiddenId, setHiddenId] = useState<number | null>(null);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchTrack[] | null>(null);
@@ -102,6 +130,27 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       return () => window.clearTimeout(t);
     }
   }, []);
+
+  useEffect(() => {
+    setLimitValue(String(playlist.myLimit));
+  }, [playlist.myLimit]);
+
+  useEffect(() => {
+    setPendingAdd((prev) =>
+      prev &&
+      playlist.tracks.some((t) => t.isMine && t.trackId === prev.trackId)
+        ? null
+        : prev
+    );
+  }, [playlist.tracks]);
+
+  useEffect(() => {
+    if (!addState.ok && addState.error) setPendingAdd(null);
+  }, [addState]);
+
+  useEffect(() => {
+    if (removeState.ok || removeState.error) setHiddenId(null);
+  }, [removeState]);
 
   useEffect(() => {
     function onClick(e: globalThis.MouseEvent) {
@@ -163,6 +212,14 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
     fd.set("name", track.name);
     fd.set("artists", track.artists);
     fd.set("track_url", track.url ?? "");
+    if (track.durationMs != null) {
+      fd.set("duration_ms", String(track.durationMs));
+    }
+    setPendingAdd({
+      trackId: track.id,
+      name: track.name,
+      artists: track.artists,
+    });
     addAction(fd);
     setQuery("");
     setResults(null);
@@ -177,12 +234,20 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       onConfirm: () => {
         const fd = new FormData();
         fd.set("id", String(track.id));
+        setHiddenId(track.id);
         removeAction(fd);
       },
     });
   }
 
   const hasPlaylist = playlist.playlistId != null;
+  const visibleTracks = playlist.tracks.filter((t) => t.id !== hiddenId);
+  const effectiveMyCount = playlist.myCount + (pendingAdd ? 1 : 0);
+  const totalDurationMs = visibleTracks.reduce(
+    (sum, t) => sum + (t.durationMs ?? 0),
+    0
+  );
+  const hasDuration = visibleTracks.some((t) => t.durationMs != null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -261,6 +326,41 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
           )}
           {!disconnectState.ok && disconnectState.error && (
             <p className="text-sm text-red-600">{disconnectState.error}</p>
+          )}
+
+          <div className="flex items-center justify-between gap-2 rounded-[10px] bg-mist px-3 py-2.5">
+            <label htmlFor="tracks-limit" className="text-sm text-ink">
+              Limit piosenek na osobę
+            </label>
+            <div className="flex shrink-0 items-center gap-2">
+              <input
+                id="tracks-limit"
+                type="number"
+                min={1}
+                max={20}
+                value={limitValue}
+                onChange={(e) => setLimitValue(e.target.value)}
+                className="w-16 rounded-lg border border-input-line bg-surface px-2 py-1.5 text-sm text-ink"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const fd = new FormData();
+                  fd.set("limit", limitValue);
+                  limitAction(fd);
+                }}
+                disabled={savingLimit}
+                className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+              >
+                {savingLimit ? "Zapisywanie…" : "Zapisz"}
+              </button>
+            </div>
+          </div>
+          {limitState.error && (
+            <p className="text-sm text-red-600">{limitState.error}</p>
+          )}
+          {limitState.ok && (
+            <p className="text-sm text-accent">Zapisano limit.</p>
           )}
 
           {playlist.spotifyLinked && !hasPlaylist && (
@@ -409,11 +509,17 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted">
-              Wspólna playlista — każdy dodaje do {playlist.myLimit}{" "}
-              {playlist.myLimit === 5 ? "piosenek" : "piosenek"}.
+              Wspólna playlista — {visibleTracks.length}{" "}
+              {plural(visibleTracks.length, [
+                "piosenka",
+                "piosenki",
+                "piosenek",
+              ])}
+              {hasDuration ? ` • ${formatDuration(totalDurationMs)}` : ""} ·
+              każdy dodaje do {playlist.myLimit}
             </p>
             <span className="shrink-0 rounded-full bg-sage-100 px-2 py-0.5 text-xs font-semibold text-accent dark:bg-sage-300 dark:text-[#e6f6ec]">
-              {playlist.myCount}/{playlist.myLimit}
+              {effectiveMyCount}/{playlist.myLimit}
             </span>
           </div>
 
@@ -458,7 +564,9 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                           <button
                             type="button"
                             onClick={() => handlePick(t)}
-                            disabled={adding || playlist.myCount >= playlist.myLimit}
+                            disabled={
+                              adding || effectiveMyCount >= playlist.myLimit
+                            }
                             className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-mist disabled:opacity-50"
                           >
                             {t.image ? (
@@ -508,13 +616,13 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
             <p className="text-sm text-red-600">{removeState.error}</p>
           )}
 
-          {playlist.tracks.length === 0 ? (
+          {visibleTracks.length === 0 && !pendingAdd ? (
             <div className="rounded-[10px] border border-dashed border-line bg-mist p-4 text-sm text-muted">
               Nikt jeszcze nie dodał piosenki. Bądź pierwszy!
             </div>
           ) : (
             <ul className="flex flex-col gap-1.5">
-              {playlist.tracks.map((track) => (
+              {visibleTracks.map((track) => (
                 <li
                   key={track.id}
                   className="flex items-center gap-3 rounded-[10px] bg-mist px-3 py-2"
@@ -569,6 +677,26 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   )}
                 </li>
               ))}
+              {pendingAdd && (
+                <li className="flex items-center gap-3 rounded-[10px] bg-mist px-3 py-2">
+                  <Avatar
+                    name={playlist.myName}
+                    src={playlist.myAvatarUrl}
+                    size={32}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">
+                      {pendingAdd.name}
+                    </p>
+                    <p className="truncate text-xs text-muted">
+                      {pendingAdd.artists} · Ty
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded bg-sage-100 px-1.5 py-0.5 text-[10px] font-semibold text-accent dark:bg-sage-300 dark:text-[#e6f6ec]">
+                    Synchronizuję…
+                  </span>
+                </li>
+              )}
             </ul>
           )}
         </div>

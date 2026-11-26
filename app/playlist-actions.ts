@@ -16,7 +16,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PlaylistActionResult = { ok: boolean; error?: string };
 
-const TRACKS_PER_USER = 5;
+const MIN_TRACKS_PER_USER = 1;
+const MAX_TRACKS_PER_USER = 20;
 
 async function requireUser() {
   const supabase = await createClient();
@@ -49,15 +50,26 @@ function parsePlaylistId(raw: string): string | null {
   return null;
 }
 
+async function getPartySettings(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<{ playlistId: string | null; tracksPerUser: number }> {
+  const { data } = await supabase
+    .from("party")
+    .select("spotify_playlist_id, tracks_per_user")
+    .eq("id", 1)
+    .maybeSingle();
+  return {
+    playlistId: data?.spotify_playlist_id ?? null,
+    tracksPerUser:
+      typeof data?.tracks_per_user === "number" ? data.tracks_per_user : 5,
+  };
+}
+
 async function getPartyPlaylistId(
   supabase: Awaited<ReturnType<typeof createClient>>
 ): Promise<string | null> {
-  const { data } = await supabase
-    .from("party")
-    .select("spotify_playlist_id")
-    .eq("id", 1)
-    .maybeSingle();
-  return data?.spotify_playlist_id ?? null;
+  const { playlistId } = await getPartySettings(supabase);
+  return playlistId;
 }
 
 export async function createSpotifyPlaylist(
@@ -207,6 +219,38 @@ export async function probeSpotifyPermissions(
   }
 }
 
+export async function updateTrackLimit(
+  _prev: PlaylistActionResult,
+  formData: FormData
+): Promise<PlaylistActionResult> {
+  const org = await requireOrganizer();
+  if (!org) {
+    return { ok: false, error: "Tylko organizator może zarządzać playlistą." };
+  }
+  const { supabase } = org;
+  const limit = Number(formData.get("limit"));
+  if (
+    !Number.isInteger(limit) ||
+    limit < MIN_TRACKS_PER_USER ||
+    limit > MAX_TRACKS_PER_USER
+  ) {
+    return {
+      ok: false,
+      error: `Limit: liczba całkowita ${MIN_TRACKS_PER_USER}–${MAX_TRACKS_PER_USER}.`,
+    };
+  }
+  const { error } = await supabase
+    .from("party")
+    .update({
+      tracks_per_user: limit,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function addPlaylistTrack(
   _prev: PlaylistActionResult,
   formData: FormData
@@ -216,10 +260,15 @@ export async function addPlaylistTrack(
   const name = String(formData.get("name") ?? "").trim();
   const artists = String(formData.get("artists") ?? "").trim();
   const trackUrl = String(formData.get("track_url") ?? "").trim();
+  const durationMsRaw = Number(formData.get("duration_ms"));
+  const durationMs =
+    Number.isInteger(durationMsRaw) && durationMsRaw > 0
+      ? durationMsRaw
+      : null;
   if (!trackId || !name || !artists) {
     return { ok: false, error: "Nieprawidłowy utwór." };
   }
-  const playlistId = await getPartyPlaylistId(supabase);
+  const { playlistId, tracksPerUser } = await getPartySettings(supabase);
   if (!playlistId) {
     return { ok: false, error: "Organizator nie utworzył jeszcze playlisty." };
   }
@@ -228,8 +277,8 @@ export async function addPlaylistTrack(
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
   if (countError) return { ok: false, error: countError.message };
-  if ((count ?? 0) >= TRACKS_PER_USER) {
-    return { ok: false, error: `Maksymalnie ${TRACKS_PER_USER} piosenek.` };
+  if ((count ?? 0) >= tracksPerUser) {
+    return { ok: false, error: `Maksymalnie ${tracksPerUser} piosenek.` };
   }
   const { data: existing } = await supabase
     .from("playlist_tracks")
@@ -247,6 +296,7 @@ export async function addPlaylistTrack(
       name,
       artists,
       track_url: trackUrl || null,
+      duration_ms: durationMs,
       status: "pending",
     })
     .select("id")

@@ -87,7 +87,7 @@ export default async function Home() {
     supabase
       .from("party")
       .select(
-        "starts_at, location, notes, label, list_budget, theme_budget, panel_visibility, spotify_playlist_id, spotify_playlist_name"
+        "starts_at, location, notes, label, list_budget, theme_budget, panel_visibility, spotify_playlist_id, spotify_playlist_name, tracks_per_user"
       )
       .eq("id", 1)
       .maybeSingle(),
@@ -131,7 +131,7 @@ export default async function Home() {
     supabase
       .from("playlist_tracks")
       .select(
-        "id, user_id, name, artists, track_url, status, added_at, profiles(full_name, avatar_path, avatar_updated_at, oauth_avatar_url)"
+        "id, user_id, track_id, name, artists, track_url, duration_ms, status, added_at, profiles(full_name, avatar_path, avatar_updated_at, oauth_avatar_url)"
       )
       .order("added_at"),
   ]);
@@ -336,9 +336,11 @@ export default async function Home() {
   type PlaylistTrackRow = {
     id: number;
     user_id: string;
+    track_id: string;
     name: string;
     artists: string;
     track_url: string | null;
+    duration_ms: number | null;
     status: string;
     added_at: string;
     profiles: {
@@ -353,9 +355,11 @@ export default async function Home() {
   ).map(
     (t) => ({
       id: t.id,
+      trackId: t.track_id,
       name: t.name,
       artists: t.artists,
       trackUrl: t.track_url,
+      durationMs: t.duration_ms,
       addedByName: t.profiles?.full_name ?? "??",
       addedByAvatarUrl: avatarUrlOf(t.profiles),
       isMine: t.user_id === user.id,
@@ -699,7 +703,12 @@ export default async function Home() {
           : null,
         tracks: playlistTracks,
         myCount: myTrackCount,
-        myLimit: 5,
+        myLimit:
+          typeof partyRow?.tracks_per_user === "number"
+            ? partyRow.tracks_per_user
+            : 5,
+        myName: profile?.full_name ?? "Ty",
+        myAvatarUrl: avatarUrlOf(profile),
       }}
       kids={{
         me: user.id,

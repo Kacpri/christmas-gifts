@@ -36,6 +36,7 @@ export type SpotifyTrack = {
   artists: string;
   url: string | null;
   image: string | null;
+  durationMs: number | null;
 };
 
 type OrgAccount = {
@@ -53,6 +54,7 @@ type RawTrack = {
   artists?: { name: string }[];
   external_urls?: { spotify?: string };
   album?: { images?: { url: string }[] };
+  duration_ms?: number;
 };
 
 function tokenParams(clientId: string, clientSecret: string) {
@@ -270,6 +272,7 @@ function mapTrack(t: RawTrack): SpotifyTrack {
       t.album?.images?.find((i) => i.url)?.url ??
       t.album?.images?.[0]?.url ??
       null,
+    durationMs: t.duration_ms ?? null,
   };
 }
 
