@@ -407,7 +407,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   type="button"
                   onClick={() => probeAction(new FormData())}
                   disabled={probing}
-                  className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                  className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-mist disabled:opacity-50"
                 >
                   {probing ? "Testowanie…" : "Testuj uprawnienia"}
                 </button>
@@ -423,7 +423,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                     })
                   }
                   disabled={disconnecting}
-                  className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                  className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-mist disabled:opacity-50"
                 >
                   {disconnecting ? "Rozłączanie…" : "Rozłącz"}
                 </button>
@@ -461,7 +461,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   limitAction(fd);
                 }}
                 disabled={savingLimit}
-                className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist disabled:opacity-50"
+                className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-mist disabled:opacity-50"
               >
                 {savingLimit ? "Zapisywanie…" : "Zapisz"}
               </button>
@@ -562,7 +562,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   <button
                     type="button"
                     onClick={() => setAttachOpen((o) => !o)}
-                    className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:bg-mist"
+                    className="rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-mist"
                   >
                     Podłącz inną
                   </button>
@@ -571,7 +571,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                       href={playlist.playlistUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-xs font-medium text-ink hover:bg-mist"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-mist"
                     >
                       <ExternalLinkIcon />
                       Otwórz w Spotify
@@ -602,7 +602,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                   <button
                     type="submit"
                     disabled={attaching}
-                    className="inline-flex min-w-[152px] items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+                    className="inline-flex min-w-[152px] items-center justify-center rounded-xl border border-input-line bg-surface px-4 py-2.5 text-sm font-medium text-ink hover:bg-mist disabled:opacity-50"
                   >
                     {attaching ? "Podpinanie…" : "Podłącz"}
                   </button>
@@ -840,7 +840,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                         retryAction(fd);
                       }}
                       disabled={retrying}
-                      className="shrink-0 rounded-lg border border-input-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink hover:bg-mist disabled:opacity-50"
+                      className="shrink-0 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-medium text-ink hover:bg-mist disabled:opacity-50"
                     >
                       {retrying ? "…" : "Ponów"}
                     </button>
