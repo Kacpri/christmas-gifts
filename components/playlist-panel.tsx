@@ -21,6 +21,31 @@ import {
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { plural } from "@/lib/format";
 
+function silentWavUrl(): string {
+  const sampleRate = 8000;
+  const numSamples = 800;
+  const dataSize = numSamples * 2;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  const writeStr = (offset: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+  };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+  return URL.createObjectURL(new Blob([buffer], { type: "audio/wav" }));
+}
+
 export type PlaylistTrackItem = {
   id: number;
   trackId: string;
@@ -126,11 +151,27 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewSeq = useRef(0);
+  const primedRef = useRef(false);
+
+  function ensureAudio(): HTMLAudioElement {
+    if (!audioRef.current) audioRef.current = new Audio();
+    return audioRef.current;
+  }
+
+  function primeAudio() {
+    if (primedRef.current) return;
+    primedRef.current = true;
+    const audio = ensureAudio();
+    audio.onended = null;
+    audio.onerror = null;
+    audio.muted = true;
+    audio.src = silentWavUrl();
+    void audio.play().catch(() => {});
+  }
 
   function stopPreview() {
     previewSeq.current++;
     audioRef.current?.pause();
-    audioRef.current = null;
     setPreviewingId(null);
     setPreviewLoadingId(null);
     setPreviewError(null);
@@ -142,6 +183,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       return;
     }
     stopPreview();
+    primeAudio();
     const seq = ++previewSeq.current;
     setPreviewLoadingId(track.id);
     try {
@@ -167,17 +209,16 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
         setPreviewError("Brak podglądu dla tego utworu.");
         return;
       }
-      const audio = new Audio(body.previewUrl);
-      audioRef.current = audio;
+      const audio = ensureAudio();
+      audio.muted = false;
+      audio.src = body.previewUrl;
       audio.onended = () => {
         if (audioRef.current === audio) {
-          audioRef.current = null;
           setPreviewingId(null);
         }
       };
       audio.onerror = () => {
         if (audioRef.current === audio) {
-          audioRef.current = null;
           setPreviewingId(null);
           setPreviewError("Nie udało się odtworzyć podglądu.");
         }
