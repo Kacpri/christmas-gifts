@@ -342,6 +342,16 @@ export async function getOrgSpotifyId(): Promise<string | null> {
   return acc?.spotify_id ?? null;
 }
 
+function describeHeaders(res: Response): string {
+  const hdr = [
+    res.headers.get("server") && `server: ${res.headers.get("server")}`,
+    res.headers.get("via") && `via: ${res.headers.get("via")}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return hdr ? ` (${hdr})` : "";
+}
+
 export async function probePermissions(): Promise<string[]> {
   const token = requireToken(await orgToken());
   const describe = (e: unknown) =>
@@ -377,6 +387,20 @@ export async function probePermissions(): Promise<string[]> {
     }
   } catch (e) {
     results.push(`POST /playlists (utwórz): ${describe(e)}`);
+  }
+  try {
+    const res = await fetch("https://postman-echo.com/post", {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ probe: true }),
+    });
+    await res.text();
+    results.push(
+      `POST postman-echo (kontrola): HTTP ${res.status}${describeHeaders(res)}`
+    );
+  } catch (e) {
+    results.push(`POST postman-echo (kontrola): ${String(e)}`);
   }
   return results;
 }
