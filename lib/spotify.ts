@@ -87,6 +87,16 @@ async function readSpotifyError(
     if (body) message = `Spotify: HTTP ${res.status} — ${body.slice(0, 200)}`;
   }
   if (body) message += ` [${body.slice(0, 120)}]`;
+  const hdr = [
+    res.headers.get("server") && `server: ${res.headers.get("server")}`,
+    res.headers.get("via") && `via: ${res.headers.get("via")}`,
+    res.headers.get("x-vercel-id") && `vercel: ${res.headers.get("x-vercel-id")}`,
+    res.headers.get("x-amz-request-id") &&
+      `aws: ${res.headers.get("x-amz-request-id")}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  if (hdr) message += ` (${hdr})`;
   return new SpotifyError(message, res.status);
 }
 
