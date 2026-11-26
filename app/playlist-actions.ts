@@ -424,7 +424,10 @@ export async function retryPlaylistTrack(
   if (!row.cover_path) {
     try {
       const track = await getTrack(row.track_id);
-      const coverPath = await storeAlbumCover(row.track_id, track.image ?? "");
+      const coverPath = await storeAlbumCover(
+        row.track_id,
+        track.coverUrl ?? track.image ?? ""
+      );
       if (coverPath) {
         await supabase
           .from("playlist_tracks")

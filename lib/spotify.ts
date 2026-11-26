@@ -37,6 +37,7 @@ export type SpotifyTrack = {
   artists: string;
   url: string | null;
   image: string | null;
+  coverUrl: string | null;
   durationMs: number | null;
   previewUrl: string | null;
 };
@@ -55,7 +56,7 @@ type RawTrack = {
   name: string;
   artists?: { name: string }[];
   external_urls?: { spotify?: string };
-  album?: { images?: { url: string }[] };
+  album?: { images?: { url: string; width?: number; height?: number }[] };
   duration_ms?: number;
   preview_url?: string | null;
 };
@@ -265,16 +266,35 @@ function requireToken(token: string | null): string {
   return token;
 }
 
+// Spotify zwraca okladki w 3 rozmiarach (640/300/100 px) —
+// dobieramy najblizsza zadana szerokosci (dla swiezego obrazu
+// przy 2x/3x DPI wystarczy 100 px do wyswietlenia i 300 px do
+// zapisu w Storage).
+function pickImage(
+  images: { url: string; width?: number }[],
+  target: number
+): string | null {
+  if (images.length === 0) return null;
+  const withSize = images.filter((i) => typeof i.width === "number");
+  if (withSize.length === 0) return images[0].url ?? null;
+  const fitting = withSize.filter((i) => (i.width ?? 0) <= target);
+  const pool = fitting.length > 0 ? fitting : withSize;
+  return pool.reduce((best, i) =>
+    Math.abs((i.width ?? 0) - target) < Math.abs((best.width ?? 0) - target)
+      ? i
+      : best
+  ).url;
+}
+
 function mapTrack(t: RawTrack): SpotifyTrack {
+  const images = t.album?.images ?? [];
   return {
     id: t.id,
     name: t.name,
     artists: (t.artists ?? []).map((a) => a.name).join(", "),
     url: t.external_urls?.spotify ?? null,
-    image:
-      t.album?.images?.find((i) => i.url)?.url ??
-      t.album?.images?.[0]?.url ??
-      null,
+    image: pickImage(images, 100),
+    coverUrl: pickImage(images, 300),
     durationMs: t.duration_ms ?? null,
     previewUrl: t.preview_url ?? null,
   };

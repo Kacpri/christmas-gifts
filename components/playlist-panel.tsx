@@ -61,6 +61,7 @@ type SearchTrack = {
   artists: string;
   url: string | null;
   image: string | null;
+  coverUrl: string | null;
   durationMs: number | null;
 };
 
@@ -319,7 +320,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
     fd.set("name", track.name);
     fd.set("artists", track.artists);
     fd.set("track_url", track.url ?? "");
-    fd.set("cover_url", track.image ?? "");
+    fd.set("cover_url", track.coverUrl ?? track.image ?? "");
     if (track.durationMs != null) {
       fd.set("duration_ms", String(track.durationMs));
     }
