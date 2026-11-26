@@ -385,7 +385,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
               </p>
               <a
                 href="/spotify/connect"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90"
               >
                 <SpotifyIcon />
                 Połącz Spotify
@@ -503,7 +503,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:bg-sage-150 disabled:text-accent-deep"
+                  className="inline-flex min-w-[152px] items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
                 >
                   {creating ? "Tworzenie…" : "Utwórz playlistę"}
                 </button>
@@ -747,16 +747,12 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                                   ? "Zatrzymaj podgląd"
                                   : "Podgląd (30 s)"
                               }
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg disabled:opacity-50 ${
-                                previewingId === t.id
-                                  ? "bg-sage-100 text-accent-deep dark:bg-sage-300 dark:text-[#e6f6ec]"
-                                  : "text-muted hover:bg-mist"
-                              }`}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
                             >
                               {previewingId === t.id ? (
                                 <PauseIcon />
                               ) : previewLoadingId === t.id ? (
-                                <span className="text-xs">…</span>
+                                <SpinnerIcon />
                               ) : (
                                 <PlayIcon />
                               )}
@@ -852,7 +848,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                       disabled={removing}
                       aria-label={`Usuń ${track.name}`}
                       title="Usuń"
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-danger disabled:opacity-50"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-danger hover:bg-danger-soft disabled:opacity-50"
                     >
                       <TrashIcon />
                     </button>
@@ -1017,6 +1013,24 @@ function PauseIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <rect x="6" y="4" width="4" height="16" rx="1" />
       <rect x="14" y="4" width="4" height="16" rx="1" />
+    </svg>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      className="animate-spin"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M21 12a9 9 0 1 1-6.2-8.56" />
     </svg>
   );
 }
