@@ -123,6 +123,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previewSeq = useRef(0);
 
@@ -132,6 +133,7 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
     audioRef.current = null;
     setPreviewingId(null);
     setPreviewLoadingId(null);
+    setPreviewError(null);
   }
 
   async function handlePreview(track: SearchTrack) {
@@ -157,7 +159,14 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
         error?: string;
       };
       if (seq !== previewSeq.current) return;
-      if (!body.previewUrl) return;
+      if (body.error) {
+        setPreviewError(`Podgląd: ${body.error}`);
+        return;
+      }
+      if (!body.previewUrl) {
+        setPreviewError("Brak podglądu dla tego utworu.");
+        return;
+      }
       const audio = new Audio(body.previewUrl);
       audioRef.current = audio;
       audio.onended = () => {
@@ -166,14 +175,26 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
           setPreviewingId(null);
         }
       };
-      await audio.play();
+      audio.onerror = () => {
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+          setPreviewingId(null);
+          setPreviewError("Nie udało się odtworzyć podglądu.");
+        }
+      };
+      try {
+        await audio.play();
+      } catch {
+        setPreviewError("Przeglądarka zablokowała odtwarzanie.");
+        return;
+      }
       if (seq !== previewSeq.current) {
         audio.pause();
         return;
       }
       setPreviewingId(track.id);
     } catch {
-      // brak podglądu — przycisk wraca do stanu play
+      setPreviewError("Podgląd teraz nie działa.");
     } finally {
       if (seq === previewSeq.current) setPreviewLoadingId(null);
     }
@@ -723,6 +744,9 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
             )}
           </div>
 
+          {previewError && (
+            <p className="text-sm text-red-600">{previewError}</p>
+          )}
           {!addState.ok && addState.error && (
             <p className="text-sm text-red-600">{addState.error}</p>
           )}
