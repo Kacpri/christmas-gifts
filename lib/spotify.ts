@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { findItunesPreview } from "@/lib/itunes";
 
 const API = "https://api.spotify.com/v1";
 const AUTH = "https://accounts.spotify.com";
@@ -401,6 +402,12 @@ export async function probePermissions(): Promise<string[]> {
     );
   } catch (e) {
     results.push(`GET /search (preview): ${describe(e)}`);
+  }
+  try {
+    const url = await findItunesPreview("Last Christmas", "Wham!");
+    results.push(`iTunes preview: ${url ? "OK" : "brak dopasowania"}`);
+  } catch (e) {
+    results.push(`iTunes preview: ${describe(e)}`);
   }
   return results;
 }
