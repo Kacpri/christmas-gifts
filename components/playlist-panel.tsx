@@ -57,7 +57,6 @@ type SearchTrack = {
   url: string | null;
   image: string | null;
   durationMs: number | null;
-  previewUrl: string | null;
 };
 
 type PendingAdd = {
@@ -123,36 +122,61 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
   const searchSeq = useRef(0);
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewSeq = useRef(0);
 
   function stopPreview() {
+    previewSeq.current++;
     audioRef.current?.pause();
     audioRef.current = null;
     setPreviewingId(null);
+    setPreviewLoadingId(null);
   }
 
-  function togglePreview(track: SearchTrack) {
-    if (!track.previewUrl) return;
+  async function handlePreview(track: SearchTrack) {
     if (previewingId === track.id) {
       stopPreview();
       return;
     }
-    audioRef.current?.pause();
-    const audio = new Audio(track.previewUrl);
-    audioRef.current = audio;
-    audio.onended = () => {
-      if (audioRef.current === audio) {
-        audioRef.current = null;
-        setPreviewingId(null);
+    stopPreview();
+    const seq = ++previewSeq.current;
+    setPreviewLoadingId(track.id);
+    try {
+      const res = await fetch("/api/spotify/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trackId: track.id,
+          name: track.name,
+          artists: track.artists,
+        }),
+      });
+      const body = (await res.json()) as {
+        previewUrl?: string | null;
+        error?: string;
+      };
+      if (seq !== previewSeq.current) return;
+      if (!body.previewUrl) return;
+      const audio = new Audio(body.previewUrl);
+      audioRef.current = audio;
+      audio.onended = () => {
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+          setPreviewingId(null);
+        }
+      };
+      await audio.play();
+      if (seq !== previewSeq.current) {
+        audio.pause();
+        return;
       }
-    };
-    void audio.play().catch(() => {
-      if (audioRef.current === audio) {
-        audioRef.current = null;
-        setPreviewingId(null);
-      }
-    });
-    setPreviewingId(track.id);
+      setPreviewingId(track.id);
+    } catch {
+      // brak podglądu — przycisk wraca do stanu play
+    } finally {
+      if (seq === previewSeq.current) setPreviewLoadingId(null);
+    }
   }
 
   useEffect(() => stopPreview, []);
@@ -661,33 +685,34 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                                 )}
                               </span>
                             </button>
-                            {t.previewUrl && (
-                              <button
-                                type="button"
-                                onClick={() => togglePreview(t)}
-                                aria-label={
-                                  previewingId === t.id
-                                    ? `Zatrzymaj podgląd: ${t.name}`
-                                    : `Odtwórz podgląd: ${t.name}`
-                                }
-                                title={
-                                  previewingId === t.id
-                                    ? "Zatrzymaj podgląd"
-                                    : "Podgląd (30 s)"
-                                }
-                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                                  previewingId === t.id
-                                    ? "bg-sage-100 text-accent-deep dark:bg-sage-300 dark:text-[#e6f6ec]"
-                                    : "text-muted hover:bg-mist"
-                                }`}
-                              >
-                                {previewingId === t.id ? (
-                                  <PauseIcon />
-                                ) : (
-                                  <PlayIcon />
-                                )}
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => void handlePreview(t)}
+                              disabled={previewLoadingId === t.id}
+                              aria-label={
+                                previewingId === t.id
+                                  ? `Zatrzymaj podgląd: ${t.name}`
+                                  : `Odtwórz podgląd: ${t.name}`
+                              }
+                              title={
+                                previewingId === t.id
+                                  ? "Zatrzymaj podgląd"
+                                  : "Podgląd (30 s)"
+                              }
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg disabled:opacity-50 ${
+                                previewingId === t.id
+                                  ? "bg-sage-100 text-accent-deep dark:bg-sage-300 dark:text-[#e6f6ec]"
+                                  : "text-muted hover:bg-mist"
+                              }`}
+                            >
+                              {previewingId === t.id ? (
+                                <PauseIcon />
+                              ) : previewLoadingId === t.id ? (
+                                <span className="text-xs">…</span>
+                              ) : (
+                                <PlayIcon />
+                              )}
+                            </button>
                           </li>
                         );
                       })}

@@ -185,9 +185,9 @@ function TagPillIcon({ tag }: { tag: Tag }) {
   if (tag === "anonimowy") {
     return (
       <svg {...common}>
-        <rect x="2.5" y="7" width="19" height="8" rx="3" />
-        <circle cx="8.5" cy="11" r="1.6" fill="currentColor" stroke="none" />
-        <circle cx="15.5" cy="11" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M9 10h.01" />
+        <path d="M15 10h.01" />
+        <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
       </svg>
     );
   }
@@ -305,7 +305,7 @@ function ArrowLeftIcon() {
   );
 }
 
-function ThiefMaskIcon() {
+function GhostIcon() {
   return (
     <svg
       width="18"
@@ -318,9 +318,9 @@ function ThiefMaskIcon() {
       strokeLinejoin="round"
       aria-hidden
     >
-      <rect x="2.5" y="7" width="19" height="8" rx="3" />
-      <circle cx="8.5" cy="11" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="15.5" cy="11" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M9 10h.01" />
+      <path d="M15 10h.01" />
+      <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
     </svg>
   );
 }
@@ -1395,7 +1395,7 @@ export function ChatsPanel({
         }`}
       >
         <span className="flex items-center gap-2">
-          <ThiefMaskIcon />
+          <GhostIcon />
           Anonimowy czat
         </span>
         <span
@@ -1978,11 +1978,6 @@ export function ChatsPanel({
           <div className="mb-1">
             <AnonChatToggle />
           </div>
-          {pickerMode === "anon" && (
-            <p className="px-3 pb-1 text-xs text-faint">
-              Ta osoba nie dowie się, kim jesteś.
-            </p>
-          )}
           <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
             {others.map((p) => (
               <button
@@ -2026,11 +2021,6 @@ export function ChatsPanel({
             <div className="mb-1">
               <AnonChatToggle />
             </div>
-            {pickerMode === "anon" && (
-              <p className="mb-1 px-1 text-xs text-faint">
-                Ta osoba nie dowie się, kim jesteś.
-              </p>
-            )}
             <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
               {others.map((p) => (
                 <button
