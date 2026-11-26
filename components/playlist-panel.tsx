@@ -179,22 +179,15 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
           artists: track.artists,
         }),
       });
-      const body = (await res.json()) as {
-        previewUrl?: string | null;
-        error?: string;
-      };
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setPreviewError(`Podgląd: ${err?.error ?? res.status}`);
+        return;
+      }
       if (seq !== previewSeq.current) return;
-      if (body.error) {
-        setPreviewError(`Podgląd: ${body.error}`);
-        return;
-      }
-      if (!body.previewUrl) {
-        setPreviewError("Brak podglądu dla tego utworu.");
-        return;
-      }
-      const audioRes = await fetch(body.previewUrl);
-      if (!audioRes.ok) throw new Error(`audio ${audioRes.status}`);
-      const audioBuf = await audioRes.arrayBuffer();
+      const audioBuf = await res.arrayBuffer();
       const decoded = await ctx.decodeAudioData(audioBuf);
       if (seq !== previewSeq.current) return;
       if (ctx.state !== "running") {
@@ -218,7 +211,9 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
       setPreviewingId(track.id);
     } catch (e) {
       setPreviewError(
-        `Podgląd nie działa (${e instanceof Error ? e.name : "błąd"}).`
+        `Podgląd nie działa (${
+          e instanceof Error ? `${e.name}: ${e.message}` : "błąd"
+        }).`
       );
     } finally {
       if (seq === previewSeq.current) setPreviewLoadingId(null);

@@ -5,6 +5,22 @@ import { isRateLimited } from "@/lib/rate-limit";
 import { findItunesPreview } from "@/lib/itunes";
 import { getTrack } from "@/lib/spotify";
 
+async function fetchPreviewAudio(url: string): Promise<Response | null> {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    return new Response(buf, {
+      headers: {
+        "Content-Type": res.headers.get("content-type") ?? "audio/x-m4p",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -35,14 +51,28 @@ export async function POST(request: NextRequest) {
   try {
     const track = await getTrack(trackId);
     if (track.previewUrl) {
-      return NextResponse.json({ previewUrl: track.previewUrl });
+      const audio = await fetchPreviewAudio(track.previewUrl);
+      if (audio) return audio;
     }
   } catch {
     // Spotify niedostępne albo brak preview_url — idziemy do iTunes
   }
   try {
     const previewUrl = await findItunesPreview(name, artists);
-    return NextResponse.json({ previewUrl });
+    if (!previewUrl) {
+      return NextResponse.json(
+        { error: "Brak podglądu dla tego utworu." },
+        { status: 404 }
+      );
+    }
+    const audio = await fetchPreviewAudio(previewUrl);
+    if (!audio) {
+      return NextResponse.json(
+        { error: "Podgląd teraz nie działa." },
+        { status: 502 }
+      );
+    }
+    return audio;
   } catch {
     return NextResponse.json(
       { error: "Podgląd teraz nie działa." },
