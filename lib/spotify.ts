@@ -384,6 +384,24 @@ export async function probePermissions(): Promise<string[]> {
   } catch (e) {
     results.push(`POST /me/playlists (utwórz): ${describe(e)}`);
   }
+  try {
+    const params = new URLSearchParams({
+      q: "christmas",
+      type: "track",
+      limit: "8",
+    });
+    const res = await apiFetch(`/search?${params.toString()}`, { method: "GET" }, token);
+    const body = (await res.json()) as {
+      tracks?: { items?: { id: string; preview_url?: string | null }[] };
+    };
+    const items = body.tracks?.items ?? [];
+    const withPreview = items.filter((t) => t.preview_url).length;
+    results.push(
+      `GET /search: ${withPreview}/${items.length} utworów z preview_url`
+    );
+  } catch (e) {
+    results.push(`GET /search (preview): ${describe(e)}`);
+  }
   return results;
 }
 
