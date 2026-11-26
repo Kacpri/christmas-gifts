@@ -20,6 +20,11 @@ import {
 } from "@/app/playlist-actions";
 import { ConfirmDialog, type ConfirmState } from "@/components/confirm-dialog";
 import { plural } from "@/lib/format";
+import {
+  artistMatches,
+  SIMILAR_TITLE_THRESHOLD,
+  titleSimilarity,
+} from "@/lib/title-match";
 
 function silentWavUrl(): string {
   const sampleRate = 8000;
@@ -697,8 +702,9 @@ export function PlaylistPanel({ playlist }: { playlist: PlaylistPanelData }) {
                           !onList &&
                           playlist.tracks.some(
                             (x) =>
-                              x.name.trim().toLowerCase() ===
-                              t.name.trim().toLowerCase()
+                              artistMatches(x.artists, t.artists) &&
+                              titleSimilarity(x.name, t.name) >=
+                                SIMILAR_TITLE_THRESHOLD
                           );
                         return (
                           <li key={t.id} className="flex items-center pr-1.5">

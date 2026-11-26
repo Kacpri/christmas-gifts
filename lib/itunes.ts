@@ -1,29 +1,10 @@
+import { artistMatches, normalize } from "./title-match";
+
 type ItunesResult = {
   trackName: string;
   artistName: string;
   previewUrl: string | null;
 };
-
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\(.*?\)/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function artistMatches(spotifyArtists: string, itunesArtist: string): boolean {
-  const itunes = normalize(itunesArtist);
-  if (!itunes) return false;
-  const parts = spotifyArtists
-    .split(",")
-    .map(normalize)
-    .filter(Boolean);
-  return parts.some((p) => itunes.includes(p) || p.includes(itunes));
-}
 
 function titleScore(a: string, b: string): number {
   if (!a || !b) return 0;
