@@ -13,15 +13,19 @@ import {
 
 import {
   deleteAnonDm,
+  deleteChildChatMessage,
   deleteDm,
   deleteMessage,
   editAnonDm,
+  editChildChatMessage,
   editDm,
   editMessage,
   markAnonDmRead,
+  markChildChatRead,
   markDmRead,
   markThreadRead,
   sendAnonDm,
+  sendChildChatMessage,
   sendDm,
   sendMessage,
   type ActionResult,
@@ -76,6 +80,35 @@ export type AnonDmThread = {
   unread: number;
 };
 
+export type ChildChatThread = {
+  conversationId: number;
+  childId: number;
+  isOpener: boolean;
+  peerName: string;
+  peerAvatarUrl: string | null;
+  isAnon: boolean;
+  senderNames: Record<string, string>;
+  messages: ChatMessage[];
+  unread: number;
+};
+
+export type ChildPickerItem = {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  isMyChild: boolean;
+  hasNamedReservation: boolean;
+};
+
+type ChildInfo = {
+  childId: number;
+  isOpener: boolean;
+  peerName: string;
+  peerAvatarUrl: string | null;
+  isAnon: boolean;
+  senderNames: Record<string, string>;
+};
+
 const empty: ActionResult = { ok: false };
 
 const ltKey = (t: {
@@ -89,6 +122,9 @@ const dmPeerOf = (key: string) => key.slice(3);
 
 const anonKey = (conversationId: number) => `anon:${conversationId}`;
 const anonConvOf = (key: string) => Number(key.slice(5));
+
+const childKey = (conversationId: number) => `child:${conversationId}`;
+const childConvOf = (key: string) => Number(key.slice(6));
 
 function applyReactionToMessages(
   list: ChatMessage[],
@@ -126,7 +162,7 @@ type DbRead = {
   last_read_at: string;
 };
 
-type Tag = "z listy" | "tematyczny" | "prywatny" | "anonimowy";
+type Tag = "z listy" | "tematyczny" | "prywatny" | "anonimowy" | "dziecko";
 
 type ListItem = {
   key: string;
@@ -134,19 +170,30 @@ type ListItem = {
   tag: Tag;
   last: ChatMessage | null;
   unread: number;
-  kind: "lottery" | "dm" | "anon";
+  kind: "lottery" | "dm" | "anon" | "child";
   avatarUrl?: string | null;
   lotteryType?: number;
   drawerId?: string;
   draweeId?: string;
   peerId?: string;
   conversationId?: number;
+  isAnon?: boolean;
 };
+
+const FILTER_TAGS: ("all" | Tag)[] = [
+  "all",
+  "z listy",
+  "tematyczny",
+  "prywatny",
+  "anonimowy",
+  "dziecko",
+];
 
 function tagClass(tag: Tag) {
   if (tag === "z listy") return "bg-sage-200 text-list-ink";
   if (tag === "tematyczny") return "bg-honey-200 text-honey-800";
   if (tag === "anonimowy") return "bg-violet-200 text-violet-800";
+  if (tag === "dziecko") return "bg-rose-200 text-rose-800";
   return "bg-sky-200 text-sky-800";
 }
 
@@ -191,6 +238,16 @@ function TagPillIcon({ tag }: { tag: Tag }) {
       </svg>
     );
   }
+  if (tag === "dziecko") {
+    return (
+      <svg {...common}>
+        <path d="M9 12h.01" />
+        <path d="M15 12h.01" />
+        <path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5" />
+        <path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 2c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1" />
+      </svg>
+    );
+  }
   return (
     <svg {...common}>
       <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
@@ -199,13 +256,39 @@ function TagPillIcon({ tag }: { tag: Tag }) {
   );
 }
 
-function TagPill({ tag }: { tag: Tag }) {
+function TagPill({ tag, iconOnly = false }: { tag: Tag; iconOnly?: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-bold leading-4 ${tagClass(tag)}`}
+      title={tag}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full ${
+        iconOnly ? "h-5 w-5 justify-center" : "px-2 py-1 text-xs font-bold leading-4"
+      } ${tagClass(tag)}`}
     >
       <TagPillIcon tag={tag} />
-      {tag}
+      {!iconOnly && tag}
+    </span>
+  );
+}
+
+function AnonBadge() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-200 px-2 py-0.5 text-[11px] font-bold leading-4 text-violet-800">
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M9 10h.01" />
+        <path d="M15 10h.01" />
+        <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
+      </svg>
+      anonimowy
     </span>
   );
 }
@@ -334,6 +417,10 @@ export function ChatsPanel({
   participants,
   dmThreads,
   anonThreads,
+  childThreads,
+  kids,
+  openChildRequest,
+  onOpenChildHandled,
   onUnreadChange,
   narrow = false,
 }: {
@@ -345,6 +432,10 @@ export function ChatsPanel({
   participants: DmParticipant[];
   dmThreads: DmThread[];
   anonThreads: AnonDmThread[];
+  childThreads: ChildChatThread[];
+  kids: ChildPickerItem[];
+  openChildRequest?: { childId: number } | null;
+  onOpenChildHandled?: () => void;
   onUnreadChange?: (total: number) => void;
   narrow?: boolean;
 }) {
@@ -373,6 +464,19 @@ export function ChatsPanel({
         anonThreads.map((t) => [anonKey(t.conversationId), t.unread])
       )
   );
+  const [childMsgs, setChildMsgs] = useState<Record<string, ChatMessage[]>>(
+    () =>
+      Object.fromEntries(
+        childThreads.map((t) => [childKey(t.conversationId), t.messages])
+      )
+  );
+  const [childUnread, setChildUnread] = useState<Record<string, number>>(
+    () =>
+      Object.fromEntries(
+        childThreads.map((t) => [childKey(t.conversationId), t.unread])
+      )
+  );
+  const [childNew, setChildNew] = useState<Record<number, ChildInfo>>({});
   const [value, setValue] = useState("");
   const [lotteryState, lotterySend, lotteryPending] = useActionState(
     sendMessage,
@@ -380,6 +484,11 @@ export function ChatsPanel({
   );
   const [dmState, dmSend, dmPending] = useActionState(sendDm, empty);
   const [anonState, anonSend, anonPending] = useActionState(sendAnonDm, empty);
+  const [childState, childSend, childPending] = useActionState(
+    sendChildChatMessage,
+    empty
+  );
+  const [tagFilter, setTagFilter] = useState<"all" | Tag>("all");
   const photo = usePhotoAttachment();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"dm" | "anon">("dm");
@@ -419,6 +528,26 @@ export function ChatsPanel({
   );
   const anonInfoRef = useRef(anonInfo);
   anonInfoRef.current = anonInfo;
+
+  const childInfo = useMemo(
+    () =>
+      new Map<number, ChildInfo>(
+        childThreads.map((t) => [
+          t.conversationId,
+          {
+            childId: t.childId,
+            isOpener: t.isOpener,
+            peerName: t.peerName,
+            peerAvatarUrl: t.peerAvatarUrl,
+            isAnon: t.isAnon,
+            senderNames: t.senderNames,
+          },
+        ])
+      ),
+    [childThreads]
+  );
+  const childInfoRef = useRef(childInfo);
+  childInfoRef.current = childInfo;
 
   const listItems = useMemo<ListItem[]>(() => {
     const items: ListItem[] = [];
@@ -478,6 +607,40 @@ export function ChatsPanel({
         conversationId: cid,
       });
     }
+    const childCids = new Set(childThreads.map((t) => t.conversationId));
+    for (const cid of Object.keys(childNew)) childCids.add(Number(cid));
+    if (selectedKey?.startsWith("child:")) {
+      const cid = childConvOf(selectedKey);
+      if (Number.isInteger(cid) && cid > 0) childCids.add(cid);
+    }
+    for (const cid of childCids) {
+      const t = childThreads.find((x) => x.conversationId === cid);
+      const info: ChildInfo | undefined = t
+        ? {
+            childId: t.childId,
+            isOpener: t.isOpener,
+            peerName: t.peerName,
+            peerAvatarUrl: t.peerAvatarUrl,
+            isAnon: t.isAnon,
+            senderNames: t.senderNames,
+          }
+        : childNew[cid];
+      if (!info) continue;
+      const key = childKey(cid);
+      const msgs = childMsgs[key] ?? [];
+      const last = msgs.length ? msgs[msgs.length - 1] : null;
+      items.push({
+        key,
+        name: info.peerName,
+        tag: "dziecko",
+        last,
+        unread: childUnread[key] ?? 0,
+        kind: "child",
+        avatarUrl: info.peerAvatarUrl,
+        conversationId: cid,
+        isAnon: info.isAnon,
+      });
+    }
     return items.sort((a, b) => {
       const la = a.last?.createdAt ?? "";
       const lb = b.last?.createdAt ?? "";
@@ -489,16 +652,34 @@ export function ChatsPanel({
     threads,
     dmThreads,
     anonThreads,
+    childThreads,
+    childNew,
     selectedKey,
     lotteryMsgs,
     dmMsgs,
     anonMsgs,
+    childMsgs,
     lotteryUnread,
     dmUnread,
     anonUnread,
+    childUnread,
     nameById,
     anonNewPeers,
   ]);
+
+  const filteredItems = useMemo(() => {
+    if (tagFilter === "all") return listItems;
+    return listItems.filter((item) => {
+      if (tagFilter === "anonimowy") {
+        return (
+          item.tag === "anonimowy" ||
+          (item.kind === "child" && item.isAnon) ||
+          (item.kind === "lottery" && item.drawerId === me)
+        );
+      }
+      return item.tag === tagFilter;
+    });
+  }, [listItems, tagFilter, me]);
 
   const updateListFade = useCallback(() => {
     const el = listRef.current;
@@ -557,6 +738,30 @@ export function ChatsPanel({
         messages: anonMsgs[anonKey(cid)] ?? [],
       };
     }
+    if (selectedKey.startsWith("child:")) {
+      const cid = childConvOf(selectedKey);
+      const t = childThreads.find((x) => x.conversationId === cid);
+      const info: ChildInfo | undefined = t
+        ? {
+            childId: t.childId,
+            isOpener: t.isOpener,
+            peerName: t.peerName,
+            peerAvatarUrl: t.peerAvatarUrl,
+            isAnon: t.isAnon,
+            senderNames: t.senderNames,
+          }
+        : childNew[cid];
+      return {
+        kind: "child" as const,
+        key: selectedKey,
+        name: info?.peerName ?? "??",
+        tag: "dziecko" as Tag,
+        conversationId: cid,
+        isAnon: info?.isAnon ?? false,
+        isOpener: info?.isOpener ?? true,
+        messages: childMsgs[childKey(cid)] ?? [],
+      };
+    }
     const t = threads.find((x) => ltKey(x) === selectedKey);
     if (!t) return null;
     return {
@@ -576,6 +781,9 @@ export function ChatsPanel({
     anonMsgs,
     anonThreads,
     anonNewPeers,
+    childMsgs,
+    childThreads,
+    childNew,
     lotteryMsgs,
     nameById,
   ]);
@@ -1102,6 +1310,208 @@ export function ChatsPanel({
   }, [me]);
 
   useEffect(() => {
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!session) return;
+      await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+      if (cancelled) return;
+      channel = supabase
+        .channel("child-chat-messages")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "child_chat_messages" },
+          (payload) => {
+            const m = payload.new as {
+              id: number;
+              conversation_id: number;
+              sender_id: string;
+              text: string;
+              image_path: string | null;
+              image_width: number | null;
+              image_height: number | null;
+              created_at: string;
+            };
+            const key = childKey(m.conversation_id);
+            const info = childInfoRef.current.get(m.conversation_id);
+            const isMine = m.sender_id === me;
+            let senderId: string;
+            let senderName: string | null;
+            if (isMine) {
+              senderId = me;
+              senderName = null;
+            } else if (info?.senderNames[m.sender_id]) {
+              senderId = m.sender_id;
+              senderName = info.senderNames[m.sender_id];
+            } else if (info && !info.isOpener) {
+              senderId = "anon";
+              senderName = "Anonim";
+            } else {
+              senderId = m.sender_id;
+              senderName = nameByIdRef.current.get(m.sender_id) ?? null;
+            }
+            setChildMsgs((prev) => {
+              const list = prev[key] ?? [];
+              if (list.some((x) => x.id === m.id)) return prev;
+              return {
+                ...prev,
+                [key]: [
+                  ...list,
+                  {
+                    id: m.id,
+                    senderId,
+                    senderName,
+                    text: m.text,
+                    createdAt: m.created_at,
+                    editedAt: null,
+                    deleted: false,
+                    imageUrl: m.image_path ? chatPhotoUrl(m.image_path) : null,
+                    imageWidth: m.image_width,
+                    imageHeight: m.image_height,
+                    reactions: [],
+                  },
+                ],
+              };
+            });
+            if (isMine) return;
+            if (key === selectedRef.current && !collapsedRef.current) {
+              setChildUnread((prev) => ({ ...prev, [key]: 0 }));
+              const fd = new FormData();
+              fd.set("conversation_id", String(m.conversation_id));
+              markChildChatRead(fd);
+            } else {
+              setChildUnread((prev) => ({
+                ...prev,
+                [key]: (prev[key] ?? 0) + 1,
+              }));
+              notify(
+                "Nowa wiadomość",
+                info?.peerName ?? "Nowa wiadomość"
+              );
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "child_chat_messages" },
+          (payload) => {
+            const m = payload.new as {
+              id: number;
+              text: string;
+              edited_at: string | null;
+              deleted_at: string | null;
+            };
+            setChildMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === m.id)) {
+                  next[key] = list.map((x) =>
+                    x.id === m.id
+                      ? {
+                          ...x,
+                          text: m.text,
+                          editedAt: m.edited_at,
+                          deleted: m.deleted_at != null,
+                        }
+                      : x
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "child_chat_message_reactions",
+          },
+          (payload) => {
+            const r = payload.new as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setChildMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[key] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    true
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "child_chat_message_reactions",
+          },
+          (payload) => {
+            const r = payload.old as {
+              message_id: number;
+              user_id: string;
+              emoji: string;
+            };
+            setChildMsgs((prev) => {
+              let changed = false;
+              const next: Record<string, ChatMessage[]> = {};
+              for (const [key, list] of Object.entries(prev)) {
+                if (list.some((x) => x.id === r.message_id)) {
+                  next[key] = applyReactionToMessages(
+                    list,
+                    r.message_id,
+                    r.emoji,
+                    r.user_id,
+                    false
+                  );
+                  changed = true;
+                } else {
+                  next[key] = list;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [me]);
+
+  useEffect(() => {
     if (!lotteryState.ok && lotteryState.error) {
       setValue((v) => v || lastSentRef.current);
     }
@@ -1119,6 +1529,12 @@ export function ChatsPanel({
     }
   }, [anonState]);
 
+  useEffect(() => {
+    if (!childState.ok && childState.error) {
+      setValue((v) => v || lastSentRef.current);
+    }
+  }, [childState]);
+
   const photoClearRef = useRef(photo.clear);
   photoClearRef.current = photo.clear;
 
@@ -1129,6 +1545,10 @@ export function ChatsPanel({
   useEffect(() => {
     if (dmState.ok) photoClearRef.current();
   }, [dmState]);
+
+  useEffect(() => {
+    if (childState.ok) photoClearRef.current();
+  }, [childState]);
 
   useEffect(() => {
     setLotteryMsgs((prev) => {
@@ -1149,6 +1569,26 @@ export function ChatsPanel({
       return changed ? next : prev;
     });
   }, [threads]);
+
+  useEffect(() => {
+    setChildMsgs((prev) => {
+      let changed = false;
+      const next: Record<string, ChatMessage[]> = {};
+      for (const t of childThreads) {
+        const key = childKey(t.conversationId);
+        const existing = prev[key] ?? [];
+        const existingIds = new Set(existing.map((m) => m.id));
+        const missing = t.messages.filter((m) => !existingIds.has(m.id));
+        if (missing.length > 0) {
+          next[key] = [...existing, ...missing].sort((a, b) => a.id - b.id);
+          changed = true;
+        } else {
+          next[key] = existing;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [childThreads]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1257,6 +1697,12 @@ export function ChatsPanel({
       const fd = new FormData();
       fd.set("conversation_id", String(cid));
       markAnonDmRead(fd);
+    } else if (key.startsWith("child:")) {
+      const cid = childConvOf(key);
+      setChildUnread((prev) => ({ ...prev, [key]: 0 }));
+      const fd = new FormData();
+      fd.set("conversation_id", String(cid));
+      markChildChatRead(fd);
     } else {
       const t = threadsRef.current.find((x) => ltKey(x) === key);
       if (!t) return;
@@ -1317,9 +1763,10 @@ export function ChatsPanel({
     const total =
       Object.values(lotteryUnread).reduce((a, b) => a + b, 0) +
       Object.values(dmUnread).reduce((a, b) => a + b, 0) +
-      Object.values(anonUnread).reduce((a, b) => a + b, 0);
+      Object.values(anonUnread).reduce((a, b) => a + b, 0) +
+      Object.values(childUnread).reduce((a, b) => a + b, 0);
     onUnreadChange?.(total);
-  }, [lotteryUnread, dmUnread, anonUnread, onUnreadChange]);
+  }, [lotteryUnread, dmUnread, anonUnread, childUnread, onUnreadChange]);
 
   function openLottery(t: Thread) {
     const key = ltKey(t);
@@ -1349,6 +1796,59 @@ export function ChatsPanel({
     fd.set("conversation_id", String(conversationId));
     markAnonDmRead(fd);
   }
+
+  function openChild(conversationId: number) {
+    const key = childKey(conversationId);
+    setSelectedKey(key);
+    setChildUnread((prev) => ({ ...prev, [key]: 0 }));
+    const fd = new FormData();
+    fd.set("conversation_id", String(conversationId));
+    markChildChatRead(fd);
+  }
+
+  async function openChildChat(childId: number) {
+    const kid = kids.find((k) => k.id === childId);
+    if (!kid) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("child_chat_conversations")
+      .upsert(
+        { child_id: childId, user_id: me },
+        { onConflict: "child_id,user_id" }
+      )
+      .select("id")
+      .single();
+    if (error || !data) {
+      console.error("child_chat_conversations upsert:", error?.message);
+      return;
+    }
+    const cid = data.id as number;
+    const info: ChildInfo = {
+      childId,
+      isOpener: true,
+      peerName: kid.name,
+      peerAvatarUrl: kid.avatarUrl,
+      isAnon: !kid.hasNamedReservation,
+      senderNames: {},
+    };
+    childInfoRef.current.set(cid, info);
+    setChildNew((prev) => ({ ...prev, [cid]: info }));
+    setPickerOpen(false);
+    openChild(cid);
+  }
+
+  const openChildChatRef = useRef<(childId: number) => Promise<void>>(
+    async () => {}
+  );
+  openChildChatRef.current = openChildChat;
+  const onOpenChildHandledRef = useRef(onOpenChildHandled);
+  onOpenChildHandledRef.current = onOpenChildHandled;
+
+  useEffect(() => {
+    if (!openChildRequest) return;
+    void openChildChatRef.current(openChildRequest.childId);
+    onOpenChildHandledRef.current?.();
+  }, [openChildRequest]);
 
   async function openAnonDm(peerId: string) {
     const supabase = createClient();
@@ -1381,6 +1881,28 @@ export function ChatsPanel({
       openDm(p.id);
       setPickerOpen(false);
     }
+  }
+
+  function renderKidsSection() {
+    if (otherKids.length === 0) return null;
+    return (
+      <div className="mt-2 border-t border-line pt-2">
+        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-faint">
+          Dzieci
+        </p>
+        {otherKids.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            onClick={() => void openChildChat(k.id)}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-ink hover:bg-mist"
+          >
+            <Avatar name={k.name} src={k.avatarUrl} size={32} />
+            <span className="truncate">{k.name}</span>
+          </button>
+        ))}
+      </div>
+    );
   }
 
   function AnonChatToggle() {
@@ -1533,6 +2055,49 @@ export function ChatsPanel({
       });
   }
 
+  function toggleChildChatReaction(
+    conversationId: number,
+    messageId: number,
+    emoji: string
+  ) {
+    const key = childKey(conversationId);
+    const cur = (childMsgs[key] ?? []).find((m) => m.id === messageId);
+    const add = !cur?.reactions.some(
+      (r) => r.emoji === emoji && r.users.includes(me)
+    );
+    setChildMsgs((prev) => ({
+      ...prev,
+      [key]: applyReactionToMessages(
+        prev[key] ?? [],
+        messageId,
+        emoji,
+        me,
+        add
+      ),
+    }));
+    createClient()
+      .rpc("toggle_message_reaction", {
+        p_kind: 5,
+        p_message_id: messageId,
+        p_emoji: emoji,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error("toggle_message_reaction (child):", error.message);
+          setChildMsgs((prev) => ({
+            ...prev,
+            [key]: applyReactionToMessages(
+              prev[key] ?? [],
+              messageId,
+              emoji,
+              me,
+              !add
+            ),
+          }));
+        }
+      });
+  }
+
   // stabilny callback dla memo(MessageBubble) — zawsze woła wersję z
   // bieżącego renderu (latest ref)
   const toggleReactionRef = useRef<(messageId: number, emoji: string) => void>(
@@ -1543,6 +2108,8 @@ export function ChatsPanel({
     if (!sel) return;
     if (sel.kind === "anon") {
       toggleAnonReaction(sel.conversationId, messageId, emoji);
+    } else if (sel.kind === "child") {
+      toggleChildChatReaction(sel.conversationId, messageId, emoji);
     } else if (sel.kind === "dm") {
       toggleDmReaction(sel.peerId, messageId, emoji);
     } else {
@@ -1564,7 +2131,12 @@ export function ChatsPanel({
     );
   }
 
-  if (!lotteryDone && dmThreads.length === 0 && anonThreads.length === 0) {
+  if (
+    !lotteryDone &&
+    dmThreads.length === 0 &&
+    anonThreads.length === 0 &&
+    childThreads.length === 0
+  ) {
     return (
       <p className="mt-1 text-sm text-muted">
         Czaty pojawią się po losowaniu.
@@ -1573,19 +2145,30 @@ export function ChatsPanel({
   }
 
   const others = participants.filter((p) => p.id !== me);
+  const otherKids = kids.filter((k) => !k.isMyChild);
   const isDm = selectedItem?.kind === "dm";
   const isAnon = selectedItem?.kind === "anon";
-  const pending = isAnon ? anonPending : isDm ? dmPending : lotteryPending;
-  const visibleListItems =
-    isDesktop || listExpanded ? listItems : listItems.slice(0, 5);
+  const isChild = selectedItem?.kind === "child";
+  const pending = isAnon
+    ? anonPending
+    : isChild
+      ? childPending
+      : isDm
+        ? dmPending
+        : lotteryPending;
+  const visibleListItems = isDesktop || listExpanded
+    ? filteredItems
+    : filteredItems.slice(0, 5);
   const sendError =
     !anonState.ok && anonState.error
       ? anonState.error
-      : !dmState.ok && dmState.error
-        ? dmState.error
-        : !lotteryState.ok && lotteryState.error
-          ? lotteryState.error
-          : null;
+      : !childState.ok && childState.error
+        ? childState.error
+        : !dmState.ok && dmState.error
+          ? dmState.error
+          : !lotteryState.ok && lotteryState.error
+            ? lotteryState.error
+            : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -1600,6 +2183,24 @@ export function ChatsPanel({
             isDesktop ? "h-[480px] pb-3" : ""
           } ${!useMobileLayout ? "w-72" : ""}`}
         >
+          <div className="flex flex-wrap gap-1.5">
+            {FILTER_TAGS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setTagFilter(f)}
+                aria-pressed={tagFilter === f}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${
+                  tagFilter === f
+                    ? "border-[#14532d] bg-sage-200 text-list-ink dark:border-accent dark:bg-sage-100"
+                    : "border-input-line bg-surface text-muted hover:bg-mist"
+                }`}
+              >
+                {f !== "all" && <TagPillIcon tag={f} />}
+                {f === "all" ? "Wszystkie" : f}
+              </button>
+            ))}
+          </div>
           <div className="relative min-h-0 flex-1">
             <div
               ref={listRef}
@@ -1609,7 +2210,11 @@ export function ChatsPanel({
               }`}
             >
             {visibleListItems.length === 0 && (
-              <p className="text-sm text-faint">Brak czatów.</p>
+              <p className="text-sm text-faint">
+                {listItems.length === 0
+                  ? "Brak czatów."
+                  : "Brak czatów z tym tagiem."}
+              </p>
             )}
             {visibleListItems.map((item) => (
               <button
@@ -1620,9 +2225,11 @@ export function ChatsPanel({
                     ? openDm(item.peerId!)
                     : item.kind === "anon"
                       ? openAnon(item.conversationId!)
-                      : openLottery(
-                          threads.find((x) => ltKey(x) === item.key)!
-                        )
+                      : item.kind === "child"
+                        ? openChild(item.conversationId!)
+                        : openLottery(
+                            threads.find((x) => ltKey(x) === item.key)!
+                          )
                 }
                 aria-current={selectedKey === item.key}
                 className={`w-full shrink-0 rounded-[14px] border p-3 px-3.5 text-left transition-colors ${
@@ -1633,7 +2240,9 @@ export function ChatsPanel({
               >
                 <span className="flex items-center justify-between gap-2 leading-5">
                   <span className="flex min-w-0 flex-1 items-center gap-2">
-                    {(item.kind === "dm" || item.kind === "anon") && (
+                    {(item.kind === "dm" ||
+                      item.kind === "anon" ||
+                      item.kind === "child") && (
                       <Avatar
                         name={item.name}
                         src={item.avatarUrl ?? null}
@@ -1651,6 +2260,10 @@ export function ChatsPanel({
                     >
                       {item.name}
                     </span>
+                    {(item.kind === "child" && item.isAnon) ||
+                      (item.kind === "lottery" && item.drawerId === me) ? (
+                      <AnonBadge />
+                    ) : null}
                   </span>
                   {item.last && (
                     <span
@@ -1662,7 +2275,7 @@ export function ChatsPanel({
                   )}
                 </span>
                 <span className="mt-1 flex min-h-6 items-center gap-2">
-                  <TagPill tag={item.tag} />
+                  <TagPill tag={item.tag} iconOnly />
                   {item.last ? (
                     <span
                       className={`min-w-0 flex-1 truncate text-sm ${
@@ -1708,7 +2321,7 @@ export function ChatsPanel({
               />
             )}
           </div>
-          {!isDesktop && listItems.length > 5 && (
+          {!isDesktop && filteredItems.length > 5 && (
             <button
               type="button"
               onClick={() => setListExpanded(!listExpanded)}
@@ -1716,7 +2329,7 @@ export function ChatsPanel({
             >
               {listExpanded
                 ? "Zwiń"
-                : `Pokaż wszystkie (${listItems.length})`}
+                : `Pokaż wszystkie (${filteredItems.length})`}
             </button>
           )}
           <button
@@ -1758,6 +2371,11 @@ export function ChatsPanel({
                     {selectedItem.name}
                   </span>
                   <TagPill tag={selectedItem.tag} />
+                  {(selectedItem.kind === "child" && selectedItem.isAnon) ||
+                  (selectedItem.kind === "lottery" &&
+                    selectedItem.drawerId === me) ? (
+                    <AnonBadge />
+                  ) : null}
                 </div>
                 {selectedItem.kind === "lottery" &&
                   selectedItem.name === "Tajemniczy Mikołaj" && (
@@ -1770,6 +2388,15 @@ export function ChatsPanel({
                     {selectedItem.isAnonSender
                       ? "Piszesz anonimowo — ta osoba nie widzi, kim jesteś."
                       : "Nie wiesz, kim jest ta osoba."}
+                  </p>
+                )}
+                {selectedItem.kind === "child" && (
+                  <p className="text-sm text-[var(--chat-header-sub)]">
+                    {selectedItem.isOpener
+                      ? `Piszesz do rodziców ${selectedItem.name}.`
+                      : selectedItem.isAnon
+                        ? "Nie wiesz, kim jest ta osoba."
+                        : `Piszesz z ${selectedItem.name}.`}
                   </p>
                 )}
               </div>
@@ -1819,10 +2446,22 @@ export function ChatsPanel({
                           meId={me}
                           onToggleReaction={handleToggleReaction}
                           editAction={
-                            isAnon ? editAnonDm : isDm ? editDm : editMessage
+                            isAnon
+                              ? editAnonDm
+                              : isChild
+                                ? editChildChatMessage
+                                : isDm
+                                  ? editDm
+                                  : editMessage
                           }
                           deleteAction={
-                            isAnon ? deleteAnonDm : isDm ? deleteDm : deleteMessage
+                            isAnon
+                              ? deleteAnonDm
+                              : isChild
+                                ? deleteChildChatMessage
+                                : isDm
+                                  ? deleteDm
+                                  : deleteMessage
                           }
                         />
                       </div>
@@ -1842,7 +2481,15 @@ export function ChatsPanel({
                 />
               </div>
                 <form
-                  action={isAnon ? anonSend : isDm ? dmSend : lotterySend}
+                  action={
+                    isAnon
+                      ? anonSend
+                      : isChild
+                        ? childSend
+                        : isDm
+                          ? dmSend
+                          : lotterySend
+                  }
                   onSubmit={(e) => {
                     lastSentRef.current = value;
                     setValue("");
@@ -1854,7 +2501,7 @@ export function ChatsPanel({
                         fd.set("image_width", String(photo.dims.width));
                         fd.set("image_height", String(photo.dims.height));
                       }
-                      (isDm ? dmSend : lotterySend)(fd);
+                      (isChild ? childSend : isDm ? dmSend : lotterySend)(fd);
                     }
                   }}
                   className="flex flex-col gap-2"
@@ -1881,6 +2528,12 @@ export function ChatsPanel({
                 )}
                 <div className="flex gap-3">
                 {isAnon ? (
+                  <input
+                    type="hidden"
+                    name="conversation_id"
+                    value={selectedItem.conversationId}
+                  />
+                ) : isChild ? (
                   <input
                     type="hidden"
                     name="conversation_id"
@@ -1995,6 +2648,7 @@ export function ChatsPanel({
                 Brak innych uczestników.
               </p>
             )}
+            {renderKidsSection()}
           </div>
           <button
             type="button"
@@ -2038,6 +2692,7 @@ export function ChatsPanel({
                   Brak innych uczestników.
                 </p>
               )}
+              {renderKidsSection()}
             </div>
             <button
               type="button"

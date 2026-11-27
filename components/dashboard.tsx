@@ -42,6 +42,8 @@ import { BottomSheet } from "@/components/bottom-sheet";
 import {
   ChatsPanel,
   type AnonDmThread,
+  type ChildChatThread,
+  type ChildPickerItem,
   type DmParticipant,
   type DmThread,
   type Thread,
@@ -1308,6 +1310,8 @@ export function Dashboard({
     participants: DmParticipant[];
     dmThreads: DmThread[];
     anonThreads: AnonDmThread[];
+    childThreads: ChildChatThread[];
+    kids: ChildPickerItem[];
   };
   groupChat: { me: string; messages: ChatMessage[] };
   wishes: {
@@ -1392,6 +1396,9 @@ export function Dashboard({
     chats.threads.reduce((sum, t) => sum + t.unread, 0)
   );
   const [groupUnread, setGroupUnread] = useState(0);
+  const [openChildRequest, setOpenChildRequest] = useState<{
+    childId: number;
+  } | null>(null);
   const [wishCount, setWishCount] = useState(wishes.wishes.length);
   const [revealed, setRevealed] = useState(false);
   const [topBarHidden, setTopBarHidden] = useState(false);
@@ -1485,6 +1492,19 @@ export function Dashboard({
 
   const handleGroupUnreadChange = useCallback(
     (total: number) => setGroupUnread(total),
+    []
+  );
+
+  const handleOpenChildChat = useCallback((childId: number) => {
+    setOpenChildRequest({ childId });
+    setCollapsed((prev) => ({ ...prev, chats: false }));
+    document
+      .getElementById("panel-chats")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleOpenChildHandled = useCallback(
+    () => setOpenChildRequest(null),
     []
   );
 
@@ -1775,6 +1795,10 @@ export function Dashboard({
           participants={chats.participants}
           dmThreads={chats.dmThreads}
           anonThreads={chats.anonThreads}
+          childThreads={chats.childThreads}
+          kids={chats.kids}
+          openChildRequest={openChildRequest}
+          onOpenChildHandled={handleOpenChildHandled}
           onUnreadChange={handleUnreadChange}
           narrow={isTwoCol}
         />
@@ -1823,7 +1847,13 @@ export function Dashboard({
     },
     children: {
       title: "Dzieci",
-      body: <MemoChildrenPanel {...kids} onAnimState={childrenFormAnim} />,
+      body: (
+        <MemoChildrenPanel
+          {...kids}
+          onAnimState={childrenFormAnim}
+          onOpenChildChat={handleOpenChildChat}
+        />
+      ),
     },
     ready: {
       title: "Gotowość",

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import {
   type AnonDmThread,
+  type ChildChatThread,
   type DmParticipant,
   type DmThread,
   type Thread,
@@ -187,6 +188,7 @@ export default async function Home() {
     child_wish_id: number;
     state: string;
     is_mine: boolean;
+    is_anonymous: boolean;
     reserver_name: string | null;
   }[];
   const kids = (childRows ?? []).map((c) => {
@@ -222,6 +224,7 @@ export default async function Home() {
               ? {
                   state: r.state as "reserved" | "purchased",
                   isMine: r.is_mine,
+                  anonymous: r.is_anonymous,
                   reserverName: r.reserver_name,
                 }
               : null,
@@ -649,6 +652,137 @@ export default async function Home() {
     };
   });
 
+  const myChildIds = (childParentRows ?? [])
+    .filter((p) => p.user_id === user.id)
+    .map((p) => p.child_id);
+  const { data: childConvRows } =
+    myChildIds.length > 0
+      ? await supabase
+          .from("child_chat_conversations")
+          .select("id, child_id, user_id")
+          .or(`user_id.eq.${user.id},child_id.in.(${myChildIds.join(",")})`)
+      : await supabase
+          .from("child_chat_conversations")
+          .select("id, child_id, user_id")
+          .eq("user_id", user.id);
+  const childConvs = (childConvRows ?? []) as {
+    id: number;
+    child_id: number;
+    user_id: string;
+  }[];
+  const childConvIds = childConvs.map((c) => c.id);
+  const [
+    { data: childMsgRows },
+    { data: childReadRows },
+    { data: childReactionRows },
+  ] = await Promise.all([
+    childConvIds.length > 0
+      ? supabase
+          .from("child_chat_messages")
+          .select(
+            "id, conversation_id, sender_id, text, image_path, image_width, image_height, created_at, edited_at, deleted_at"
+          )
+          .in("conversation_id", childConvIds)
+          .order("created_at")
+      : Promise.resolve({ data: [] as unknown[] }),
+    childConvIds.length > 0
+      ? supabase
+          .from("child_chat_reads")
+          .select("conversation_id, last_read_at")
+          .eq("user_id", user.id)
+          .in("conversation_id", childConvIds)
+      : Promise.resolve({ data: [] as unknown[] }),
+    supabase
+      .from("child_chat_message_reactions")
+      .select("message_id, user_id, emoji"),
+  ]);
+  const childMsgsAll = (childMsgRows ?? []) as {
+    id: number;
+    conversation_id: number;
+    sender_id: string;
+    text: string;
+    image_path: string | null;
+    image_width: number | null;
+    image_height: number | null;
+    created_at: string;
+    edited_at: string | null;
+    deleted_at: string | null;
+  }[];
+  const childReads = (childReadRows ?? []) as {
+    conversation_id: number;
+    last_read_at: string;
+  }[];
+  const childReactionsByMsg = reactionRowsByMessage(childReactionRows);
+  const wishChildId = new Map<number, number>(
+    (childWishRows ?? []).map((w) => [w.id, w.child_id])
+  );
+  const hasNamedReservation = (openerId: string, childId: number) =>
+    reservations.some((r) => {
+      if (wishChildId.get(r.child_wish_id) !== childId) return false;
+      if (openerId === user.id) return r.is_mine && !r.is_anonymous;
+      return !r.is_mine && r.reserver_name != null;
+    });
+  const childChatThreads: ChildChatThread[] = childConvs.map((c) => {
+    const isOpener = c.user_id === user.id;
+    const child = kids.find((k) => k.id === c.child_id);
+    const openerId = c.user_id;
+    const named = hasNamedReservation(openerId, c.child_id);
+    const convMsgs = childMsgsAll.filter((m) => m.conversation_id === c.id);
+    const read = childReads.find((r) => r.conversation_id === c.id);
+    const peerName = isOpener
+      ? (child?.name ?? "??")
+      : named
+        ? (nameById.get(openerId) ?? "??")
+        : "Anonim";
+    const peerAvatarUrl = isOpener
+      ? (child?.avatarUrl ?? null)
+      : named
+        ? (avatarById.get(openerId) ?? null)
+        : null;
+    const senderNames: Record<string, string> = {};
+    if (isOpener) {
+      for (const p of child?.parents ?? []) senderNames[p.id] = p.name;
+    } else {
+      if (named) senderNames[openerId] = nameById.get(openerId) ?? "??";
+      for (const p of child?.parents ?? []) {
+        if (p.id !== user.id) senderNames[p.id] = p.name;
+      }
+    }
+    return {
+      conversationId: c.id,
+      childId: c.child_id,
+      isOpener,
+      peerName,
+      peerAvatarUrl,
+      isAnon: !named,
+      senderNames,
+      messages: convMsgs.map((m) => {
+        const anonSide = !isOpener && m.sender_id === openerId && !named;
+        return {
+          id: m.id,
+          senderId: anonSide ? "anon" : m.sender_id,
+          senderName: anonSide
+            ? "Anonim"
+            : (senderNames[m.sender_id] ?? null),
+          text: m.text,
+          createdAt: m.created_at,
+          editedAt: m.edited_at,
+          deleted: m.deleted_at != null,
+          imageUrl: m.image_path ? `${photoBase}/${m.image_path}` : null,
+          imageWidth: m.image_width,
+          imageHeight: m.image_height,
+          reactions: reactionsFor(childReactionsByMsg, m.id),
+        };
+      }),
+      unread: convMsgs.filter(
+        (m) =>
+          m.deleted_at == null &&
+          m.sender_id !== user.id &&
+          (!read || m.created_at > read.last_read_at)
+      ).length,
+    };
+  });
+
   const gifts: GiftsData =
     lotteryDone && listGift && themeGift
       ? { kind: "done", listGift, themeGift, giftReady: profile?.gift_ready ?? false }
@@ -673,6 +807,19 @@ export default async function Home() {
         participants: dmParticipants,
         dmThreads,
         anonThreads,
+        childThreads: childChatThreads,
+        kids: kids.map((k) => ({
+          id: k.id,
+          name: k.name,
+          avatarUrl: k.avatarUrl,
+          isMyChild: k.isMyChild,
+          hasNamedReservation: k.wishes.some(
+            (w) =>
+              w.reservation != null &&
+              w.reservation.isMine &&
+              !w.reservation.anonymous
+          ),
+        })),
       }}
       groupChat={{
         me: user.id,

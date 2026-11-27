@@ -977,6 +977,137 @@ export async function markAnonDmRead(formData: FormData): Promise<void> {
     );
 }
 
+async function childChatConversation(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  conversationId: number
+): Promise<{ childId: number; openerId: string } | null> {
+  const { data: conv } = await supabase
+    .from("child_chat_conversations")
+    .select("id, child_id, user_id")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conv) return null;
+  if (conv.user_id === userId) {
+    return { childId: conv.child_id, openerId: conv.user_id };
+  }
+  const { data: cp } = await supabase
+    .from("child_parents")
+    .select("child_id")
+    .eq("child_id", conv.child_id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!cp) return null;
+  return { childId: conv.child_id, openerId: conv.user_id };
+}
+
+export async function sendChildChatMessage(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  if (isRateLimited(`childchat:${user.id}`, 10, 60_000)) {
+    return { ok: false, error: "Zbyt wiele wiadomości. Spróbuj za chwilę." };
+  }
+  const text = String(formData.get("text") ?? "").trim();
+  const conversationId = Number(formData.get("conversation_id"));
+  if (!Number.isInteger(conversationId) || conversationId <= 0) {
+    return { ok: false, error: "Nieprawidłowa rozmowa." };
+  }
+  if (text.length > 500) {
+    return { ok: false, error: "Wiadomość: maks. 500 znaków." };
+  }
+  const conv = await childChatConversation(supabase, user.id, conversationId);
+  if (!conv) {
+    return { ok: false, error: "Nie masz dostępu do tej rozmowy." };
+  }
+  const photo = await uploadChatPhoto(supabase, user.id, formData);
+  if (photo.error) return { ok: false, error: photo.error };
+  if (!text && !photo.path) {
+    return { ok: false, error: "Wpisz wiadomość lub dodaj zdjęcie." };
+  }
+  const imageWidth = chatPhotoSize(formData.get("image_width"));
+  const imageHeight = chatPhotoSize(formData.get("image_height"));
+  const { error } = await supabase.from("child_chat_messages").insert({
+    conversation_id: conversationId,
+    sender_id: user.id,
+    text,
+    image_path: photo.path,
+    image_width: imageWidth,
+    image_height: imageHeight,
+  });
+  if (error) return { ok: false, error: error.message };
+  await supabase
+    .from("child_chat_reads")
+    .upsert(
+      {
+        user_id: user.id,
+        conversation_id: conversationId,
+        last_read_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,conversation_id" }
+    );
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function editChildChatMessage(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  const text = String(formData.get("text") ?? "").trim();
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  if (!text || text.length > 500) {
+    return { ok: false, error: "Wiadomość: 1–500 znaków." };
+  }
+  const { error } = await supabase
+    .from("child_chat_messages")
+    .update({ text, edited_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteChildChatMessage(
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return { ok: false, error: "Nieprawidłowa wiadomość." };
+  }
+  const { error } = await supabase
+    .from("child_chat_messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("sender_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function markChildChatRead(formData: FormData): Promise<void> {
+  const { supabase, user } = await requireUser();
+  const conversationId = Number(formData.get("conversation_id"));
+  if (!Number.isInteger(conversationId) || conversationId <= 0) return;
+  await supabase
+    .from("child_chat_reads")
+    .upsert(
+      {
+        user_id: user.id,
+        conversation_id: conversationId,
+        last_read_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,conversation_id" }
+    );
+}
+
 export async function cancelLottery(
   _prev: ActionResult,
   _formData: FormData
@@ -1742,9 +1873,14 @@ export async function reserveChildWish(
   if (!Number.isInteger(wishId)) {
     return { ok: false, error: "Nieprawidłowy prezent." };
   }
+  const isAnonymous = formData.get("is_anonymous") === "1";
   const { error } = await supabase
     .from("child_wish_reservations")
-    .insert({ child_wish_id: wishId, user_id: user.id });
+    .insert({
+      child_wish_id: wishId,
+      user_id: user.id,
+      is_anonymous: isAnonymous,
+    });
   if (error) {
     return {
       ok: false,

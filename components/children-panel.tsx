@@ -56,6 +56,7 @@ import { useMediaQuery } from "@/lib/use-media-query";
 export type ChildReservation = {
   state: "reserved" | "purchased";
   isMine: boolean;
+  anonymous: boolean;
   reserverName: string | null;
 };
 
@@ -89,7 +90,11 @@ export function ChildrenPanel({
   kids,
   users,
   onAnimState,
-}: ChildrenData & { onAnimState?: (on: boolean) => void }) {
+  onOpenChildChat,
+}: ChildrenData & {
+  onAnimState?: (on: boolean) => void;
+  onOpenChildChat?: (childId: number) => void;
+}) {
   const [selectedId, setSelectedId] = useState<number | null>(
     kids[0]?.id ?? null
   );
@@ -218,7 +223,13 @@ export function ChildrenPanel({
         </BottomSheet>
       )}
       {selected && (
-        <ChildDetail key={selected.id} me={me} child={selected} users={users} />
+        <ChildDetail
+          key={selected.id}
+          me={me}
+          child={selected}
+          users={users}
+          onOpenChildChat={onOpenChildChat}
+        />
       )}
       <ConfirmDialog
         state={childClearConfirm}
@@ -553,10 +564,12 @@ function ChildDetail({
   me,
   child,
   users,
+  onOpenChildChat,
 }: {
   me: string;
   child: ChildItem;
   users: { id: string; fullName: string }[];
+  onOpenChildChat?: (childId: number) => void;
 }) {
   const isParent = child.isMyChild;
   const [localWishes, setLocalWishes] = useState<ChildWish[]>(child.wishes);
@@ -994,6 +1007,11 @@ function ChildDetail({
                       onMenu={setMenuWish}
                       onOptimistic={(r) => applyOptimistic(wish.id, r)}
                       onCancelEdit={() => setEditingId(null)}
+                      onOpenChat={
+                        onOpenChildChat
+                          ? () => onOpenChildChat(child.id)
+                          : undefined
+                      }
                     />
                   ))}
                   {!wishAddOpen && <li>{wishAddButton}</li>}
@@ -1009,6 +1027,9 @@ function ChildDetail({
                   wish={wish}
                   index={index}
                   onOptimistic={(r) => applyOptimistic(wish.id, r)}
+                  onOpenChat={
+                    onOpenChildChat ? () => onOpenChildChat(child.id) : undefined
+                  }
                 />
               ))}
             </ul>
@@ -1163,10 +1184,12 @@ function ChildWishRow({
   wish,
   index,
   onOptimistic,
+  onOpenChat,
 }: {
   wish: ChildWish;
   index: number;
   onOptimistic: (r: ChildReservation | null) => void;
+  onOpenChat?: () => void;
 }) {
   const purchased = wish.reservation?.state === "purchased";
   return (
@@ -1199,7 +1222,11 @@ function ChildWishRow({
             <ExternalLinkIcon />
           </a>
         )}
-        <ReservationControls wish={wish} onOptimistic={onOptimistic} />
+        <ReservationControls
+          wish={wish}
+          onOptimistic={onOptimistic}
+          onOpenChat={onOpenChat}
+        />
       </div>
     </li>
   );
@@ -1212,6 +1239,7 @@ function SortableChildWishRow({
   onMenu,
   onOptimistic,
   onCancelEdit,
+  onOpenChat,
 }: {
   wish: ChildWish;
   index: number;
@@ -1219,6 +1247,7 @@ function SortableChildWishRow({
   onMenu: (wish: ChildWish) => void;
   onOptimistic: (r: ChildReservation | null) => void;
   onCancelEdit: () => void;
+  onOpenChat?: () => void;
 }) {
   const {
     attributes,
@@ -1304,7 +1333,11 @@ function SortableChildWishRow({
             <ExternalLinkIcon />
           </a>
         )}
-        <ReservationControls wish={wish} onOptimistic={onOptimistic} />
+        <ReservationControls
+          wish={wish}
+          onOptimistic={onOptimistic}
+          onOpenChat={onOpenChat}
+        />
       </div>
     </li>
   );
@@ -1335,9 +1368,11 @@ function WishPrice({
 function ReservationControls({
   wish,
   onOptimistic,
+  onOpenChat,
 }: {
   wish: ChildWish;
   onOptimistic: (r: ChildReservation | null) => void;
+  onOpenChat?: () => void;
 }) {
   const [reserveState, reserveAction, reservePending] = useActionState(
     reserveChildWish,
@@ -1370,9 +1405,10 @@ function ReservationControls({
     }
   }, [reserveState, cancelState, buyState, unbuyState, onOptimistic]);
 
-  const fd = () => {
+  const fd = (anonymous = false) => {
     const f = new FormData();
     f.set("wish_id", String(wish.id));
+    if (anonymous) f.set("is_anonymous", "1");
     return f;
   };
 
@@ -1386,7 +1422,12 @@ function ReservationControls({
           type="button"
           onClick={() => {
             prevRef.current = r;
-            onOptimistic({ state: "reserved", isMine: true, reserverName: null });
+            onOptimistic({
+              state: "reserved",
+              isMine: true,
+              anonymous: false,
+              reserverName: null,
+            });
             reserveAction(fd());
           }}
           disabled={reservePending}
@@ -1394,6 +1435,24 @@ function ReservationControls({
         >
           {reservePending && <SpinnerIcon />}
           Zarezerwuj
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            prevRef.current = r;
+            onOptimistic({
+              state: "reserved",
+              isMine: true,
+              anonymous: true,
+              reserverName: null,
+            });
+            reserveAction(fd(true));
+          }}
+          disabled={reservePending}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-mist disabled:opacity-50"
+        >
+          {reservePending && <SpinnerIcon />}
+          Zarezerwuj anonimowo
         </button>
         {!reserveState.ok && reserveState.error && (
           <span className="text-[13px] text-red-600">{reserveState.error}</span>
@@ -1421,6 +1480,16 @@ function ReservationControls({
           {buyPending ? <SpinnerIcon /> : <CheckIcon />}
           Oznacz jako kupiony
         </button>
+        {onOpenChat && (
+          <button
+            type="button"
+            onClick={onOpenChat}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-mist"
+          >
+            <ChatIcon />
+            Otwórz czat
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -1454,6 +1523,16 @@ function ReservationControls({
           <CheckIcon />
           Kupiony
         </span>
+        {onOpenChat && (
+          <button
+            type="button"
+            onClick={onOpenChat}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-input-line bg-surface px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-mist"
+          >
+            <ChatIcon />
+            Otwórz czat
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -1824,6 +1903,24 @@ function LockIcon() {
     >
       <rect x="3" y="11" width="18" height="11" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
     </svg>
   );
 }

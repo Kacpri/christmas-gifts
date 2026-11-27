@@ -21,6 +21,7 @@ const empty: ActionResult = { ok: false };
 export type ChatMessage = {
   id: number;
   senderId: string;
+  senderName?: string | null;
   text: string;
   createdAt: string;
   editedAt: string | null;
@@ -182,6 +183,11 @@ function MessageBubbleBase({
               : ""
         }`}
       >
+      {!isOwn && !message.deleted && !editing && message.senderName && (
+        <p className="mb-1 px-1.5 text-[11px] font-semibold leading-4 text-[#4a5c50] dark:text-muted">
+          {message.senderName}
+        </p>
+      )}
       <div
         className={`group w-full select-none px-[14px] pt-2.5 pb-2 ${
           isOwn
