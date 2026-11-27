@@ -270,13 +270,21 @@ function TagPill({ tag, iconOnly = false }: { tag: Tag; iconOnly?: boolean }) {
   );
 }
 
-function AnonBadge() {
+function AnonBadge({ iconOnly = false }: { iconOnly?: boolean }) {
+  if (iconOnly) {
+    return (
+      <span
+        title="anonimowy"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-800"
+      >
+        <TagPillIcon tag="anonimowy" />
+      </span>
+    );
+  }
   return (
-    <span
-      title="anonimowy"
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-800"
-    >
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-200 px-2 py-1 text-xs font-bold leading-4 text-violet-800">
       <TagPillIcon tag="anonimowy" />
+      anonimowy
     </span>
   );
 }
@@ -2263,7 +2271,7 @@ export function ChatsPanel({
                     <TagPill tag={item.tag} iconOnly />
                     {(item.kind === "child" && item.isAnon) ||
                     (item.kind === "lottery" && item.drawerId === me) ? (
-                      <AnonBadge />
+                      <AnonBadge iconOnly />
                     ) : null}
                   </span>
                   {item.last ? (
@@ -2360,11 +2368,11 @@ export function ChatsPanel({
                   <span className="min-w-0 truncate text-xl font-bold text-[#0f3d24] dark:text-[#7cc99a]">
                     {selectedItem.name}
                   </span>
-                  <TagPill tag={selectedItem.tag} />
+                  <TagPill tag={selectedItem.tag} iconOnly={useMobileLayout} />
                   {(selectedItem.kind === "child" && selectedItem.isAnon) ||
                   (selectedItem.kind === "lottery" &&
                     selectedItem.drawerId === me) ? (
-                    <AnonBadge />
+                    <AnonBadge iconOnly={useMobileLayout} />
                   ) : null}
                 </div>
                 {selectedItem.kind === "lottery" &&
