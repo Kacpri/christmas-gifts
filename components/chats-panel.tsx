@@ -742,7 +742,17 @@ export function ChatsPanel({
     updateChipsFade();
     const ro = new ResizeObserver(() => updateChipsFade());
     ro.observe(el);
-    return () => ro.disconnect();
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("wheel", onWheel);
+    };
   }, [updateChipsFade]);
 
   const latestActivity = useMemo(() => {
@@ -2250,10 +2260,10 @@ export function ChatsPanel({
                   className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${
                     f === "all"
                       ? tagFilter === f
-                        ? "border-[#14532d] bg-sage-200 text-list-ink dark:border-accent dark:bg-sage-100"
+                        ? "border-current bg-sage-200 text-list-ink dark:bg-sage-100"
                         : "border-input-line bg-surface text-muted hover:bg-mist"
                       : tagFilter === f
-                        ? `border-[#14532d] dark:border-accent ${tagBgClass(f)} ${tagTextClass(f)}`
+                        ? `border-current ${tagBgClass(f)} ${tagTextClass(f)}`
                         : `border-transparent ${tagBgClass(f)} ${tagTextClass(f)}`
                   }`}
                 >
