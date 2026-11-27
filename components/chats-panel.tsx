@@ -202,10 +202,10 @@ function tagTextClass(tag: Tag) {
   return "text-rose-800";
 }
 
-function TagPillIcon({ tag }: { tag: Tag }) {
+function TagPillIcon({ tag, size = 12 }: { tag: Tag; size?: number }) {
   const common = {
-    width: 12,
-    height: 12,
+    width: size,
+    height: size,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
@@ -270,7 +270,7 @@ function TagPill({ tag, iconOnly = false }: { tag: Tag; iconOnly?: boolean }) {
         iconOnly ? "h-5 w-5 justify-center" : "px-2 py-1 text-xs font-bold leading-4"
       } ${tagTextClass(tag)} ${iconOnly ? "" : tagBgClass(tag)}`}
     >
-      <TagPillIcon tag={tag} />
+      <TagPillIcon tag={tag} size={iconOnly ? 16 : 12} />
       {!iconOnly && tag}
     </span>
   );
@@ -283,7 +283,7 @@ function AnonBadge({ iconOnly = false }: { iconOnly?: boolean }) {
         title="anonimowy"
         className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-violet-800"
       >
-        <TagPillIcon tag="anonimowy" />
+        <TagPillIcon tag="anonimowy" size={16} />
       </span>
     );
   }
@@ -529,6 +529,7 @@ export function ChatsPanel({
   const [visibleCount, setVisibleCount] = useState(30);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const useMobileLayout = !isDesktop || narrow;
+  const listTagsFull = isDesktop && narrow;
   const boxRef = useRef<HTMLDivElement>(null);
   const loadOlderAnchorRef = useRef<{ top: number; height: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -2296,10 +2297,12 @@ export function ChatsPanel({
                       {item.name}
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
-                      {item.tag ? <TagPill tag={item.tag} iconOnly /> : null}
-                      {(item.kind === "child" && item.isAnon) ||
-                      (item.kind === "lottery" && item.drawerId === me) ? (
-                        <AnonBadge iconOnly />
+                      {((item.kind === "child" && item.isAnon) ||
+                        (item.kind === "lottery" && item.drawerId === me)) && (
+                        <AnonBadge iconOnly={!listTagsFull} />
+                      )}
+                      {item.tag ? (
+                        <TagPill tag={item.tag} iconOnly={!listTagsFull} />
                       ) : null}
                     </span>
                     {item.last && (
@@ -2330,7 +2333,7 @@ export function ChatsPanel({
                             }`}
                       </span>
                     ) : (
-                      <span className="min-w-0 flex-1 truncate text-sm text-faint">
+                      <span className="min-w-0 flex-1 truncate text-sm italic text-faint">
                         Brak wiadomości
                       </span>
                     )}
@@ -2407,16 +2410,13 @@ export function ChatsPanel({
                   <span className="min-w-0 truncate text-xl font-bold text-[#0f3d24] dark:text-[#7cc99a]">
                     {selectedItem.name}
                   </span>
-                  {selectedItem.tag ? (
-                    <TagPill
-                      tag={selectedItem.tag}
-                      iconOnly={useMobileLayout}
-                    />
-                  ) : null}
                   {(selectedItem.kind === "child" && selectedItem.isAnon) ||
                   (selectedItem.kind === "lottery" &&
                     selectedItem.drawerId === me) ? (
-                    <AnonBadge iconOnly={useMobileLayout} />
+                    <AnonBadge iconOnly={!isDesktop} />
+                  ) : null}
+                  {selectedItem.tag ? (
+                    <TagPill tag={selectedItem.tag} iconOnly={!isDesktop} />
                   ) : null}
                 </div>
                 {selectedItem.kind === "lottery" &&
