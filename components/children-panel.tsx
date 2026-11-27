@@ -34,6 +34,7 @@ import {
   deleteChild,
   editChild,
   editChildWish,
+  fetchChildWishImage,
   markChildWishPurchased,
   removeChildParent,
   removeChildWish,
@@ -65,6 +66,7 @@ export type ChildWish = {
   text: string;
   link: string | null;
   price: number | null;
+  imageUrl: string | null;
   reservation: ChildReservation | null;
 };
 
@@ -595,6 +597,11 @@ function ChildDetail({
     addChildParent,
     empty
   );
+  const [fetchImgState, fetchImgAction, fetchImgPending] = useActionState(
+    fetchChildWishImage,
+    empty
+  );
+  const [fetchImgWishId, setFetchImgWishId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<ConfirmState | null>(
     null
   );
@@ -921,6 +928,32 @@ function ChildDetail({
         <PencilIcon />
         Edytuj
       </button>
+      {menuWish.link && (
+        <button
+          type="button"
+          onClick={() => {
+            setFetchImgWishId(menuWish.id);
+            const fd = new FormData();
+            fd.set("id", String(menuWish.id));
+            fetchImgAction(fd);
+          }}
+          disabled={fetchImgPending}
+          aria-label={`Pobierz zdjęcie: ${menuWish.text}`}
+          className="flex items-center gap-2 rounded-xl border border-input-line bg-mist px-4 py-2.5 text-sm font-medium text-ink hover:bg-icon-hover disabled:opacity-50"
+        >
+          {fetchImgPending && fetchImgWishId === menuWish.id ? (
+            <SpinnerIcon />
+          ) : (
+            <ImageIcon />
+          )}
+          Pobierz zdjęcie
+        </button>
+      )}
+      {menuWish.link &&
+        fetchImgWishId === menuWish.id &&
+        fetchImgState.error && (
+          <p className="text-sm text-red-600">{fetchImgState.error}</p>
+        )}
       <button
         type="button"
         onClick={() => {
@@ -1194,22 +1227,35 @@ function ChildWishRow({
   const purchased = wish.reservation?.state === "purchased";
   return (
     <li className="flex flex-col gap-2 rounded-[10px] bg-surface px-3.5 py-3">
-      <div className="flex min-h-[36px] items-center justify-between gap-3">
-        <span className="min-w-0 text-[15px] leading-snug">
-          <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
-            {index + 1}.
-          </span>{" "}
-          <span
-            className={`font-semibold ${
-              purchased ? "text-muted line-through" : "text-ink"
-            }`}
-          >
-            {wish.text}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {wish.imageUrl && (
+            <img
+              src={wish.imageUrl}
+              alt=""
+              className="h-[52px] w-[52px] shrink-0 rounded-lg object-cover"
+            />
+          )}
+          <span className="min-w-0 text-[15px] leading-snug">
+            <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
+              {index + 1}.
+            </span>{" "}
+            <span
+              className={`font-semibold ${
+                purchased ? "text-muted line-through" : "text-ink"
+              }`}
+            >
+              {wish.text}
+            </span>
           </span>
-        </span>
+        </div>
         <WishPrice price={wish.price} purchased={purchased} />
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div
+        className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${
+          wish.imageUrl ? "pl-[62px]" : ""
+        }`}
+      >
         {wish.link && (
           <a
             href={wish.link}
@@ -1293,6 +1339,13 @@ function SortableChildWishRow({
             <GripIcon />
           </span>
         </button>
+        {wish.imageUrl && (
+          <img
+            src={wish.imageUrl}
+            alt=""
+            className="h-[52px] w-[52px] shrink-0 rounded-lg object-cover"
+          />
+        )}
         <span className="min-w-0 flex-1 text-[15px] leading-snug">
           <span className="select-none font-medium text-[#4a5c50] dark:text-muted">
             {index + 1}.
@@ -1320,7 +1373,11 @@ function SortableChildWishRow({
           </span>
         </button>
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pl-12">
+      <div
+        className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${
+          wish.imageUrl ? "pl-[108px]" : "pl-12"
+        }`}
+      >
         {wish.link && (
           <a
             href={wish.link}
@@ -2078,6 +2135,26 @@ function TrashIcon() {
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function ImageIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
     </svg>
   );
 }

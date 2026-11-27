@@ -126,7 +126,7 @@ export default async function Home() {
       .select("child_id, user_id, is_creator"),
     supabase
       .from("child_wishes")
-      .select("id, child_id, text, link, price")
+      .select("id, child_id, text, link, price, image_path")
       .order("pos"),
     supabase.rpc("child_reservation_data"),
     supabase
@@ -148,6 +148,7 @@ export default async function Home() {
 
   const nameById = new Map((participants ?? []).map((p) => [p.id, p.full_name]));
   const avatarBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars`;
+  const wishImageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/wish-images`;
   const avatarUrlOf = (
     p:
       | {
@@ -220,6 +221,7 @@ export default async function Home() {
             text: w.text,
             link: w.link,
             price: w.price,
+            imageUrl: w.image_path ? `${wishImageBase}/${w.image_path}` : null,
             reservation: r
               ? {
                   state: r.state as "reserved" | "purchased",

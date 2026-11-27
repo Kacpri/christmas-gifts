@@ -1722,9 +1722,12 @@ export async function deleteChild(
   }
   const { data: wishRows } = await supabase
     .from("child_wishes")
-    .select("id")
+    .select("id, image_path")
     .eq("child_id", childId);
   const wishIds = (wishRows ?? []).map((w) => w.id);
+  const wishImagePaths = (wishRows ?? [])
+    .map((w) => w.image_path)
+    .filter((p): p is string => Boolean(p));
   if (wishIds.length > 0) {
     const { data: reservationRows, error: reservationError } = await supabase.rpc(
       "child_reservation_data"
@@ -1755,8 +1758,105 @@ export async function deleteChild(
         "Nie można usunąć dziecka z zarezerwowanymi lub kupionymi prezentami.",
     };
   }
+  if (wishImagePaths.length > 0) {
+    await supabase.storage.from("wish-images").remove(wishImagePaths);
+  }
   revalidatePath("/");
   return { ok: true };
+}
+
+const WISH_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+const WISH_IMAGE_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+function extractOgImage(html: string, pageUrl: string): string | null {
+  const patterns = [
+    /<meta\b[^>]*property=["']og:image(?:secure_url)?["'][^>]*content=["']([^"']+)["']/i,
+    /<meta\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image(?:secure_url)?["']/i,
+    /<meta\b[^>]*name=["']twitter:image[:\w]*["'][^>]*content=["']([^"']+)["']/i,
+    /<meta\b[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image[:\w]*["']/i,
+  ];
+  for (const re of patterns) {
+    const m = html.match(re);
+    const raw = m?.[1];
+    if (raw) {
+      try {
+        return new URL(raw.trim(), pageUrl).toString();
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+type WishImageResult =
+  | { path: string }
+  | { path: null; reason: "not-found" | "failed" };
+
+async function fetchWishImage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  childId: number,
+  wishId: number,
+  link: string
+): Promise<WishImageResult> {
+  let finalUrl = link;
+  let html: string;
+  try {
+    const res = await fetch(link, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(10_000),
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ChristmasGifts/1.0)" },
+    });
+    if (!res.ok) return { path: null, reason: "failed" };
+    finalUrl = res.url || link;
+    html = await res.text();
+  } catch {
+    return { path: null, reason: "failed" };
+  }
+  const imageUrl = extractOgImage(html, finalUrl);
+  if (!imageUrl) return { path: null, reason: "not-found" };
+  let blob: Blob;
+  let ext: string;
+  try {
+    const res = await fetch(imageUrl, {
+      signal: AbortSignal.timeout(15_000),
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ChristmasGifts/1.0)" },
+    });
+    if (!res.ok) return { path: null, reason: "failed" };
+    const contentType = (res.headers.get("content-type") ?? "")
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    ext = WISH_IMAGE_EXT[contentType];
+    if (!ext) return { path: null, reason: "not-found" };
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength === 0 || buf.byteLength > WISH_IMAGE_MAX_BYTES) {
+      return { path: null, reason: "failed" };
+    }
+    blob = new Blob([buf], { type: contentType });
+  } catch {
+    return { path: null, reason: "failed" };
+  }
+  const path = `${childId}/${wishId}-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}.${ext}`;
+  const { error } = await supabase.storage
+    .from("wish-images")
+    .upload(path, blob, { contentType: blob.type });
+  if (error) return { path: null, reason: "failed" };
+  return { path };
+}
+
+async function removeWishImage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  imagePath: string | null
+): Promise<void> {
+  if (!imagePath) return;
+  await supabase.storage.from("wish-images").remove([imagePath]);
 }
 
 export async function addChildWish(
@@ -1790,14 +1890,27 @@ export async function addChildWish(
     .order("pos", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { error } = await supabase.from("child_wishes").insert({
-    child_id: childId,
-    text,
-    link: link || null,
-    price,
-    pos: (top?.pos ?? 0) + 1,
-  });
+  const { data: inserted, error } = await supabase
+    .from("child_wishes")
+    .insert({
+      child_id: childId,
+      text,
+      link: link || null,
+      price,
+      pos: (top?.pos ?? 0) + 1,
+    })
+    .select("id")
+    .single();
   if (error) return { ok: false, error: error.message };
+  if (link && inserted) {
+    const img = await fetchWishImage(supabase, childId, inserted.id, link);
+    if (img.path) {
+      await supabase
+        .from("child_wishes")
+        .update({ image_path: img.path })
+        .eq("id", inserted.id);
+    }
+  }
   revalidatePath("/");
   return { ok: true };
 }
@@ -1816,7 +1929,7 @@ export async function editChildWish(
   }
   const { data: wishRow } = await supabase
     .from("child_wishes")
-    .select("child_id")
+    .select("child_id, link, image_path")
     .eq("id", id)
     .maybeSingle();
   if (!wishRow) return { ok: false, error: "Nieprawidłowe życzenie." };
@@ -1837,6 +1950,60 @@ export async function editChildWish(
     .update({ text, link: link || null, price })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };
+  const newLink = link || null;
+  if (newLink !== (wishRow.link ?? null)) {
+    await removeWishImage(supabase, wishRow.image_path);
+    let imagePath: string | null = null;
+    if (newLink) {
+      const img = await fetchWishImage(supabase, wishRow.child_id, id, newLink);
+      if (img.path) imagePath = img.path;
+    }
+    await supabase
+      .from("child_wishes")
+      .update({ image_path: imagePath })
+      .eq("id", id);
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function fetchChildWishImage(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) {
+    return { ok: false, error: "Nieprawidłowe życzenie." };
+  }
+  const { data: wishRow } = await supabase
+    .from("child_wishes")
+    .select("child_id, link, image_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (!wishRow) return { ok: false, error: "Nieprawidłowe życzenie." };
+  if (!(await isChildParent(supabase, user.id, wishRow.child_id))) {
+    return { ok: false, error: "Tylko rodzic może zarządzać życzeniami dziecka." };
+  }
+  if (!wishRow.link) {
+    return { ok: false, error: "To życzenie nie ma linku do sklepu." };
+  }
+  const img = await fetchWishImage(supabase, wishRow.child_id, id, wishRow.link);
+  if (img.path === null) {
+    return {
+      ok: false,
+      error:
+        img.reason === "not-found"
+          ? "Nie znaleziono zdjęcia produktu na tej stronie."
+          : "Nie udało się pobrać zdjęcia. Spróbuj ponownie.",
+    };
+  }
+  await removeWishImage(supabase, wishRow.image_path);
+  const { error } = await supabase
+    .from("child_wishes")
+    .update({ image_path: img.path })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath("/");
   return { ok: true };
 }
@@ -1851,7 +2018,7 @@ export async function removeChildWish(
   }
   const { data: wishRow } = await supabase
     .from("child_wishes")
-    .select("child_id")
+    .select("child_id, image_path")
     .eq("id", id)
     .maybeSingle();
   if (!wishRow) return { ok: false, error: "Nieprawidłowe życzenie." };
@@ -1860,6 +2027,7 @@ export async function removeChildWish(
   }
   const { error } = await supabase.from("child_wishes").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await removeWishImage(supabase, wishRow.image_path);
   revalidatePath("/");
   return { ok: true };
 }
