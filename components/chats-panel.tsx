@@ -2214,14 +2214,14 @@ export function ChatsPanel({
             isDesktop ? "h-[480px] pb-3" : ""
           } ${!useMobileLayout ? "min-w-0 flex-1" : ""}`}
         >
-          <div className="flex flex-wrap gap-1.5">
+          <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
             {FILTER_TAGS.map((f) => (
               <button
                 key={f}
                 type="button"
                 onClick={() => setTagFilter(f)}
                 aria-pressed={tagFilter === f}
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${
                   tagFilter === f
                     ? "border-[#14532d] bg-sage-200 text-list-ink dark:border-accent dark:bg-sage-100"
                     : "border-input-line bg-surface text-muted hover:bg-mist"
@@ -2296,7 +2296,11 @@ export function ChatsPanel({
                     >
                       {item.name}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1">
+                    <span
+                      className={`flex shrink-0 items-center ${
+                        listTagsFull ? "gap-1" : "gap-0.5"
+                      }`}
+                    >
                       {((item.kind === "child" && item.isAnon) ||
                         (item.kind === "lottery" && item.drawerId === me)) && (
                         <AnonBadge iconOnly={!listTagsFull} />
@@ -2410,14 +2414,20 @@ export function ChatsPanel({
                   <span className="min-w-0 truncate text-xl font-bold text-[#0f3d24] dark:text-[#7cc99a]">
                     {selectedItem.name}
                   </span>
-                  {(selectedItem.kind === "child" && selectedItem.isAnon) ||
-                  (selectedItem.kind === "lottery" &&
-                    selectedItem.drawerId === me) ? (
-                    <AnonBadge iconOnly={!isDesktop} />
-                  ) : null}
-                  {selectedItem.tag ? (
-                    <TagPill tag={selectedItem.tag} iconOnly={!isDesktop} />
-                  ) : null}
+                  <span
+                    className={`flex shrink-0 items-center ${
+                      isDesktop ? "gap-2" : "gap-0.5"
+                    }`}
+                  >
+                    {(selectedItem.kind === "child" && selectedItem.isAnon) ||
+                    (selectedItem.kind === "lottery" &&
+                      selectedItem.drawerId === me) ? (
+                      <AnonBadge iconOnly={!isDesktop} />
+                    ) : null}
+                    {selectedItem.tag ? (
+                      <TagPill tag={selectedItem.tag} iconOnly={!isDesktop} />
+                    ) : null}
+                  </span>
                 </div>
                 {selectedItem.kind === "lottery" &&
                   selectedItem.name === "Tajemniczy Mikołaj" && (
