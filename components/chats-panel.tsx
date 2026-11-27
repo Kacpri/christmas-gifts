@@ -272,23 +272,11 @@ function TagPill({ tag, iconOnly = false }: { tag: Tag; iconOnly?: boolean }) {
 
 function AnonBadge() {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-200 px-2 py-0.5 text-[11px] font-bold leading-4 text-violet-800">
-      <svg
-        width="11"
-        height="11"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-      >
-        <path d="M9 10h.01" />
-        <path d="M15 10h.01" />
-        <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
-      </svg>
-      anonimowy
+    <span
+      title="anonimowy"
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-800"
+    >
+      <TagPillIcon tag="anonimowy" />
     </span>
   );
 }
@@ -2260,10 +2248,6 @@ export function ChatsPanel({
                     >
                       {item.name}
                     </span>
-                    {(item.kind === "child" && item.isAnon) ||
-                      (item.kind === "lottery" && item.drawerId === me) ? (
-                      <AnonBadge />
-                    ) : null}
                   </span>
                   {item.last && (
                     <span
@@ -2275,7 +2259,13 @@ export function ChatsPanel({
                   )}
                 </span>
                 <span className="mt-1 flex min-h-6 items-center gap-2">
-                  <TagPill tag={item.tag} iconOnly />
+                  <span className="flex shrink-0 items-center gap-1">
+                    <TagPill tag={item.tag} iconOnly />
+                    {(item.kind === "child" && item.isAnon) ||
+                    (item.kind === "lottery" && item.drawerId === me) ? (
+                      <AnonBadge />
+                    ) : null}
+                  </span>
                   {item.last ? (
                     <span
                       className={`min-w-0 flex-1 truncate text-sm ${
