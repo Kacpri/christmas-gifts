@@ -525,6 +525,7 @@ export function ChatsPanel({
   const [pickerMode, setPickerMode] = useState<"dm" | "anon">("dm");
   const [anonNewPeers, setAnonNewPeers] = useState<Record<number, string>>({});
   const [listFade, setListFade] = useState(false);
+  const [chipsFade, setChipsFade] = useState({ left: false, right: false });
   const [listExpanded, setListExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(30);
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -533,6 +534,7 @@ export function ChatsPanel({
   const boxRef = useRef<HTMLDivElement>(null);
   const loadOlderAnchorRef = useRef<{ top: number; height: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
   const lastSentRef = useRef("");
   const selectedRef = useRef(selectedKey);
   selectedRef.current = selectedKey;
@@ -723,6 +725,25 @@ export function ChatsPanel({
   useEffect(() => {
     updateListFade();
   }, [listItems, updateListFade]);
+
+  const updateChipsFade = useCallback(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const canScroll = el.scrollWidth > el.clientWidth;
+    setChipsFade({
+      left: canScroll && el.scrollLeft > 4,
+      right: canScroll && el.scrollLeft < el.scrollWidth - el.clientWidth - 4,
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    updateChipsFade();
+    const ro = new ResizeObserver(() => updateChipsFade());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateChipsFade]);
 
   const latestActivity = useMemo(() => {
     let max = "";
@@ -2214,23 +2235,45 @@ export function ChatsPanel({
             isDesktop ? "h-[480px] pb-3" : ""
           } ${!useMobileLayout ? "min-w-0 flex-1" : ""}`}
         >
-          <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-            {FILTER_TAGS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setTagFilter(f)}
-                aria-pressed={tagFilter === f}
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${
-                  tagFilter === f
-                    ? "border-[#14532d] bg-sage-200 text-list-ink dark:border-accent dark:bg-sage-100"
-                    : "border-input-line bg-surface text-muted hover:bg-mist"
-                }`}
-              >
-                {f !== "all" && <TagPillIcon tag={f} />}
-                {f === "all" ? "Wszystkie" : f}
-              </button>
-            ))}
+          <div className="relative">
+            <div
+              ref={chipsRef}
+              onScroll={updateChipsFade}
+              className="no-scrollbar flex gap-1.5 overflow-x-auto"
+            >
+              {FILTER_TAGS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setTagFilter(f)}
+                  aria-pressed={tagFilter === f}
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${
+                    f === "all"
+                      ? tagFilter === f
+                        ? "border-[#14532d] bg-sage-200 text-list-ink dark:border-accent dark:bg-sage-100"
+                        : "border-input-line bg-surface text-muted hover:bg-mist"
+                      : tagFilter === f
+                        ? `border-[#14532d] dark:border-accent ${tagBgClass(f)} ${tagTextClass(f)}`
+                        : `border-transparent ${tagBgClass(f)} ${tagTextClass(f)}`
+                  }`}
+                >
+                  {f !== "all" && <TagPillIcon tag={f} />}
+                  {f === "all" ? "Wszystkie" : f}
+                </button>
+              ))}
+            </div>
+            {chipsFade.left && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-surface to-transparent"
+              />
+            )}
+            {chipsFade.right && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-surface to-transparent"
+              />
+            )}
           </div>
           <div className="relative min-h-0 flex-1">
             <div
