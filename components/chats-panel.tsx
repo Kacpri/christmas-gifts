@@ -9,6 +9,8 @@ import {
   useRef,
   useState,
   useActionState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import {
@@ -754,6 +756,62 @@ export function ChatsPanel({
       el.removeEventListener("wheel", onWheel);
     };
   }, [updateChipsFade]);
+
+  const chipsDragRef = useRef<{
+    x: number;
+    sl: number;
+    moved: boolean;
+    pointerId: number;
+  } | null>(null);
+  const suppressChipsClickRef = useRef(false);
+
+  function suppressChipsClick() {
+    suppressChipsClickRef.current = true;
+    window.setTimeout(() => {
+      suppressChipsClickRef.current = false;
+    }, 150);
+  }
+
+  function onChipsPointerDown(e: ReactPointerEvent) {
+    if (e.pointerType !== "mouse") return;
+    chipsDragRef.current = {
+      x: e.clientX,
+      sl: e.currentTarget.scrollLeft,
+      moved: false,
+      pointerId: e.pointerId,
+    };
+  }
+
+  function onChipsPointerMove(e: ReactPointerEvent) {
+    const drag = chipsDragRef.current;
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) > 5) {
+      drag.moved = true;
+      e.currentTarget.setPointerCapture(drag.pointerId);
+    }
+    if (drag.moved) {
+      e.currentTarget.scrollLeft = drag.sl - dx;
+    }
+  }
+
+  function onChipsPointerUp(e: ReactPointerEvent) {
+    const drag = chipsDragRef.current;
+    if (drag?.moved) {
+      suppressChipsClick();
+      if (e.currentTarget.hasPointerCapture(drag.pointerId)) {
+        e.currentTarget.releasePointerCapture(drag.pointerId);
+      }
+    }
+    chipsDragRef.current = null;
+  }
+
+  function onChipsClickCapture(e: ReactMouseEvent) {
+    if (suppressChipsClickRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
 
   const latestActivity = useMemo(() => {
     let max = "";
@@ -2249,7 +2307,12 @@ export function ChatsPanel({
             <div
               ref={chipsRef}
               onScroll={updateChipsFade}
-              className="no-scrollbar flex gap-1.5 overflow-x-auto"
+              onPointerDown={onChipsPointerDown}
+              onPointerMove={onChipsPointerMove}
+              onPointerUp={onChipsPointerUp}
+              onPointerCancel={onChipsPointerUp}
+              onClickCapture={onChipsClickCapture}
+              className="no-scrollbar flex select-none gap-1.5 overflow-x-auto"
             >
               {FILTER_TAGS.map((f) => (
                 <button
