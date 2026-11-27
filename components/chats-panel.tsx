@@ -162,12 +162,12 @@ type DbRead = {
   last_read_at: string;
 };
 
-type Tag = "z listy" | "tematyczny" | "prywatny" | "anonimowy" | "dziecko";
+type Tag = "z listy" | "tematyczny" | "anonimowy" | "dziecko";
 
 type ListItem = {
   key: string;
   name: string;
-  tag: Tag;
+  tag?: Tag;
   last: ChatMessage | null;
   unread: number;
   kind: "lottery" | "dm" | "anon" | "child";
@@ -184,17 +184,22 @@ const FILTER_TAGS: ("all" | Tag)[] = [
   "all",
   "z listy",
   "tematyczny",
-  "prywatny",
   "anonimowy",
   "dziecko",
 ];
 
-function tagClass(tag: Tag) {
-  if (tag === "z listy") return "bg-sage-200 text-list-ink";
-  if (tag === "tematyczny") return "bg-honey-200 text-honey-800";
-  if (tag === "anonimowy") return "bg-violet-200 text-violet-800";
-  if (tag === "dziecko") return "bg-rose-200 text-rose-800";
-  return "bg-sky-200 text-sky-800";
+function tagBgClass(tag: Tag) {
+  if (tag === "z listy") return "bg-sage-200";
+  if (tag === "tematyczny") return "bg-honey-200";
+  if (tag === "anonimowy") return "bg-violet-200";
+  return "bg-rose-200";
+}
+
+function tagTextClass(tag: Tag) {
+  if (tag === "z listy") return "text-list-ink";
+  if (tag === "tematyczny") return "text-honey-800";
+  if (tag === "anonimowy") return "text-violet-800";
+  return "text-rose-800";
 }
 
 function TagPillIcon({ tag }: { tag: Tag }) {
@@ -250,8 +255,9 @@ function TagPillIcon({ tag }: { tag: Tag }) {
   }
   return (
     <svg {...common}>
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      <path d="M9 10h.01" />
+      <path d="M15 10h.01" />
+      <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
     </svg>
   );
 }
@@ -262,7 +268,7 @@ function TagPill({ tag, iconOnly = false }: { tag: Tag; iconOnly?: boolean }) {
       title={tag}
       className={`inline-flex shrink-0 items-center gap-1 rounded-full ${
         iconOnly ? "h-5 w-5 justify-center" : "px-2 py-1 text-xs font-bold leading-4"
-      } ${tagClass(tag)}`}
+      } ${tagTextClass(tag)} ${iconOnly ? "" : tagBgClass(tag)}`}
     >
       <TagPillIcon tag={tag} />
       {!iconOnly && tag}
@@ -275,7 +281,7 @@ function AnonBadge({ iconOnly = false }: { iconOnly?: boolean }) {
     return (
       <span
         title="anonimowy"
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-200 text-violet-800"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-violet-800"
       >
         <TagPillIcon tag="anonimowy" />
       </span>
@@ -289,11 +295,11 @@ function AnonBadge({ iconOnly = false }: { iconOnly?: boolean }) {
   );
 }
 
-function LotteryAvatar({ mystery }: { mystery: boolean }) {
+function LotteryAvatar({ mystery, tag }: { mystery: boolean; tag: Tag }) {
   return (
     <span
       aria-hidden
-      className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-honey-200 text-honey-800"
+      className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${tagBgClass(tag)} ${tagTextClass(tag)}`}
     >
       {mystery ? (
         <span className="text-2xl font-bold leading-none">?</span>
@@ -603,7 +609,6 @@ export function ChatsPanel({
       items.push({
         key: dmKey(peerId),
         name: nameById.get(peerId) ?? peerId,
-        tag: "prywatny",
         last,
         unread: dmUnread[peerId] ?? 0,
         kind: "dm",
@@ -745,7 +750,7 @@ export function ChatsPanel({
         kind: "dm" as const,
         key: selectedKey,
         name: nameById.get(peerId) ?? peerId,
-        tag: "prywatny" as Tag,
+        tag: undefined as Tag | undefined,
         peerId,
         messages: dmMsgs[peerId] ?? [],
       };
@@ -2206,7 +2211,7 @@ export function ChatsPanel({
         <div
           className={`flex flex-col gap-3 ${
             isDesktop ? "h-[480px] pb-3" : ""
-          } ${!useMobileLayout ? "w-72" : ""}`}
+          } ${!useMobileLayout ? "min-w-0 flex-1" : ""}`}
         >
           <div className="flex flex-wrap gap-1.5">
             {FILTER_TAGS.map((f) => (
@@ -2274,6 +2279,7 @@ export function ChatsPanel({
                 ) : (
                   <LotteryAvatar
                     mystery={item.draweeId === me && item.drawerId !== me}
+                    tag={item.tag ?? "z listy"}
                   />
                 )}
                 <span className="flex min-w-0 flex-1 flex-col">
@@ -2290,7 +2296,7 @@ export function ChatsPanel({
                       {item.name}
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
-                      <TagPill tag={item.tag} iconOnly />
+                      {item.tag ? <TagPill tag={item.tag} iconOnly /> : null}
                       {(item.kind === "child" && item.isAnon) ||
                       (item.kind === "lottery" && item.drawerId === me) ? (
                         <AnonBadge iconOnly />
@@ -2401,7 +2407,12 @@ export function ChatsPanel({
                   <span className="min-w-0 truncate text-xl font-bold text-[#0f3d24] dark:text-[#7cc99a]">
                     {selectedItem.name}
                   </span>
-                  <TagPill tag={selectedItem.tag} iconOnly={useMobileLayout} />
+                  {selectedItem.tag ? (
+                    <TagPill
+                      tag={selectedItem.tag}
+                      iconOnly={useMobileLayout}
+                    />
+                  ) : null}
                   {(selectedItem.kind === "child" && selectedItem.isAnon) ||
                   (selectedItem.kind === "lottery" &&
                     selectedItem.drawerId === me) ? (
